@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/api/drivers_repository.dart';
 import '../core/api/jobs_repository.dart';
+import '../core/location/location_source.dart';
 import '../core/ws/crane_socket.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/customer/request/matching_screen.dart';
@@ -105,12 +106,14 @@ GoRouter createRouter() {
             BlocProvider(
               create: (context) => DriverHomeCubit(
                 driversRepository: context.read<DriversRepository>(),
+                locationSource: context.read<LocationSource?>(),
               ),
             ),
             BlocProvider(
               create: (context) => ActiveJobCubit(
                 jobsRepository: context.read<JobsRepository>(),
                 socket: context.read<CraneSocket?>(),
+                locationSource: context.read<LocationSource?>(),
               ),
             ),
             BlocProvider(

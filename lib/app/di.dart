@@ -6,6 +6,7 @@ import '../core/api/fake_drivers_repository.dart';
 import '../core/api/fake_jobs_repository.dart';
 import '../core/api/jobs_repository.dart';
 import '../core/config/env.dart';
+import '../core/location/location_source.dart';
 import '../core/ws/crane_socket.dart';
 
 // TODO(FND-1): construct firebase_core / firebase_auth / firebase_messaging
@@ -13,8 +14,9 @@ import '../core/ws/crane_socket.dart';
 // files from the Firebase console). CraneSocket's token provider
 // (`lib/core/ws/crane_socket.dart`) is the same seam to plug the real
 // Firebase ID token into once this lands.
-// TODO(FND-6): construct google_maps / location services here once Maps
-// keys and native setup are in place.
+// TODO(FND-6): construct google_maps here once Maps keys and native setup
+// are in place. Driver location (TRK-5) is separate and already wired below
+// via GeolocatorLocationSource.
 
 /// Composition root: builds the HTTP client and repositories once at app
 /// start. The instances are exposed to the widget tree through
@@ -25,6 +27,7 @@ class AppDependencies {
     required this.jobsRepository,
     required this.driversRepository,
     this.socket,
+    this.locationSource,
   });
 
   /// Production wiring for the active flavor.
@@ -38,7 +41,8 @@ class AppDependencies {
   /// The api-backed branch also opens one shared [CraneSocket] (TRK-4):
   /// both repositories push/pull through it, and it's exposed on
   /// [AppDependencies.socket] so `ActiveJobCubit` can send driver location
-  /// fixes over the same connection.
+  /// fixes over the same connection. [locationSource] (TRK-5) is the real
+  /// GPS feed for those fixes — null under fakes, where nothing needs one.
   factory AppDependencies.fromEnv() {
     final dio = createDio(baseUrl: Env.apiBaseUrl);
     if (Env.useFakeBackend) {
@@ -55,6 +59,7 @@ class AppDependencies {
       jobsRepository: ApiJobsRepository(dio, socket),
       driversRepository: ApiDriversRepository(dio, socket),
       socket: socket,
+      locationSource: GeolocatorLocationSource(),
     );
   }
 
@@ -64,4 +69,7 @@ class AppDependencies {
 
   /// Null when [Env.useFakeBackend] is true — the fakes don't use a socket.
   final CraneSocket? socket;
+
+  /// Null when [Env.useFakeBackend] is true — nothing needs real GPS.
+  final LocationSource? locationSource;
 }

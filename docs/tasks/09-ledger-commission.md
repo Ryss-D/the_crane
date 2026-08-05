@@ -10,10 +10,10 @@ The money spine. Built during the cash MVP so monetization works from day one an
   Running balance per driver; if `balance_cap` (from config, nullable = disabled) exceeded, driver is excluded from dispatch and sees the blocked state (DRV-1).
   *AC: crossing the cap removes the driver from the geo search; settling restores them.*
 
-- [ ] **LED-3 — Cash payment provider** *(deps: LED-1)*
+- [x] **LED-3 — Cash payment provider** *(deps: LED-1)*
   First implementation of the `PaymentProvider` protocol (`base.py` + `cash.py`): create intent = pending cash payment; driver confirmation settles it.
   *AC: protocol interface covers create_intent / get_status / refund / parse_webhook so Wompi (PAY-2) slots in without API changes.*
-  Status: the cash side effect (accrual on completion) exists inline in `app/services/jobs.py`, but the formal `PaymentProvider` protocol abstraction isn't extracted yet — needed before PAY-2 (Wompi) lands so it slots in without an API change.
+  Note: named `PaymentGateway` in code (`app/services/payments/`), not `PaymentProvider` — that name is already the DB enum for which gateway a payment used. `confirm_delivery` takes the gateway as an injectable default, so PAY-2 needs zero API-layer changes (proven by a test that swaps in a recording gateway).
 
 - [x] **LED-4 — Manual settlement recording** *(deps: LED-1)*
   `POST /v1/admin/ledger/{driver_id}/settle` — record a balance payment or adjustment with note; feeds ADM-6.

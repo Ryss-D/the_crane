@@ -7,6 +7,7 @@ import 'app/router.dart';
 import 'app/theme.dart';
 import 'core/api/drivers_repository.dart';
 import 'core/api/jobs_repository.dart';
+import 'core/location/location_source.dart';
 import 'core/ws/crane_socket.dart';
 import 'l10n/app_localizations.dart';
 
@@ -44,6 +45,11 @@ class _TheCraneAppState extends State<TheCraneApp> {
         // `ActiveJobCubit` treats a null socket as "no location push".
         RepositoryProvider<CraneSocket?>.value(
           value: widget.dependencies.socket,
+        ),
+        // Null under `Env.useFakeBackend`; `DriverHomeCubit`/`ActiveJobCubit`
+        // treat a null source as "no real GPS" (TRK-5).
+        RepositoryProvider<LocationSource?>.value(
+          value: widget.dependencies.locationSource,
         ),
       ],
       child: MaterialApp.router(

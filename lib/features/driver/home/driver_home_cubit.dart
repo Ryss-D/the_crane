@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../core/api/drivers_repository.dart';
+import '../../../core/location/location_source.dart';
 import '../../../core/models/driver_profile.dart';
 
 part 'driver_home_cubit.freezed.dart';
@@ -26,25 +27,31 @@ abstract class DriverHomeState with _$DriverHomeState {
 
 /// Drives the DRV-1 availability toggle through [DriversRepository].
 class DriverHomeCubit extends Cubit<DriverHomeState> {
-  DriverHomeCubit({required DriversRepository driversRepository})
-      : _repo = driversRepository,
+  DriverHomeCubit({
+    required DriversRepository driversRepository,
+    LocationSource? locationSource,
+  })  : _repo = driversRepository,
+        _locationSource = locationSource,
         super(const DriverHomeState());
 
   final DriversRepository _repo;
+  final LocationSource? _locationSource;
 
   /// Flips available/offline via `PATCH /v1/drivers/me/status`.
   ///
-  /// TODO(TRK-5): going available must also start the foreground location
-  /// stream once geolocator is wired. The WS half of this (`sendLocation`)
-  /// already fires from `ActiveJobCubit` once a job is active — geolocator
-  /// is the only missing piece, since the backend only accepts driver
-  /// `location` messages while a job is assigned anyway.
+  /// Requests location permission up front when going available (TRK-5) —
+  /// better to ask now than mid-job. The actual position stream only starts
+  /// once a job is active (`ActiveJobCubit`), since the backend only accepts
+  /// a driver's `location` message while one is assigned.
   Future<void> toggleAvailability() async {
     if (state.isUpdating) return;
     final target = state.status == DriverStatus.available
         ? DriverStatus.offline
         : DriverStatus.available;
     emit(state.copyWith(isUpdating: true));
+    if (target == DriverStatus.available) {
+      await _locationSource?.requestPermission();
+    }
     try {
       final profile = await _repo.setStatus(target);
       emit(state.copyWith(

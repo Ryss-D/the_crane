@@ -16,6 +16,7 @@ Trust signals and trip records for both roles.
   Design: «Historial» (`docs/design/screen-references.md`)
   *AC: paging works on 100+ seeded jobs; static maps used (no live map cost).*
 
-- [ ] **RAT-4 — es-CO localization pass** *(deps: —)*
+- [x] **RAT-4 — es-CO localization pass** *(deps: —)*
   All user-facing strings via l10n; es-CO primary, en fallback; COP formatting (`$ 85.000`).
   *AC: no hardcoded strings in features/; currency renders es-CO style.*
+  Audited: only non-l10n literal in `lib/features/` is a numeric star-count interpolation (not translatable copy). `formatCop`/`formatKm` use `es_CO` NumberFormat.

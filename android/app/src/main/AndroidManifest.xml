@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- TRK-5: driver location while the app is open and a job is active.
+         "Always"/background (screen-off) tracking needs ACCESS_BACKGROUND_LOCATION
+         + a foreground service, not yet added — that's a separate pass with real
+         device testing, not something to add speculatively without it. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
         android:label="the_crane"
         android:name="${applicationName}"

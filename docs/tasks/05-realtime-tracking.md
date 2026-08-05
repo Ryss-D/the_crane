@@ -21,6 +21,7 @@ WebSocket layer for live positions and job events; FCM covers backgrounded apps.
 - [ ] **TRK-5 — Driver background location** *(deps: TRK-2)*
   geolocator foreground-service mode (Android) + iOS background location entitlement, active only while available/on-job. Battery-sane intervals.
   *AC: locked-screen Android device keeps streaming during an active job; iOS entitlement justification drafted for review.*
+  Partial: `geolocator` wired end to end while the **app is open and a job is active** — `LocationSource` abstraction, live position replacing the pickup-point placeholder in `ActiveJobCubit`, permission requested on go-available, `ACCESS_FINE/COARSE_LOCATION` (Android) + `NSLocationWhenInUseUsageDescription` (iOS) declared. Still open: true background/locked-screen tracking (Android foreground service + `ACCESS_BACKGROUND_LOCATION`, iOS "Always" entitlement + App Store justification) — that needs a real device to verify and is a distinct, riskier pass.
 
 - [ ] **TRK-6 — Share-track token backend** *(deps: TRK-3)*
   Mint `job_token` at creation; `GET /v1/track/{token}` + public WS/poll channel exposing only position, status, ETA (no PII beyond driver first name/plate).

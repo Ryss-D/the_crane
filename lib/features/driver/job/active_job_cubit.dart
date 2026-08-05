@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/api/jobs_repository.dart';
+import '../../../core/location/location_source.dart';
 import '../../../core/models/job.dart';
+import '../../../core/models/lat_lng.dart';
 import '../../../core/ws/crane_socket.dart';
 
 /// DRV-3 skeleton — holds the driver's active job and advances the JOB-3
@@ -18,19 +20,24 @@ class ActiveJobCubit extends Cubit<Job?> {
   ActiveJobCubit({
     required JobsRepository jobsRepository,
     CraneSocket? socket,
+    LocationSource? locationSource,
     this.locationInterval = const Duration(seconds: 5),
   })  : _repo = jobsRepository,
         _socket = socket,
+        _locationSource = locationSource,
         super(null);
 
   final JobsRepository _repo;
   final CraneSocket? _socket;
+  final LocationSource? _locationSource;
 
   /// Injectable so tests don't wait 5 real seconds between fixes.
   final Duration locationInterval;
 
   bool _advancing = false;
   Timer? _locationTimer;
+  StreamSubscription<LatLng>? _positionSub;
+  LatLng? _lastFix;
 
   /// Statuses in which the backend accepts a driver's WS `location` message
   /// (mirrors `ACTIVE_DRIVER_STATUSES` server-side).
@@ -71,30 +78,40 @@ class ActiveJobCubit extends Cubit<Job?> {
   void _syncLocationTimer(Job job) {
     final socket = _socket;
     if (socket == null || !_activeDriverStatuses.contains(job.status)) {
-      _locationTimer?.cancel();
-      _locationTimer = null;
+      _stopLocationTracking();
       return;
     }
+    _positionSub ??= _locationSource?.watchPosition().listen((fix) {
+      _lastFix = fix;
+    });
     _locationTimer ??= Timer.periodic(locationInterval, (_) {
       final current = state;
       if (current == null) return;
-      // TODO(TRK-5): source the fix from geolocator's live position stream
-      // instead of the job's own pickup point once it's wired — this keeps
-      // the WS `location` message flowing end to end in the meantime.
-      socket.sendLocation(current.id, current.pickup.lat, current.pickup.lng);
+      // Prefer the live GPS fix; fall back to the job's pickup point when no
+      // LocationSource was wired (fakes, or tests that don't care about
+      // TRK-5) so the WS `location` message keeps flowing either way.
+      final fix = _lastFix ?? current.pickup;
+      socket.sendLocation(current.id, fix.lat, fix.lng);
     });
+  }
+
+  void _stopLocationTracking() {
+    _locationTimer?.cancel();
+    _locationTimer = null;
+    _positionSub?.cancel();
+    _positionSub = null;
+    _lastFix = null;
   }
 
   /// Clears the finished job when the driver returns home.
   void clear() {
     emit(null);
-    _locationTimer?.cancel();
-    _locationTimer = null;
+    _stopLocationTracking();
   }
 
   @override
   Future<void> close() {
-    _locationTimer?.cancel();
+    _stopLocationTracking();
     return super.close();
   }
 }

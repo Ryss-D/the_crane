@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- TRK-5: driver location while the app is open and a job is active.
+	     Always/background tracking needs NSLocationAlwaysAndWhenInUseUsageDescription
+	     + the background-modes entitlement, plus an App Store review justification —
+	     not added yet, that's a separate pass with real device testing. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>La Grúa usa tu ubicación para guiarte hacia el cliente y compartir tu posición durante un servicio activo.</string>
 </dict>
 </plist>
