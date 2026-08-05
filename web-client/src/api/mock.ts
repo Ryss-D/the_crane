@@ -77,8 +77,8 @@ export class MockApi implements CraneApi {
       vehicle_type: 'car',
       pickup_address: 'Cra. 43A #1-50, El Poblado, Medellín',
       dropoff_address: 'Cl. 10 #52-25, Guayabal, Medellín',
-      price: 92000,
-      eta_minutes: 12,
+      quoted_price: 92000,
+      final_price: null,
       distance_km: 8,
       driver: MOCK_DRIVER,
       share_token: 'demo-token',
@@ -108,7 +108,8 @@ export class MockApi implements CraneApi {
       ...rec.job,
       status,
       driver: assigned ? MOCK_DRIVER : null,
-      eta_minutes: status === 'completed' || status === 'delivered' ? 0 : rec.job.eta_minutes,
+      // Mirrors confirm_delivery: final_price settles to quoted_price on completion.
+      final_price: status === 'completed' ? rec.job.quoted_price : rec.job.final_price,
     };
   }
 
@@ -139,8 +140,8 @@ export class MockApi implements CraneApi {
       vehicle_type: req.vehicle_type,
       pickup_address: req.pickup_address,
       dropoff_address: req.dropoff_address,
-      price: quote.price,
-      eta_minutes: quote.eta_minutes,
+      quoted_price: quote.price,
+      final_price: null,
       distance_km: quote.distance_km,
       driver: null,
       share_token: `tok_${id}`,

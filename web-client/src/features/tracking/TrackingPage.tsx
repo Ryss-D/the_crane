@@ -77,17 +77,11 @@ export function TrackingPage() {
           <span className="text-slate-500">B: </span>
           {job.dropoff_address}
         </p>
-        <p className="flex justify-between">
-          <span>
-            {strings.tracking.priceLabel}:{' '}
-            <span className="font-bold text-amber-400">{formatCOP(job.price)}</span>
+        <p>
+          {strings.tracking.priceLabel}:{' '}
+          <span className="font-bold text-amber-400">
+            {formatCOP(job.final_price ?? job.quoted_price)}
           </span>
-          {job.eta_minutes !== null && (
-            <span>
-              {strings.tracking.etaLabel}:{' '}
-              <span className="font-semibold">{strings.request.etaValue(job.eta_minutes)}</span>
-            </span>
-          )}
         </p>
         <button
           type="button"

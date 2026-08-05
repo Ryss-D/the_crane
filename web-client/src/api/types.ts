@@ -78,9 +78,10 @@ export interface Job {
   vehicle_type: VehicleType;
   pickup_address: string;
   dropoff_address: string;
-  /** COP, integer pesos. */
-  price: number;
-  eta_minutes: number | null;
+  /** COP, integer pesos — the fare locked in from the quote at creation. */
+  quoted_price: number;
+  /** COP; null until `completed` (no surge in MVP, so it always settles == quoted_price). */
+  final_price: number | null;
   distance_km: number;
   driver: Driver | null;
   /** Token for the public share-track page (/t/{token}). */
