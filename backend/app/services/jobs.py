@@ -73,7 +73,8 @@ ALLOWED_TRANSITIONS: dict[JobStatus, frozenset[JobStatus]] = {
     JobStatus.delivered: frozenset({JobStatus.completed}),
     JobStatus.completed: frozenset(),
     JobStatus.cancelled: frozenset(),
-    JobStatus.no_drivers: frozenset(),
+    # DSP-5: customer retry re-enters the pool (dispatch.retry_dispatch drives this).
+    JobStatus.no_drivers: frozenset({JobStatus.matching}),
 }
 
 # Statuses the assigned driver may set through POST /v1/jobs/{id}/status (JOB-6).

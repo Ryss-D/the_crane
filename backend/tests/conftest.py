@@ -1,3 +1,4 @@
+import math
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -12,9 +13,11 @@ from app.core.redis import get_redis
 from app.core.security import get_token_verifier
 from app.main import create_app
 from app.models.base import Base
+from app.models.driver import DriverProfile, DriverStatus, Truck, TruckCapacity, TruckType
 from app.models.job import Job, JobStatus, VehicleType
 from app.models.user import User, UserRole
 from app.services.config import set_config
+from app.services.dispatch import add_driver_to_geo
 
 
 @pytest.fixture
@@ -30,12 +33,32 @@ async def session_maker() -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     await engine.dispose()
 
 
+def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Great-circle distance in km — good enough for test-scale geo assertions."""
+    r = 6371.0088
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
+    return 2 * r * math.asin(min(1.0, math.sqrt(a)))
+
+
+_GEO_UNIT_SCALE = {"km": 1.0, "m": 1000.0, "mi": 0.621371, "ft": 3280.84}
+
+
 class FakeRedis:
-    """In-memory stand-in for redis.asyncio.Redis (decode_responses=True subset)."""
+    """In-memory stand-in for redis.asyncio.Redis (decode_responses=True subset).
+
+    DSP-1 adds a small GEOADD/GEOSEARCH/ZREM emulation (haversine over stored plain
+    lat/lng coords) so the dispatch service can be exercised without a real Redis —
+    method signatures mirror redis.asyncio.Redis's so app code is unchanged in prod.
+    """
 
     def __init__(self) -> None:
         self.store: dict[str, str] = {}
         self.ttls: dict[str, int | None] = {}
+        # geo key -> {member: (lng, lat)}
+        self.geo: dict[str, dict[str, tuple[float, float]]] = {}
 
     async def get(self, key: str) -> str | None:
         return self.store.get(key)
@@ -47,6 +70,57 @@ class FakeRedis:
     async def delete(self, *keys: str) -> None:
         for key in keys:
             self.store.pop(key, None)
+
+    async def geoadd(self, name: str, values: list) -> int:
+        bucket = self.geo.setdefault(name, {})
+        added = 0
+        it = iter(values)
+        for lng, lat, member in zip(it, it, it, strict=True):
+            if member not in bucket:
+                added += 1
+            bucket[member] = (float(lng), float(lat))
+        return added
+
+    async def zrem(self, name: str, *values: str) -> int:
+        bucket = self.geo.get(name)
+        if not bucket:
+            return 0
+        removed = 0
+        for member in values:
+            if bucket.pop(member, None) is not None:
+                removed += 1
+        return removed
+
+    async def geosearch(
+        self,
+        name: str,
+        *,
+        longitude: float | None = None,
+        latitude: float | None = None,
+        radius: float | None = None,
+        unit: str = "km",
+        sort: str | None = None,
+        withdist: bool = False,
+        count: int | None = None,
+        **_ignored: object,
+    ) -> list:
+        bucket = self.geo.get(name, {})
+        scale = _GEO_UNIT_SCALE[unit]
+        assert longitude is not None and latitude is not None
+        results = []
+        for member, (lng, lat) in bucket.items():
+            dist = _haversine_km(latitude, longitude, lat, lng) * scale
+            if radius is None or dist <= radius:
+                results.append((member, dist))
+        if sort != "DESC":
+            results.sort(key=lambda pair: pair[1])
+        else:
+            results.sort(key=lambda pair: -pair[1])
+        if count is not None:
+            results = results[:count]
+        if withdist:
+            return [(member, round(dist, 4)) for member, dist in results]
+        return [member for member, _ in results]
 
 
 @pytest.fixture
@@ -134,6 +208,7 @@ TEST_CONFIG: dict[str, Any] = {
         "search_radius_km": 10,
         "radius_widen_factor": 2,
         "cancel_grace_seconds": 60,
+        "rejection_cooldown_minutes": 10,
     },
 }
 
@@ -178,3 +253,39 @@ async def make_job(
         await session.commit()
         await session.refresh(job)
         return job
+
+
+async def make_available_driver(
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+    *,
+    firebase_uid: str,
+    lat: float = 6.2442,
+    lng: float = -75.5812,
+    capacity: TruckCapacity = TruckCapacity.car,
+    verified: bool = True,
+    status: DriverStatus = DriverStatus.available,
+    plate: str | None = None,
+) -> User:
+    """Create a driver with a truck, driver_profile, and (if available) a live geo
+    entry — the DSP-1/DSP-2 building block dispatch tests need. Also used by a couple
+    of pre-existing JOB-5 API tests: wiring DSP-2 into POST /v1/jobs and the
+    driver-cancel edge means a job creation/cancel with zero reachable drivers now
+    legitimately ends in `no_drivers`, so those tests seed one reachable driver to
+    keep exercising the `matching` path they were written for.
+    """
+    user = await _create_user(session_maker, firebase_uid, UserRole.driver)
+    async with session_maker() as session:
+        session.add(DriverProfile(user_id=user.id, status=status, verified=verified))
+        session.add(
+            Truck(
+                plate=plate or firebase_uid[:16],
+                type=TruckType.standard,
+                capacity=capacity,
+                driver_id=user.id,
+            )
+        )
+        await session.commit()
+    if status is DriverStatus.available:
+        await add_driver_to_geo(fake_redis, user.id, capacity, lat, lng)
+    return user

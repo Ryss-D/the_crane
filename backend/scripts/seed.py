@@ -38,6 +38,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "radius_widen_factor": 2,
         # Free customer-cancel window after `assigned` (JOB-3).
         "cancel_grace_seconds": 60,
+        # DSP-5: a retry from `no_drivers` excludes drivers who rejected this job
+        # within this many minutes, so the candidate pool refills over time.
+        "rejection_cooldown_minutes": 10,
     },
 }
 

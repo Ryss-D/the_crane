@@ -15,7 +15,7 @@ from app.models.user import User, UserRole
 from app.services.config import set_config
 from app.services.jobs import get_job_event_hook
 from app.services.pricing import get_directions_client
-from tests.conftest import FakeRedis, _create_user, make_job
+from tests.conftest import FakeRedis, _create_user, make_available_driver, make_job
 
 AUTH_CUSTOMER = {"Authorization": "Bearer customer-token"}
 AUTH_DRIVER = {"Authorization": "Bearer driver-token"}
@@ -72,7 +72,14 @@ async def test_create_job_from_quote(
     client: AsyncClient,
     tokens: dict,
     seeded_config: dict[str, Any],
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
 ) -> None:
+    # DSP-2 now runs synchronously on job creation: seed one reachable driver so the
+    # job lands (and stays) in `matching` with a pending offer, instead of exhausting
+    # straight to `no_drivers` for lack of any candidate.
+    await make_available_driver(session_maker, fake_redis, firebase_uid="dispatch-driver-1")
+
     events: list[tuple[JobStatus, JobStatus]] = []
 
     async def hook(job: Any, old: JobStatus, new: JobStatus) -> None:
@@ -240,6 +247,7 @@ async def test_cancel_endpoint_matrix(
     tokens: dict,
     verified_tokens: dict[str, dict[str, Any]],
     session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
     customer_user: User,
     driver_user: User,
 ) -> None:
@@ -252,7 +260,10 @@ async def test_cancel_endpoint_matrix(
     assert response.status_code == 200
     assert response.json()["status"] == "cancelled"
 
-    # Driver cancel -> back to matching, driver released.
+    # Driver cancel -> back to matching, driver released. DSP-2 re-dispatches
+    # synchronously on this edge, so seed a standby driver to land back in
+    # `matching` (with a fresh pending offer to them) instead of `no_drivers`.
+    await make_available_driver(session_maker, fake_redis, firebase_uid="dispatch-standby")
     job = await make_job(
         session_maker, customer_user, status=JobStatus.en_route_pickup, driver=driver_user
     )

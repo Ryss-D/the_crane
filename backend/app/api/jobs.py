@@ -4,17 +4,25 @@ tracking endpoint (`track_router`, mounted at /v1/track in main.py).
 """
 
 import uuid
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.redis import get_redis
 from app.core.security import CurrentUser
-from app.models.driver import Truck
-from app.models.job import CustomerVehicle, DriverLocationSnapshot, Job, JobStatus
+from app.models.driver import DriverProfile, DriverStatus, Truck
+from app.models.job import (
+    CustomerVehicle,
+    DriverLocationSnapshot,
+    Job,
+    JobOffer,
+    JobStatus,
+    OfferResponse,
+)
 from app.models.user import User, UserRole
 from app.schemas.job import (
     JobCreate,
@@ -27,7 +35,7 @@ from app.schemas.job import (
     TrackDriver,
     TrackResponse,
 )
-from app.services import pricing
+from app.services import dispatch, pricing
 from app.services.config import RedisLike, get_config
 from app.services.jobs import (
     DRIVER_PROGRESS_STATUSES,
@@ -46,7 +54,14 @@ track_router = APIRouter(prefix="/track", tags=["track"])
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 RedisDep = Annotated[RedisLike, Depends(get_redis)]
 EventHookDep = Annotated[JobEventHook, Depends(get_job_event_hook)]
+OfferNotifierDep = Annotated[dispatch.OfferNotifier, Depends(dispatch.get_offer_notifier)]
 DirectionsDep = Annotated[pricing.DirectionsClient, Depends(pricing.get_directions_client)]
+
+
+def _as_aware(dt: datetime) -> datetime:
+    """SQLite returns naive datetimes; treat them as UTC (all stamps are UTC)."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
+
 
 # Statuses in which the public track page shows the (limited) driver block.
 _TRACK_DRIVER_VISIBLE = frozenset(
@@ -103,6 +118,7 @@ async def create_job(
     session: SessionDep,
     redis: RedisDep,
     event_hook: EventHookDep,
+    offer_notifier: OfferNotifierDep,
 ) -> Job:
     """JOB-5: create a job from a quote; snapshots config and moves to `matching`."""
     quote = await pricing.pop_quote(redis, body.quote_id)
@@ -154,8 +170,12 @@ async def create_job(
     )
     session.add(job)
     await transition(session, job, JobStatus.matching, actor=user, event_hook=event_hook)
-    # DSP-2 hook site: dispatch.request_drivers(job) starts the sequential-offer
-    # loop here once the dispatch service lands.
+    # DSP-2: run synchronously (direct await) rather than backgrounded — Starlette's
+    # BackgroundTasks execute before the ASGI response is actually handed back under
+    # test transports anyway (no perceived latency win there), and a truly detached
+    # asyncio.create_task would outlive this request-scoped `session`. Deterministic
+    # and simple wins for an MVP-scale matcher; a queue/worker can take over later.
+    await dispatch.start_dispatch(session, redis, job, event_hook, offer_notifier)
     return job
 
 
@@ -199,15 +219,147 @@ async def cancel_job_endpoint(
     session: SessionDep,
     redis: RedisDep,
     event_hook: EventHookDep,
+    offer_notifier: OfferNotifierDep,
 ) -> Job:
     """JOB-5: cancel per JOB-3 rules (customer -> cancelled, driver -> back to matching)."""
     job = await _get_job_or_404(session, job_id)
     try:
-        return await cancel_job(session, redis, job, actor=user, event_hook=event_hook)
+        job = await cancel_job(session, redis, job, actor=user, event_hook=event_hook)
     except JobAccessError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except JobTransitionError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    if job.status is JobStatus.matching:
+        # DSP-2 hook site: a driver cancel released the job back to the pool — re-run
+        # the offer loop. The ex-driver's own (accepted) job_offers row already
+        # excludes them from start_dispatch's candidate search, no special-casing.
+        await dispatch.start_dispatch(session, redis, job, event_hook, offer_notifier)
+    return job
+
+
+async def _get_pending_offer_or_403(
+    session: AsyncSession, job_id: uuid.UUID, driver_id: uuid.UUID
+) -> JobOffer:
+    offer = await session.scalar(
+        select(JobOffer).where(
+            JobOffer.job_id == job_id,
+            JobOffer.driver_id == driver_id,
+            JobOffer.response == OfferResponse.pending,
+        )
+    )
+    if offer is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="No pending offer for this driver"
+        )
+    return offer
+
+
+@router.post("/{job_id}/accept", response_model=JobRead)
+async def accept_job(
+    job_id: uuid.UUID,
+    user: CurrentUser,
+    session: SessionDep,
+    redis: RedisDep,
+    event_hook: EventHookDep,
+) -> Job:
+    """DSP-3: the offered driver accepts — first accept wins, job -> assigned.
+
+    Race safety: on Postgres this re-reads the job with SELECT ... FOR UPDATE,
+    serializing concurrent acceptors on the row. SQLite has no row-level locking
+    (and the test harness shares one connection/StaticPool across sessions), so the
+    actual exclusivity guarantee for BOTH dialects is the atomic conditional UPDATE
+    below — its WHERE clause (status='matching' AND driver_id IS NULL) can only ever
+    match for one writer regardless of lock semantics, so the FOR UPDATE re-read is
+    belt-and-suspenders on Postgres rather than the sole safety net.
+    """
+    job = await _get_job_or_404(session, job_id)
+    offer = await _get_pending_offer_or_403(session, job.id, user.id)
+
+    dispatch_config = await get_config(session, redis, "dispatch") or {}
+    ttl_seconds = dispatch_config.get("offer_ttl_seconds", dispatch.DEFAULT_OFFER_TTL_SECONDS)
+    if (datetime.now(UTC) - _as_aware(offer.offered_at)).total_seconds() > ttl_seconds:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Offer expired")
+
+    stmt = select(Job).where(Job.id == job.id)
+    if session.bind is not None and session.bind.dialect.name == "postgresql":
+        stmt = stmt.with_for_update()
+    job = await session.scalar(stmt)
+
+    claim = await session.execute(
+        update(Job)
+        .where(Job.id == job.id, Job.status == JobStatus.matching, Job.driver_id.is_(None))
+        .values(driver_id=user.id)
+    )
+    await session.commit()
+    if claim.rowcount != 1:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Job is no longer available"
+        )
+    await session.refresh(job)
+
+    offer.response = OfferResponse.accepted
+    offer.responded_at = datetime.now(UTC)
+
+    driver_profile = await session.scalar(
+        select(DriverProfile).where(DriverProfile.user_id == user.id)
+    )
+    if driver_profile is not None:
+        driver_profile.status = DriverStatus.on_job
+    truck = await session.scalar(select(Truck).where(Truck.driver_id == user.id))
+    if truck is not None:
+        await dispatch.remove_driver_from_geo(redis, user.id, truck.capacity)
+
+    return await transition(session, job, JobStatus.assigned, actor=user, event_hook=event_hook)
+
+
+@router.post("/{job_id}/reject", response_model=JobRead)
+async def reject_job(
+    job_id: uuid.UUID,
+    user: CurrentUser,
+    session: SessionDep,
+    redis: RedisDep,
+    event_hook: EventHookDep,
+    offer_notifier: OfferNotifierDep,
+) -> Job:
+    """DSP-3: the offered driver declines — DSP-2 advances to the next candidate."""
+    job = await _get_job_or_404(session, job_id)
+    await _get_pending_offer_or_403(session, job.id, user.id)
+    await dispatch.advance_dispatch(
+        session,
+        redis,
+        job,
+        driver_id=user.id,
+        response=OfferResponse.rejected,
+        event_hook=event_hook,
+        offer_notifier=offer_notifier,
+    )
+    await session.refresh(job)
+    return job
+
+
+@router.post("/{job_id}/retry", response_model=JobRead)
+async def retry_job(
+    job_id: uuid.UUID,
+    user: CurrentUser,
+    session: SessionDep,
+    redis: RedisDep,
+    event_hook: EventHookDep,
+    offer_notifier: OfferNotifierDep,
+) -> Job:
+    """DSP-5: the customer retries a `no_drivers` job — a fresh matching round."""
+    job = await _get_job_or_404(session, job_id)
+    if job.customer_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Only the job's customer may retry it"
+        )
+    if job.status is not JobStatus.no_drivers:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot retry a job in status {job.status.value}",
+        )
+    await dispatch.retry_dispatch(session, redis, job, event_hook, offer_notifier)
+    await session.refresh(job)
+    return job
 
 
 @router.post("/{job_id}/status", response_model=JobRead)
