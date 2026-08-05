@@ -1,0 +1,8 @@
+# Codegen options. The backend (FastAPI) speaks snake_case JSON.
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          field_rename: snake
+          explicit_to_json: true

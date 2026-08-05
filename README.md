@@ -21,3 +21,18 @@ Uber-style dispatch platform for grúas (tow trucks) hauling motos and cars. Lau
 - Firebase = auth (phone OTP) + push only; all domain data in Postgres, geo queries via PostGIS, live locations in Redis
 - Cash settlement for MVP; **driver commission per completed service**, accrued in a ledger from day one; Wompi (PSE/Nequi/cards) in Phase 5
 - Pricing, commission, settlement, and dispatch parameters are **runtime-configurable** via the super admin panel (`platform_config`) — never hardcoded
+
+## Running (Flutter app)
+
+Flavors are plain `--dart-define-from-file` configs in `env/` (keys: `API_BASE_URL`, `ENV`), read by `lib/core/config/env.dart`.
+
+```sh
+# dev (backend at http://localhost:8000)
+flutter run --dart-define-from-file=env/dev.json
+
+# prod
+flutter run --dart-define-from-file=env/prod.json
+```
+
+After changing models/providers, regenerate code: `dart run build_runner build --delete-conflicting-outputs`.
+Lints: `flutter analyze` plus `dart run custom_lint` (riverpod_lint rules).

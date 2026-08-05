@@ -1,0 +1,13 @@
+{
+  "@@locale": "en",
+  "appTitle": "The Crane",
+  "signInTitle": "Sign in",
+  "signInSubtitle": "Request a tow truck for your motorcycle or car in Medellín.",
+  "signInPhoneButton": "Continue with phone",
+  "continueAsCustomer": "Enter as customer",
+  "continueAsDriver": "Enter as driver",
+  "customerHomeTitle": "Request a tow",
+  "customerHomeBody": "The map to request a tow truck will live here.",
+  "driverHomeTitle": "Driver dashboard",
+  "driverHomeBody": "Your availability and job offers will live here."
+}

@@ -1,0 +1,43 @@
+{
+  "@@locale": "es",
+  "appTitle": "The Crane",
+  "@appTitle": {
+    "description": "Application title"
+  },
+  "signInTitle": "Inicia sesión",
+  "@signInTitle": {
+    "description": "Headline on the sign-in screen"
+  },
+  "signInSubtitle": "Pide una grúa para tu moto o carro en Medellín.",
+  "@signInSubtitle": {
+    "description": "Supporting copy on the sign-in screen"
+  },
+  "signInPhoneButton": "Continuar con teléfono",
+  "@signInPhoneButton": {
+    "description": "Primary sign-in button (phone OTP, not wired yet)"
+  },
+  "continueAsCustomer": "Entrar como cliente",
+  "@continueAsCustomer": {
+    "description": "Dev role-switch button to the customer shell"
+  },
+  "continueAsDriver": "Entrar como conductor",
+  "@continueAsDriver": {
+    "description": "Dev role-switch button to the driver shell"
+  },
+  "customerHomeTitle": "Pedir grúa",
+  "@customerHomeTitle": {
+    "description": "Customer home app bar title"
+  },
+  "customerHomeBody": "Aquí irá el mapa para pedir una grúa.",
+  "@customerHomeBody": {
+    "description": "Customer home placeholder body"
+  },
+  "driverHomeTitle": "Panel del conductor",
+  "@driverHomeTitle": {
+    "description": "Driver home app bar title"
+  },
+  "driverHomeBody": "Aquí irán tu disponibilidad y las ofertas de servicio.",
+  "@driverHomeBody": {
+    "description": "Driver home placeholder body"
+  }
+}
