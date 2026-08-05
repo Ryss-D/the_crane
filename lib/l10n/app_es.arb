@@ -26,18 +26,287 @@
   },
   "customerHomeTitle": "Pedir grúa",
   "@customerHomeTitle": {
-    "description": "Customer home app bar title"
-  },
-  "customerHomeBody": "Aquí irá el mapa para pedir una grúa.",
-  "@customerHomeBody": {
-    "description": "Customer home placeholder body"
+    "description": "Customer request screen app bar title"
   },
   "driverHomeTitle": "Panel del conductor",
   "@driverHomeTitle": {
     "description": "Driver home app bar title"
   },
-  "driverHomeBody": "Aquí irán tu disponibilidad y las ofertas de servicio.",
-  "@driverHomeBody": {
-    "description": "Driver home placeholder body"
+  "mapPlaceholderBody": "Aquí irá el mapa de Google Maps.",
+  "@mapPlaceholderBody": {
+    "description": "Label inside the map placeholder widget (pending FND-6)"
+  },
+  "pickupFieldLabel": "Punto de recogida",
+  "@pickupFieldLabel": {
+    "description": "Label for the pickup location field"
+  },
+  "pickupFieldHint": "¿Dónde está tu vehículo?",
+  "@pickupFieldHint": {
+    "description": "Hint for the pickup location field"
+  },
+  "dropoffFieldLabel": "Destino",
+  "@dropoffFieldLabel": {
+    "description": "Label for the dropoff location field"
+  },
+  "dropoffFieldHint": "¿A dónde lo llevamos?",
+  "@dropoffFieldHint": {
+    "description": "Hint for the dropoff location field"
+  },
+  "vehicleTypeLabel": "Tipo de vehículo",
+  "@vehicleTypeLabel": {
+    "description": "Heading above the vehicle type selector"
+  },
+  "vehicleMoto": "Moto",
+  "@vehicleMoto": {
+    "description": "Vehicle type: motorcycle"
+  },
+  "vehicleCar": "Carro",
+  "@vehicleCar": {
+    "description": "Vehicle type: car"
+  },
+  "vehicleSuv": "SUV",
+  "@vehicleSuv": {
+    "description": "Vehicle type: SUV"
+  },
+  "quotePrompt": "Ingresa la recogida y el destino para cotizar.",
+  "@quotePrompt": {
+    "description": "Quote card empty state, before both addresses are set"
+  },
+  "quoteError": "No pudimos calcular la tarifa. Intenta de nuevo.",
+  "@quoteError": {
+    "description": "Quote card error state"
+  },
+  "quoteEtaMinutes": "Llega en {minutes} min",
+  "@quoteEtaMinutes": {
+    "description": "Pickup ETA shown on the quote card",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "distanceKm": "{km} km",
+  "@distanceKm": {
+    "description": "Distance in kilometers (pre-formatted number)",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmRequestButton": "Confirmar solicitud",
+  "@confirmRequestButton": {
+    "description": "Button that creates the job from the current quote"
+  },
+  "matchingTitle": "Buscando tu grúa",
+  "@matchingTitle": {
+    "description": "Title of the matching/searching state (CUS-3)"
+  },
+  "matchingBody": "Estamos contactando a los conductores cercanos…",
+  "@matchingBody": {
+    "description": "Body of the matching/searching state"
+  },
+  "assignedTitle": "¡Grúa asignada!",
+  "@assignedTitle": {
+    "description": "Title when a driver is assigned"
+  },
+  "assignedBody": "Tu conductor va en camino al punto de recogida.",
+  "@assignedBody": {
+    "description": "Body when a driver is assigned"
+  },
+  "driverPlateLabel": "Placa {plate}",
+  "@driverPlateLabel": {
+    "description": "Truck plate on the assigned-driver card",
+    "placeholders": {
+      "plate": {
+        "type": "String"
+      }
+    }
+  },
+  "noDriversTitle": "Sin grúas disponibles",
+  "@noDriversTitle": {
+    "description": "Title of the no-drivers state"
+  },
+  "noDriversBody": "Por ahora no hay conductores disponibles. Intenta de nuevo.",
+  "@noDriversBody": {
+    "description": "Body of the no-drivers state"
+  },
+  "retryButton": "Reintentar",
+  "@retryButton": {
+    "description": "Generic retry button"
+  },
+  "cancelButton": "Cancelar",
+  "@cancelButton": {
+    "description": "Generic cancel button"
+  },
+  "backToHomeButton": "Volver al inicio",
+  "@backToHomeButton": {
+    "description": "Button returning to the role home screen"
+  },
+  "truckTypeMotoOnly": "Grúa de motos",
+  "@truckTypeMotoOnly": {
+    "description": "Truck type: motorcycle-only tow truck"
+  },
+  "truckTypeCar": "Grúa de carros",
+  "@truckTypeCar": {
+    "description": "Truck type: car tow truck"
+  },
+  "truckTypeFlatbed": "Planchón",
+  "@truckTypeFlatbed": {
+    "description": "Truck type: flatbed"
+  },
+  "availabilityOffline": "Desconectado",
+  "@availabilityOffline": {
+    "description": "Driver status: offline"
+  },
+  "availabilityAvailable": "Disponible",
+  "@availabilityAvailable": {
+    "description": "Driver status: available"
+  },
+  "availabilityOnJob": "En servicio",
+  "@availabilityOnJob": {
+    "description": "Driver status: on an active job"
+  },
+  "goAvailableButton": "Conectarme",
+  "@goAvailableButton": {
+    "description": "Button to go available"
+  },
+  "goOfflineButton": "Desconectarme",
+  "@goOfflineButton": {
+    "description": "Button to go offline"
+  },
+  "offlineHint": "Conéctate para recibir ofertas de servicio.",
+  "@offlineHint": {
+    "description": "Hint under the status label while offline"
+  },
+  "availableHint": "Esperando ofertas cercanas…",
+  "@availableHint": {
+    "description": "Hint under the status label while available"
+  },
+  "blockedBannerUnverified": "Tu cuenta está pendiente de verificación. No recibirás ofertas todavía.",
+  "@blockedBannerUnverified": {
+    "description": "Banner when the driver is not yet verified by an admin"
+  },
+  "devTriggerOfferButton": "Simular oferta (dev)",
+  "@devTriggerOfferButton": {
+    "description": "Dev-only button that simulates an incoming offer"
+  },
+  "offerTitle": "Nueva oferta de servicio",
+  "@offerTitle": {
+    "description": "Incoming offer sheet title"
+  },
+  "offerPickupDistance": "A {km} km de ti",
+  "@offerPickupDistance": {
+    "description": "Distance from the driver to the pickup point",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "fareLabel": "Tarifa",
+  "@fareLabel": {
+    "description": "Fare amount label"
+  },
+  "offerCommissionLabel": "Comisión plataforma",
+  "@offerCommissionLabel": {
+    "description": "Platform commission label on the offer sheet"
+  },
+  "offerEarningsLabel": "Tu ganancia",
+  "@offerEarningsLabel": {
+    "description": "Driver net earnings label on the offer sheet"
+  },
+  "offerCountdown": "Expira en {seconds} s",
+  "@offerCountdown": {
+    "description": "Offer TTL countdown",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "acceptButton": "Aceptar",
+  "@acceptButton": {
+    "description": "Accept the incoming offer"
+  },
+  "rejectButton": "Rechazar",
+  "@rejectButton": {
+    "description": "Reject the incoming offer"
+  },
+  "activeJobTitle": "Servicio activo",
+  "@activeJobTitle": {
+    "description": "Active job screen app bar title"
+  },
+  "statusRequested": "Solicitada",
+  "@statusRequested": {
+    "description": "Job status: requested"
+  },
+  "statusMatching": "Buscando conductor",
+  "@statusMatching": {
+    "description": "Job status: matching"
+  },
+  "statusAssigned": "Asignada",
+  "@statusAssigned": {
+    "description": "Job status: assigned"
+  },
+  "statusEnRoutePickup": "En camino a la recogida",
+  "@statusEnRoutePickup": {
+    "description": "Job status: en route to pickup"
+  },
+  "statusArrivedPickup": "En el punto de recogida",
+  "@statusArrivedPickup": {
+    "description": "Job status: arrived at pickup"
+  },
+  "statusLoading": "Cargando el vehículo",
+  "@statusLoading": {
+    "description": "Job status: loading the vehicle"
+  },
+  "statusInTransit": "En ruta al destino",
+  "@statusInTransit": {
+    "description": "Job status: in transit"
+  },
+  "statusDelivered": "Entregada",
+  "@statusDelivered": {
+    "description": "Job status: delivered"
+  },
+  "statusCompleted": "Completada",
+  "@statusCompleted": {
+    "description": "Job status: completed"
+  },
+  "statusCancelled": "Cancelada",
+  "@statusCancelled": {
+    "description": "Job status: cancelled"
+  },
+  "statusNoDrivers": "Sin conductores",
+  "@statusNoDrivers": {
+    "description": "Job status: no drivers found"
+  },
+  "advanceEnRoutePickup": "En camino",
+  "@advanceEnRoutePickup": {
+    "description": "Driver action: start driving to the pickup"
+  },
+  "advanceArrivedPickup": "Llegué",
+  "@advanceArrivedPickup": {
+    "description": "Driver action: arrived at pickup"
+  },
+  "advanceLoading": "Cargando vehículo",
+  "@advanceLoading": {
+    "description": "Driver action: start loading the vehicle"
+  },
+  "advanceInTransit": "En ruta",
+  "@advanceInTransit": {
+    "description": "Driver action: start the trip to the dropoff"
+  },
+  "advanceDelivered": "Entregado",
+  "@advanceDelivered": {
+    "description": "Driver action: vehicle delivered"
+  },
+  "advanceCompleted": "Finalizar servicio",
+  "@advanceCompleted": {
+    "description": "Driver action: finish the job (cash collected)"
+  },
+  "jobDoneBody": "Servicio finalizado. ¡Buen trabajo!",
+  "@jobDoneBody": {
+    "description": "Shown on the active job screen once completed"
   }
 }

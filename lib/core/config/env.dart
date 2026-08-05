@@ -16,6 +16,17 @@ abstract final class Env {
   /// Flavor name: `dev` or `prod`.
   static const String name = String.fromEnvironment('ENV', defaultValue: 'dev');
 
+  /// When true, repositories are backed by in-memory fakes with seeded data
+  /// instead of the FastAPI backend.
+  ///
+  /// Defaults to true until the backend is reachable; flip per flavor with
+  /// `USE_FAKE_BACKEND=false` in `env/*.json` once FND-1 (Firebase auth) and
+  /// the jobs API are deployed.
+  static const bool useFakeBackend = bool.fromEnvironment(
+    'USE_FAKE_BACKEND',
+    defaultValue: true,
+  );
+
   static const bool isProd = name == 'prod';
   static const bool isDev = !isProd;
 }

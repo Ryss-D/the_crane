@@ -31,12 +31,206 @@ class AppLocalizationsEs extends AppLocalizations {
   String get customerHomeTitle => 'Pedir grúa';
 
   @override
-  String get customerHomeBody => 'Aquí irá el mapa para pedir una grúa.';
-
-  @override
   String get driverHomeTitle => 'Panel del conductor';
 
   @override
-  String get driverHomeBody =>
-      'Aquí irán tu disponibilidad y las ofertas de servicio.';
+  String get mapPlaceholderBody => 'Aquí irá el mapa de Google Maps.';
+
+  @override
+  String get pickupFieldLabel => 'Punto de recogida';
+
+  @override
+  String get pickupFieldHint => '¿Dónde está tu vehículo?';
+
+  @override
+  String get dropoffFieldLabel => 'Destino';
+
+  @override
+  String get dropoffFieldHint => '¿A dónde lo llevamos?';
+
+  @override
+  String get vehicleTypeLabel => 'Tipo de vehículo';
+
+  @override
+  String get vehicleMoto => 'Moto';
+
+  @override
+  String get vehicleCar => 'Carro';
+
+  @override
+  String get vehicleSuv => 'SUV';
+
+  @override
+  String get quotePrompt => 'Ingresa la recogida y el destino para cotizar.';
+
+  @override
+  String get quoteError => 'No pudimos calcular la tarifa. Intenta de nuevo.';
+
+  @override
+  String quoteEtaMinutes(int minutes) {
+    return 'Llega en $minutes min';
+  }
+
+  @override
+  String distanceKm(String km) {
+    return '$km km';
+  }
+
+  @override
+  String get confirmRequestButton => 'Confirmar solicitud';
+
+  @override
+  String get matchingTitle => 'Buscando tu grúa';
+
+  @override
+  String get matchingBody => 'Estamos contactando a los conductores cercanos…';
+
+  @override
+  String get assignedTitle => '¡Grúa asignada!';
+
+  @override
+  String get assignedBody => 'Tu conductor va en camino al punto de recogida.';
+
+  @override
+  String driverPlateLabel(String plate) {
+    return 'Placa $plate';
+  }
+
+  @override
+  String get noDriversTitle => 'Sin grúas disponibles';
+
+  @override
+  String get noDriversBody =>
+      'Por ahora no hay conductores disponibles. Intenta de nuevo.';
+
+  @override
+  String get retryButton => 'Reintentar';
+
+  @override
+  String get cancelButton => 'Cancelar';
+
+  @override
+  String get backToHomeButton => 'Volver al inicio';
+
+  @override
+  String get truckTypeMotoOnly => 'Grúa de motos';
+
+  @override
+  String get truckTypeCar => 'Grúa de carros';
+
+  @override
+  String get truckTypeFlatbed => 'Planchón';
+
+  @override
+  String get availabilityOffline => 'Desconectado';
+
+  @override
+  String get availabilityAvailable => 'Disponible';
+
+  @override
+  String get availabilityOnJob => 'En servicio';
+
+  @override
+  String get goAvailableButton => 'Conectarme';
+
+  @override
+  String get goOfflineButton => 'Desconectarme';
+
+  @override
+  String get offlineHint => 'Conéctate para recibir ofertas de servicio.';
+
+  @override
+  String get availableHint => 'Esperando ofertas cercanas…';
+
+  @override
+  String get blockedBannerUnverified =>
+      'Tu cuenta está pendiente de verificación. No recibirás ofertas todavía.';
+
+  @override
+  String get devTriggerOfferButton => 'Simular oferta (dev)';
+
+  @override
+  String get offerTitle => 'Nueva oferta de servicio';
+
+  @override
+  String offerPickupDistance(String km) {
+    return 'A $km km de ti';
+  }
+
+  @override
+  String get fareLabel => 'Tarifa';
+
+  @override
+  String get offerCommissionLabel => 'Comisión plataforma';
+
+  @override
+  String get offerEarningsLabel => 'Tu ganancia';
+
+  @override
+  String offerCountdown(int seconds) {
+    return 'Expira en $seconds s';
+  }
+
+  @override
+  String get acceptButton => 'Aceptar';
+
+  @override
+  String get rejectButton => 'Rechazar';
+
+  @override
+  String get activeJobTitle => 'Servicio activo';
+
+  @override
+  String get statusRequested => 'Solicitada';
+
+  @override
+  String get statusMatching => 'Buscando conductor';
+
+  @override
+  String get statusAssigned => 'Asignada';
+
+  @override
+  String get statusEnRoutePickup => 'En camino a la recogida';
+
+  @override
+  String get statusArrivedPickup => 'En el punto de recogida';
+
+  @override
+  String get statusLoading => 'Cargando el vehículo';
+
+  @override
+  String get statusInTransit => 'En ruta al destino';
+
+  @override
+  String get statusDelivered => 'Entregada';
+
+  @override
+  String get statusCompleted => 'Completada';
+
+  @override
+  String get statusCancelled => 'Cancelada';
+
+  @override
+  String get statusNoDrivers => 'Sin conductores';
+
+  @override
+  String get advanceEnRoutePickup => 'En camino';
+
+  @override
+  String get advanceArrivedPickup => 'Llegué';
+
+  @override
+  String get advanceLoading => 'Cargando vehículo';
+
+  @override
+  String get advanceInTransit => 'En ruta';
+
+  @override
+  String get advanceDelivered => 'Entregado';
+
+  @override
+  String get advanceCompleted => 'Finalizar servicio';
+
+  @override
+  String get jobDoneBody => 'Servicio finalizado. ¡Buen trabajo!';
 }

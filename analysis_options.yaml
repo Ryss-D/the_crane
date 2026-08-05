@@ -1,11 +1,8 @@
 # Static analysis configuration.
-# Base rule set: flutter_lints. Riverpod-specific rules come from
-# riverpod_lint via the custom_lint analyzer plugin (`dart run custom_lint`).
+# Base rule set: flutter_lints.
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  plugins:
-    - custom_lint
   exclude:
     - '**/*.g.dart'
     - '**/*.freezed.dart'
