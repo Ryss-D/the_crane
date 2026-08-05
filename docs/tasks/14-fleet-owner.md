@@ -2,9 +2,9 @@
 
 New role: owners of multiple grúas who assign drivers to trucks and settle one consolidated commission balance. Backend foundations first (FLT-1/2), then the owner-facing screens (FLT-3/4/5 — the frames in `docs/design/screen-references.md`).
 
-- [ ] **FLT-1 — Fleet owner role + fleet/truck data model** *(deps: AUTH-1, AUTH-5)*
-  Add `fleet_owner` to the role enum. New tables: `fleets` (owner user_id) and `trucks` (plate, type, capacity, fleet_id nullable, active driver_id nullable) — migrating truck fields off `driver_profiles` so a truck can exist without a driver. Independent drivers keep working: their truck simply has no fleet.
-  *AC: migration preserves existing driver/truck data; dispatch capacity filtering reads from `trucks`.*
+- [ ] **FLT-1 — Fleet owner role + fleets model** *(deps: AUTH-1, AUTH-5)*
+  Add `fleet_owner` to the role enum (already present since AUTH-1) and a `fleets` table (owner user_id); wire the pre-existing `trucks.fleet_id` (nullable since AUTH-5) to it. A truck can exist without a driver; independent drivers keep working with no fleet.
+  *AC: fleet CRUD works; dispatch capacity filtering (already reading `trucks`) is unaffected for independent drivers.*
 
 - [ ] **FLT-2 — Fleet ledger rollup + consolidated settlement** *(deps: FLT-1, LED-1, LED-4)*
   Ledger entries gain fleet attribution via the truck; consolidated balance per fleet owner; settle endpoint accepts a fleet-level payment that clears the constituent driver balances; balance-cap gating (LED-2) evaluates at fleet level for fleet drivers.

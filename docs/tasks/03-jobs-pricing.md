@@ -3,7 +3,7 @@
 The core domain: platform config, quoting, the job record and its state machine.
 
 - [ ] **JOB-1 — Jobs + related models** *(deps: AUTH-1)*
-  `jobs` (PLAN §2.2: PostGIS points, statuses, per-transition timestamps, quoted/final price, config snapshot jsonb), `job_offers`, `customer_vehicles`, `driver_location_snapshots`.
+  `jobs` (PLAN §2.2: PostGIS points, statuses, per-transition timestamps, quoted/final price, config snapshot jsonb), `job_offers`, `customer_vehicles`, `driver_location_snapshots`. Capacity/vehicle-type filtering reads from the `trucks` table (see AUTH-5), keeping dispatch fleet-ready.
   *AC: migrations apply; GiST index on pickup geom.*
 
 - [ ] **JOB-2 — `platform_config` + audit** *(deps: FND-2)*

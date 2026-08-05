@@ -19,8 +19,8 @@ Phone-OTP identity via Firebase; profiles and roles live in Postgres.
   *AC: switching the role in DB lands the user in the other shell on next launch.*
 
 - [ ] **AUTH-5 — Driver registration flow** *(deps: AUTH-4)*
-  From settings: "become a driver" — truck info (plate, type, capacity moto/car/both) + document upload (license, truck photo) to object storage; sets role=driver with `verified=false`.
-  *AC: `driver_profiles` row created; unverified drivers see a "pending verification" state and cannot go available.*
+  From settings: "become a driver" — truck info (plate, type, capacity moto/car/both) + document upload (license, truck photo) to object storage; sets role=driver with `verified=false`. Truck data goes in a separate `trucks` table (fleet_id nullable, driver_id nullable) from the start — not columns on `driver_profiles` — so FLT-1 later attaches fleets without a migration.
+  *AC: `driver_profiles` + `trucks` rows created; unverified drivers see a "pending verification" state and cannot go available.*
 
 - [ ] **AUTH-6 — FCM token lifecycle** *(deps: AUTH-3)*
   Register/refresh device token on login and token rotation; clear on logout.
