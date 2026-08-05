@@ -64,10 +64,9 @@ class AdminDriverListResponse(BaseModel):
 
 
 class JobOfferRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: uuid.UUID
     driver_id: uuid.UUID
+    driver_name: str | None
     offered_at: datetime
     responded_at: datetime | None
     response: OfferResponse
@@ -84,17 +83,19 @@ class DriverLocationSnapshotRead(BaseModel):
     created_at: datetime
 
 
-class JobAdminDetail(BaseModel):
-    """GET /v1/admin/jobs/{id} — the job plus its full offer trail and recent
-    location snapshots. Built by hand from JobRead + these two lists rather than
-    subclassing JobRead, since Pydantic's from_attributes validation can't reach
-    across relationships that aren't declared on the ORM model."""
-
-    model_config = ConfigDict(from_attributes=True)
+class AdminJobListItem(BaseModel):
+    """GET /v1/admin/jobs list item — every JobRead field plus names joined
+    from users. Built by hand (not subclassing JobRead) for the same reason
+    as JobAdminDetail below: these two name fields aren't ORM attributes on
+    Job, so from_attributes can't reach them — the endpoint constructs each
+    item from a JobRead dict merged with a batch user-name lookup."""
 
     id: uuid.UUID
     customer_id: uuid.UUID
+    customer_name: str | None
+    customer_phone: str | None
     driver_id: uuid.UUID | None
+    driver_name: str | None
     vehicle_type: VehicleType
     status: JobStatus
     pickup_lat: float
@@ -115,6 +116,19 @@ class JobAdminDetail(BaseModel):
     cancelled_at: datetime | None
     cancel_reason: str | None
     share_token: uuid.UUID
+
+
+class AdminJobListResponse(BaseModel):
+    items: list[AdminJobListItem]
+    total: int
+    limit: int
+    offset: int
+
+
+class JobAdminDetail(AdminJobListItem):
+    """GET /v1/admin/jobs/{id} — AdminJobListItem plus the full offer trail
+    and recent location snapshots."""
+
     offers: list[JobOfferRead]
     location_snapshots: list[DriverLocationSnapshotRead]
 
@@ -155,3 +169,10 @@ class DriverLedgerEntryRead(BaseModel):
     entry_type: LedgerEntryType
     note: str | None
     created_at: datetime
+
+
+class DriverLedgerEntryListResponse(BaseModel):
+    items: list[DriverLedgerEntryRead]
+    total: int
+    limit: int
+    offset: int

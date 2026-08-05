@@ -30,11 +30,14 @@ from app.models.user import User, UserRole
 from app.schemas.admin import (
     AdminDriverListResponse,
     AdminDriverRead,
+    AdminJobListItem,
+    AdminJobListResponse,
     AdminLedgerListResponse,
     AdminLedgerRead,
     ConfigAuditRead,
     ConfigRead,
     ConfigUpdate,
+    DriverLedgerEntryListResponse,
     DriverLedgerEntryRead,
     DriverLocationSnapshotRead,
     JobAdminDetail,
@@ -42,7 +45,7 @@ from app.schemas.admin import (
     LedgerSettleRequest,
 )
 from app.schemas.driver import TruckRead
-from app.schemas.job import JobListResponse, JobRead
+from app.schemas.job import JobRead
 from app.services import dispatch
 from app.services.config import RedisLike, set_config
 from app.services.jobs import ALLOWED_TRANSITIONS, JobEventHook, get_job_event_hook, transition
@@ -225,7 +228,27 @@ async def _get_job_or_404(session: AsyncSession, job_id: uuid.UUID) -> Job:
     return job
 
 
-@router.get("/jobs", response_model=JobListResponse)
+async def _user_name_map(session: AsyncSession, user_ids: set[uuid.UUID]) -> dict[uuid.UUID, User]:
+    """Batched lookup for the customer/driver names admin job views join in —
+    one query per page/detail call instead of one per job (N+1)."""
+    if not user_ids:
+        return {}
+    users = (await session.scalars(select(User).where(User.id.in_(user_ids)))).all()
+    return {u.id: u for u in users}
+
+
+def _job_list_item(job: Job, users: dict[uuid.UUID, User]) -> AdminJobListItem:
+    customer = users.get(job.customer_id)
+    driver = users.get(job.driver_id) if job.driver_id else None
+    return AdminJobListItem(
+        **JobRead.model_validate(job).model_dump(),
+        customer_name=customer.name if customer else None,
+        customer_phone=customer.phone if customer else None,
+        driver_name=driver.name if driver else None,
+    )
+
+
+@router.get("/jobs", response_model=AdminJobListResponse)
 async def list_jobs_admin(
     admin: AdminUser,
     session: SessionDep,
@@ -248,7 +271,10 @@ async def list_jobs_admin(
     jobs = (
         await session.scalars(stmt.order_by(Job.requested_at.desc()).limit(limit).offset(offset))
     ).all()
-    return {"items": jobs, "total": total or 0, "limit": limit, "offset": offset}
+    user_ids = {j.customer_id for j in jobs} | {j.driver_id for j in jobs if j.driver_id}
+    users = await _user_name_map(session, user_ids)
+    items = [_job_list_item(j, users) for j in jobs]
+    return {"items": items, "total": total or 0, "limit": limit, "offset": offset}
 
 
 @router.get("/jobs/{job_id}", response_model=JobAdminDetail)
@@ -269,10 +295,24 @@ async def get_job_admin(job_id: uuid.UUID, admin: AdminUser, session: SessionDep
             .limit(LOCATION_SNAPSHOT_RECENT_LIMIT)
         )
     ).all()
-    job_data = JobRead.model_validate(job).model_dump()
+    user_ids = {job.customer_id} | {o.driver_id for o in offers}
+    if job.driver_id:
+        user_ids.add(job.driver_id)
+    users = await _user_name_map(session, user_ids)
+    list_item = _job_list_item(job, users)
     return JobAdminDetail(
-        **job_data,
-        offers=[JobOfferRead.model_validate(o) for o in offers],
+        **list_item.model_dump(),
+        offers=[
+            JobOfferRead(
+                id=o.id,
+                driver_id=o.driver_id,
+                driver_name=users[o.driver_id].name if o.driver_id in users else None,
+                offered_at=o.offered_at,
+                responded_at=o.responded_at,
+                response=o.response,
+            )
+            for o in offers
+        ],
         location_snapshots=[DriverLocationSnapshotRead.model_validate(s) for s in snapshots],
     )
 
@@ -355,6 +395,30 @@ async def list_ledger(
         for user in users
     ]
     return AdminLedgerListResponse(items=items, total=total or 0, limit=limit, offset=offset)
+
+
+@router.get("/ledger/{driver_id}/entries", response_model=DriverLedgerEntryListResponse)
+async def list_driver_ledger_entries(
+    driver_id: uuid.UUID,
+    admin: AdminUser,
+    session: SessionDep,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> DriverLedgerEntryListResponse:
+    """Drill-down for one driver's balance (ADM-6): every earning/payout/
+    adjustment row, newest first."""
+    user = await session.get(User, driver_id)
+    if user is None or user.role != UserRole.driver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found")
+    stmt = select(DriverLedgerEntry).where(DriverLedgerEntry.driver_id == driver_id)
+    total = await session.scalar(select(func.count()).select_from(stmt.subquery()))
+    entries = (
+        await session.scalars(
+            stmt.order_by(DriverLedgerEntry.created_at.desc()).limit(limit).offset(offset)
+        )
+    ).all()
+    items = [DriverLedgerEntryRead.model_validate(e) for e in entries]
+    return DriverLedgerEntryListResponse(items=items, total=total or 0, limit=limit, offset=offset)
 
 
 @router.post(

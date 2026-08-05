@@ -50,6 +50,7 @@ def tokens(
         ("GET", f"/v1/admin/jobs/{uuid.uuid4()}"),
         ("POST", f"/v1/admin/jobs/{uuid.uuid4()}/cancel"),
         ("GET", "/v1/admin/ledger"),
+        ("GET", f"/v1/admin/ledger/{uuid.uuid4()}/entries"),
         ("POST", f"/v1/admin/ledger/{uuid.uuid4()}/settle"),
     ],
 )
@@ -255,6 +256,33 @@ async def test_list_jobs_filters_by_status_newest_first(
     assert all(item["status"] == "requested" for item in body["items"])
 
 
+async def test_list_jobs_includes_customer_and_driver_names(
+    client: AsyncClient,
+    tokens: dict,
+    customer_user: User,
+    driver_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
+    """Regression: JobRead only has customer_id/driver_id (raw UUIDs) — the
+    admin list must join in names, batched (one query per page, not per job)."""
+    job = await make_job(
+        session_maker, customer_user, driver=driver_user, status=JobStatus.assigned
+    )
+    unassigned = await make_job(session_maker, customer_user, status=JobStatus.matching)
+
+    response = await client.get("/v1/admin/jobs", headers=AUTH_ADMIN)
+    assert response.status_code == 200
+    by_id = {item["id"]: item for item in response.json()["items"]}
+
+    assert by_id[str(job.id)]["customer_name"] == customer_user.name
+    assert by_id[str(job.id)]["customer_phone"] == customer_user.phone
+    assert by_id[str(job.id)]["driver_name"] == driver_user.name
+
+    assert by_id[str(unassigned.id)]["customer_name"] == customer_user.name
+    assert by_id[str(unassigned.id)]["driver_id"] is None
+    assert by_id[str(unassigned.id)]["driver_name"] is None
+
+
 async def test_get_job_admin_detail_includes_offers_and_snapshots(
     client: AsyncClient,
     tokens: dict,
@@ -287,8 +315,11 @@ async def test_get_job_admin_detail_includes_offers_and_snapshots(
     response = await client.get(f"/v1/admin/jobs/{job.id}", headers=AUTH_ADMIN)
     assert response.status_code == 200
     body = response.json()
+    assert body["customer_name"] == customer_user.name
+    assert body["driver_name"] == driver_user.name
     assert len(body["offers"]) == 1
     assert body["offers"][0]["driver_id"] == str(driver_user.id)
+    assert body["offers"][0]["driver_name"] == driver_user.name
     assert len(body["location_snapshots"]) == 1
     assert body["config_snapshot"]["commission"]["mode"] == "flat"
 
@@ -428,6 +459,26 @@ async def test_ledger_list_and_settle_reduces_balance(
         ).all()
         assert len(rows) == 1
         assert rows[0].note == "partial cash settlement"
+
+    # ADM-6 drill-down: the earning row + the settlement just recorded.
+    # (Not asserting order: sqlite's CURRENT_TIMESTAMP has 1s resolution, so
+    # two commits in the same test can tie — see the config-audit note in
+    # app/api/admin.py for the same caveat. Postgres in prod won't tie at
+    # human-driven edit rates.)
+    entries = await client.get(f"/v1/admin/ledger/{driver.id}/entries", headers=AUTH_ADMIN)
+    assert entries.status_code == 200
+    body = entries.json()
+    assert body["total"] == 2
+    assert {e["entry_type"] for e in body["items"]} == {"payout", "earning"}
+    payout = next(e for e in body["items"] if e["entry_type"] == "payout")
+    assert payout["net"] == 10000
+
+
+async def test_ledger_entries_404_for_non_driver(
+    client: AsyncClient, tokens: dict, customer_user: User
+) -> None:
+    response = await client.get(f"/v1/admin/ledger/{customer_user.id}/entries", headers=AUTH_ADMIN)
+    assert response.status_code == 404
 
 
 async def test_settle_rejects_non_positive_amount(
