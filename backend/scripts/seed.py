@@ -32,7 +32,13 @@ DEFAULT_CONFIG: dict[str, Any] = {
     },
     "commission": {"mode": "percent", "rate": {"moto": 0.15, "car": 0.15, "suv": 0.15}},
     "settlement": {"balance_cap": None, "period": "weekly"},
-    "dispatch": {"offer_ttl_seconds": 30, "search_radius_km": 10, "radius_widen_factor": 2},
+    "dispatch": {
+        "offer_ttl_seconds": 30,
+        "search_radius_km": 10,
+        "radius_widen_factor": 2,
+        # Free customer-cancel window after `assigned` (JOB-3).
+        "cancel_grace_seconds": 60,
+    },
 }
 
 

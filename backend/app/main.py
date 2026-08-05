@@ -26,6 +26,7 @@ def create_app() -> FastAPI:
     app.include_router(users.router, prefix="/v1")
     app.include_router(admin.router, prefix="/v1")
     app.include_router(jobs.router, prefix="/v1")
+    app.include_router(jobs.track_router, prefix="/v1")  # public share-token tracking
     app.include_router(drivers.router, prefix="/v1")
     app.include_router(ws.router)
     return app
