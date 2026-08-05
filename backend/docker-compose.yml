@@ -1,0 +1,47 @@
+services:
+  api:
+    build: .
+    command: >
+      sh -c "uv run --no-dev alembic upgrade head &&
+             uv run --no-dev uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://crane:crane@db:5432/crane
+      REDIS_URL: redis://redis:6379/0
+      ENV: dev
+      # FIREBASE_CREDENTIALS_PATH: /app/secrets/firebase.json  # mount when FND-1 lands
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    develop:
+      watch:
+        - action: sync
+          path: ./app
+          target: /app/app
+
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: crane
+      POSTGRES_PASSWORD: crane
+      POSTGRES_DB: crane
+    ports:
+      - "5432:5432"
+    volumes:
+      - crane_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crane -d crane"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+volumes:
+  crane_pgdata:
