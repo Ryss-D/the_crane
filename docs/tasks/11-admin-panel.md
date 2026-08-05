@@ -6,7 +6,7 @@ Runtime control of pricing, commission, settlement, and dispatch — plus driver
   Vite + React + TS in `admin/`, same generated API client; Firebase login gated on `role=admin`; own subdomain, desktop-first.
   *AC: non-admin login is rejected client- and server-side.*
 
-- [ ] **ADM-2 — Admin API router** *(deps: FND-5, JOB-2)*
+- [x] **ADM-2 — Admin API router** *(deps: FND-5, JOB-2)*
   `/v1/admin/*` endpoints (config, drivers, jobs, ledger) behind an admin permission dependency; audit context (who) on every mutation.
   *AC: customer/driver tokens get 403 on all admin routes.*
 

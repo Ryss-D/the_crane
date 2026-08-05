@@ -1,10 +1,10 @@
 # 13 — DevOps & CI (OPS) · Phase 0 onward
 
-- [ ] **OPS-1 — Backend CI** *(deps: FND-2)*
+- [x] **OPS-1 — Backend CI** *(deps: FND-2)*
   GitHub Actions on PR: ruff, pytest (with postgres/redis services), alembic upgrade check.
   *AC: red PR on lint/test/migration failure.*
 
-- [ ] **OPS-2 — Flutter CI** *(deps: FND-4)*
+- [x] **OPS-2 — Flutter CI** *(deps: FND-4)*
   flutter analyze + test on PR; build check for both flavors.
   *AC: analyze warnings fail the build.*
 

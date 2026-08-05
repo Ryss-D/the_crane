@@ -2,7 +2,7 @@
 
 Trust signals and trip records for both roles.
 
-- [ ] **RAT-1 — Ratings model + endpoint** *(deps: JOB-5)*
+- [x] **RAT-1 — Ratings model + endpoint** *(deps: JOB-5)*
   `ratings` table; `POST /v1/jobs/{id}/rating` — both directions, one per side per job, only after `completed`; updates `rating_avg` on driver profile.
   *AC: duplicate rating rejected; average recomputes correctly.*
 

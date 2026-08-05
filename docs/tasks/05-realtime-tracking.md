@@ -2,15 +2,15 @@
 
 WebSocket layer for live positions and job events; FCM covers backgrounded apps.
 
-- [ ] **TRK-1 — Authed WebSocket endpoint** *(deps: FND-5)*
+- [x] **TRK-1 — Authed WebSocket endpoint** *(deps: FND-5)*
   `WS /v1/ws`: token auth on connect, channel routing (driver location up; job events down), Redis pub/sub between API workers, heartbeat + stale-connection cleanup.
   *AC: two clients on different workers receive each other's job events; dead sockets pruned.*
 
-- [ ] **TRK-2 — Driver location pipeline** *(deps: TRK-1, DSP-1)*
+- [x] **TRK-2 — Driver location pipeline** *(deps: TRK-1, DSP-1)*
   Driver sends position every ~5s over WS → Redis geo-set + live channel of the active job; REST fallback `PUT /v1/drivers/me/location`. Snapshot to Postgres on every job transition.
   *AC: customer channel receives positions ≤5s stale; snapshots present per transition.*
 
-- [ ] **TRK-3 — Job event broadcasting** *(deps: TRK-1, JOB-3)*
+- [x] **TRK-3 — Job event broadcasting** *(deps: TRK-1, JOB-3)*
   Every state transition publishes to the job channel and triggers FCM (customer: status changes; driver: offers/cancellations). FCM payloads are data messages with job id for rehydration.
   *AC: app killed → FCM arrives; app open → WS event arrives; no double-handling.*
 

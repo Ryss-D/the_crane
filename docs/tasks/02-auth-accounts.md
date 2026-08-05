@@ -2,11 +2,11 @@
 
 Phone-OTP identity via Firebase; profiles and roles live in Postgres.
 
-- [ ] **AUTH-1 — Users model + migration** *(deps: FND-2)*
+- [x] **AUTH-1 — Users model + migration** *(deps: FND-2)*
   `users`: id (uuid), firebase_uid (unique), role (customer|driver|admin), name, phone, email, fcm_token, created_at.
   *AC: migration applies; unique constraint on firebase_uid.*
 
-- [ ] **AUTH-2 — `POST /v1/auth/sync` + `GET/PATCH /v1/me`** *(deps: AUTH-1, FND-5)*
+- [x] **AUTH-2 — `POST /v1/auth/sync` + `GET/PATCH /v1/me`** *(deps: AUTH-1, FND-5)*
   Sync creates-or-fetches the profile after Firebase signup (default role customer). `/me` returns profile; PATCH updates name/email/fcm_token.
   *AC: idempotent sync (second call returns existing row); tests for both roles.*
 
@@ -21,6 +21,7 @@ Phone-OTP identity via Firebase; profiles and roles live in Postgres.
 - [ ] **AUTH-5 — Driver registration flow** *(deps: AUTH-4)*
   From settings: "become a driver" — truck info (plate, type, capacity moto/car/both) + document upload (license, truck photo) to object storage; sets role=driver with `verified=false`. Truck data goes in a separate `trucks` table (fleet_id nullable, driver_id nullable) from the start — not columns on `driver_profiles` — so FLT-1 later attaches fleets without a migration.
   *AC: `driver_profiles` + `trucks` rows created; unverified drivers see a "pending verification" state and cannot go available.*
+  Backend done: `POST /v1/drivers/me/register` creates both rows, flips role, blocks unverified from going available. Flutter "become a driver" screen not built yet.
 
 - [ ] **AUTH-6 — FCM token lifecycle** *(deps: AUTH-3)*
   Register/refresh device token on login and token rotation; clear on logout.
