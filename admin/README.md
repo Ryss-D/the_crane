@@ -3,6 +3,7 @@
 Internal, desktop-first SPA behind the `admin` role, deployed on its own subdomain. See `docs/PLAN.md` §4.4 and `docs/tasks/11-admin-panel.md`.
 
 ## Sections
+
 - **Platform config** — pricing, commission mode/rate per vehicle type, settlement policy (balance cap, period), dispatch tuning. Edits apply at runtime (Redis cache bust) and are audit-logged.
 - **Drivers** — verification queue (document review), block/unblock, balances.
 - **Operations** — live jobs map/list, job event + offer trail, manual cancel.
