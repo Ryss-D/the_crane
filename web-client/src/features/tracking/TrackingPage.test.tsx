@@ -50,6 +50,12 @@ describe('tracking page (WEB-3 skeleton)', () => {
     for (const status of TIMELINE_STATUSES) {
       expect(screen.getAllByText(strings.statuses[status]).length).toBeGreaterThan(0);
     }
+
+    // Matches the backend's TrackResponse/TrackDriver shape exactly: nested
+    // driver.first_name/truck_plate, no eta_minutes (regression for a mismatch
+    // found once the real backend contract existed to check against).
+    expect(screen.getByText('Carlos')).toBeInTheDocument();
+    expect(screen.getByText('TKX-482')).toBeInTheDocument();
   });
 });
 

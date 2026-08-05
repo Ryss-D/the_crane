@@ -164,11 +164,14 @@ export class MockApi implements CraneApi {
     const job = this.materialize(rec);
     return {
       status: job.status,
-      vehicle_type: job.vehicle_type,
-      eta_minutes: job.eta_minutes,
-      driver_name: job.driver ? (job.driver.name.split(' ')[0] ?? null) : null,
-      driver_position: job.driver ? { lat: 6.2088, lng: -75.5736 } : null,
-      updated_at: new Date().toISOString(),
+      // Mock job records only keep addresses (pre-FND-6 stub); these fixed
+      // Medellín-area points stand in for real geocoded pickup/dropoff.
+      pickup: { lat: 6.2108, lng: -75.5658 },
+      dropoff: { lat: 6.2308, lng: -75.5906 },
+      driver: job.driver
+        ? { first_name: job.driver.name.split(' ')[0] ?? null, truck_plate: job.driver.plate }
+        : null,
+      driver_location: job.driver ? { lat: 6.2088, lng: -75.5736 } : null,
     };
   }
 }

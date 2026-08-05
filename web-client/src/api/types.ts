@@ -88,12 +88,21 @@ export interface Job {
   created_at: string;
 }
 
-/** Public, token-scoped view — position/status/ETA only, no PII beyond first name. */
+/**
+ * Public, token-scoped view (GET /v1/track/{token}) — matches the backend's
+ * TrackResponse/TrackDriver schemas (app/schemas/job.py) exactly: no PII
+ * beyond the driver's first name and truck plate, no ETA (the backend
+ * doesn't compute one for this endpoint).
+ */
+export interface TrackDriverInfo {
+  first_name: string | null;
+  truck_plate: string | null;
+}
+
 export interface TrackInfo {
   status: JobStatus;
-  vehicle_type: VehicleType;
-  eta_minutes: number | null;
-  driver_name: string | null;
-  driver_position: LatLng | null;
-  updated_at: string;
+  pickup: LatLng;
+  dropoff: LatLng;
+  driver: TrackDriverInfo | null;
+  driver_location: LatLng | null;
 }
