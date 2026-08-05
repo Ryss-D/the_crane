@@ -158,6 +158,11 @@ async def test_list_drivers_filters(
     # owed_balance is present and reflects driver_owed_balance
     row = next(r for r in body["items"] if r["user_id"] == str(available.id))
     assert row["owed_balance"] == 0
+    # Document URLs are exposed (ADM-4's admin document-viewer needs them);
+    # the seeded driver has neither uploaded, so both are null, not absent.
+    assert "license_url" in row
+    assert row["license_url"] is None
+    assert row["truck_photo_url"] is None
 
 
 async def test_verify_driver(

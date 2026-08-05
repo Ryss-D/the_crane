@@ -131,6 +131,8 @@ async def _serialize_admin_driver(
         rating_avg=float(profile.rating_avg) if profile.rating_avg is not None else None,
         truck=TruckRead.model_validate(truck) if truck is not None else None,
         owed_balance=owed,
+        license_url=profile.license_url,
+        truck_photo_url=profile.truck_photo_url,
     )
 
 

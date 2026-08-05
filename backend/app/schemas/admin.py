@@ -51,6 +51,8 @@ class AdminDriverRead(BaseModel):
     rating_avg: float | None
     truck: TruckRead | None
     owed_balance: int
+    license_url: str | None
+    truck_photo_url: str | None
 
 
 class AdminDriverListResponse(BaseModel):
