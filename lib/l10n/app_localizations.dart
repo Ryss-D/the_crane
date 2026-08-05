@@ -523,6 +523,96 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Servicio finalizado. ¡Buen trabajo!'**
   String get jobDoneBody;
+
+  /// Opens the RAT-2 rating dialog after a job is completed
+  ///
+  /// In es, this message translates to:
+  /// **'Calificar viaje'**
+  String get rateTripButton;
+
+  /// Title of the star-rating dialog
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo estuvo tu viaje?'**
+  String get rateDialogTitle;
+
+  /// Hint for the optional rating comment field
+  ///
+  /// In es, this message translates to:
+  /// **'Comentario (opcional)'**
+  String get rateCommentHint;
+
+  /// Submits the rating dialog
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar calificación'**
+  String get submitRatingButton;
+
+  /// Skips the rating dialog without submitting
+  ///
+  /// In es, this message translates to:
+  /// **'Omitir'**
+  String get skipRatingButton;
+
+  /// Shown in the rating dialog when submission fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos enviar tu calificación. Intenta de nuevo.'**
+  String get rateSubmitError;
+
+  /// Trip history screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Historial de viajes'**
+  String get historyTitle;
+
+  /// Trip history empty state
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no tienes viajes.'**
+  String get historyEmptyBody;
+
+  /// Trip history load error state
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar tu historial. Intenta de nuevo.'**
+  String get historyLoadError;
+
+  /// Loads the next page of trip history
+  ///
+  /// In es, this message translates to:
+  /// **'Cargar más'**
+  String get historyLoadMoreButton;
+
+  /// Trip history detail screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle del viaje'**
+  String get historyDetailTitle;
+
+  /// Heading above a job's ratings on the history detail screen
+  ///
+  /// In es, this message translates to:
+  /// **'Calificaciones'**
+  String get ratingsSectionTitle;
+
+  /// Shown when a job has no ratings yet
+  ///
+  /// In es, this message translates to:
+  /// **'Sin calificaciones todavía.'**
+  String get noRatingsBody;
+
+  /// Label for a rating the customer left for the driver
+  ///
+  /// In es, this message translates to:
+  /// **'Calificación al conductor'**
+  String get ratingFromCustomerLabel;
+
+  /// Label for a rating the driver left for the customer
+  ///
+  /// In es, this message translates to:
+  /// **'Calificación al cliente'**
+  String get ratingFromDriverLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -6,6 +6,7 @@ import '../../../core/models/job.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/labels.dart';
+import '../../shared/rating/rating_dialog.dart';
 import '../../shared/widgets/map_placeholder.dart';
 import 'active_job_cubit.dart';
 
@@ -42,7 +43,7 @@ class ActiveJobScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.activeJobTitle)),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -93,7 +94,7 @@ class ActiveJobScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 32),
               if (done) ...[
                 Text(
                   l10n.jobDoneBody,
@@ -101,6 +102,14 @@ class ActiveJobScreen extends StatelessWidget {
                   style: theme.textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 12),
+                // RAT-2: skippable — tapping "back to home" directly, below,
+                // leaves the trip unrated.
+                OutlinedButton(
+                  key: const Key('rateTripButton'),
+                  onPressed: () => showRatingDialog(context, jobId: job.id),
+                  child: Text(l10n.rateTripButton),
+                ),
+                const SizedBox(height: 8),
                 FilledButton(
                   key: const Key('backToHomeButton'),
                   onPressed: () {

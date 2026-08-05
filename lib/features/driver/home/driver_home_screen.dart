@@ -81,7 +81,17 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           final driversRepo = context.read<DriversRepository>();
 
           return Scaffold(
-            appBar: AppBar(title: Text(l10n.driverHomeTitle)),
+            appBar: AppBar(
+              title: Text(l10n.driverHomeTitle),
+              actions: [
+                IconButton(
+                  key: const Key('historyNavButton'),
+                  icon: const Icon(Icons.history),
+                  tooltip: l10n.historyTitle,
+                  onPressed: () => context.push(AppRoute.driverHistory),
+                ),
+              ],
+            ),
             body: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16),

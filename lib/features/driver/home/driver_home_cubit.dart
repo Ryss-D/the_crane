@@ -35,7 +35,10 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
   /// Flips available/offline via `PATCH /v1/drivers/me/status`.
   ///
   /// TODO(TRK-5): going available must also start the foreground location
-  /// stream once geolocator + the WebSocket are wired.
+  /// stream once geolocator is wired. The WS half of this (`sendLocation`)
+  /// already fires from `ActiveJobCubit` once a job is active — geolocator
+  /// is the only missing piece, since the backend only accepts driver
+  /// `location` messages while a job is assigned anyway.
   Future<void> toggleAvailability() async {
     if (state.isUpdating) return;
     final target = state.status == DriverStatus.available

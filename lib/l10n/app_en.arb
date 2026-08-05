@@ -70,5 +70,20 @@
   "advanceInTransit": "Start trip",
   "advanceDelivered": "Delivered",
   "advanceCompleted": "Finish job",
-  "jobDoneBody": "Job finished. Great work!"
+  "jobDoneBody": "Job finished. Great work!",
+  "rateTripButton": "Rate trip",
+  "rateDialogTitle": "How was your trip?",
+  "rateCommentHint": "Comment (optional)",
+  "submitRatingButton": "Submit rating",
+  "skipRatingButton": "Skip",
+  "rateSubmitError": "We could not submit your rating. Please try again.",
+  "historyTitle": "Trip history",
+  "historyEmptyBody": "You have no trips yet.",
+  "historyLoadError": "We could not load your history. Please try again.",
+  "historyLoadMoreButton": "Load more",
+  "historyDetailTitle": "Trip detail",
+  "ratingsSectionTitle": "Ratings",
+  "noRatingsBody": "No ratings yet.",
+  "ratingFromCustomerLabel": "Rating for the driver",
+  "ratingFromDriverLabel": "Rating for the customer"
 }

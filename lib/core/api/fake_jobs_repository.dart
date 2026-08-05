@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import '../models/job.dart';
+import '../models/job_history_page.dart';
 import '../models/lat_lng.dart';
 import '../models/quote.dart';
+import '../models/rating.dart';
 import '../models/truck.dart';
 import 'jobs_repository.dart';
 
@@ -38,7 +40,14 @@ class FakeJobsRepository implements JobsRepository {
   final Map<String, ({LatLng pickup, LatLng dropoff, Quote quote})> _quotes =
       {};
   final Map<String, StreamController<Job>> _watchers = {};
+  final Map<String, List<Rating>> _ratings = {};
   int _seq = 0;
+  int _ratingSeq = 0;
+
+  /// The dev-fake plays a single customer identity throughout — matches the
+  /// hardcoded `customerId` in [createJob] — so [listHistory] has something
+  /// to filter on without a real auth/current-user concept (AUTH-3/4).
+  static const _fakeCustomerId = 'cus-001';
 
   /// Dev-seeded pricing per vehicle type: (base, perKm, minFare) in COP.
   static const _pricing = {
@@ -171,6 +180,58 @@ class FakeJobsRepository implements JobsRepository {
     );
     _put(updated);
     return updated;
+  }
+
+  @override
+  Future<void> submitRating(
+    String jobId, {
+    required int stars,
+    String? comment,
+  }) async {
+    await Future<void>.delayed(actionDelay);
+    final job = _jobs[jobId];
+    if (job == null) throw StateError('Unknown job: $jobId');
+    final trimmed = comment?.trim();
+    final rating = Rating(
+      id: 'rat-${++_ratingSeq}',
+      jobId: jobId,
+      // Dev fake: no real current-user concept (AUTH-3/4), so every rating
+      // is recorded as the customer rating the driver — good enough to
+      // exercise the submit/skip flow and the history detail screen.
+      fromUserId: job.customerId,
+      toUserId: job.driverId ?? _seedDriver.id,
+      stars: stars,
+      comment: trimmed == null || trimmed.isEmpty ? null : trimmed,
+      createdAt: DateTime.now(),
+    );
+    _ratings.putIfAbsent(jobId, () => []).add(rating);
+  }
+
+  @override
+  Future<List<Rating>> getRatings(String jobId) async {
+    await Future<void>.delayed(actionDelay);
+    return List.unmodifiable(_ratings[jobId] ?? const <Rating>[]);
+  }
+
+  @override
+  Future<JobHistoryPage> listHistory({
+    required JobHistoryRole role,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    await Future<void>.delayed(actionDelay);
+    final all = _jobs.values.where((job) => switch (role) {
+          JobHistoryRole.customer => job.customerId == _fakeCustomerId,
+          JobHistoryRole.driver => job.driverId == _seedDriver.id,
+        }).toList()
+      ..sort((a, b) => b.requestedAt.compareTo(a.requestedAt));
+    final page = all.skip(offset).take(limit).toList(growable: false);
+    return JobHistoryPage(
+      items: page,
+      total: all.length,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   /// Seeds a job some other customer requested, for the driver offer flow

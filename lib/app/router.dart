@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/api/drivers_repository.dart';
 import '../core/api/jobs_repository.dart';
+import '../core/ws/crane_socket.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/customer/request/matching_screen.dart';
 import '../features/customer/request/request_bloc.dart';
@@ -12,14 +13,18 @@ import '../features/driver/home/driver_home_screen.dart';
 import '../features/driver/home/offer_cubit.dart';
 import '../features/driver/job/active_job_cubit.dart';
 import '../features/driver/job/active_job_screen.dart';
+import '../features/shared/history/history_cubit.dart';
+import '../features/shared/history/history_screen.dart';
 
 /// Route paths.
 abstract final class AppRoute {
   static const signIn = '/sign-in';
   static const customerHome = '/customer';
   static const customerMatching = '/customer/matching';
+  static const customerHistory = '/customer/history';
   static const driverHome = '/driver';
   static const driverJob = '/driver/job';
+  static const driverHistory = '/driver/history';
 }
 
 /// Auth state as seen by the router.
@@ -80,6 +85,16 @@ GoRouter createRouter() {
                 path: 'matching',
                 builder: (context, state) => const MatchingScreen(),
               ),
+              GoRoute(
+                path: 'history',
+                builder: (context, state) => BlocProvider(
+                  create: (context) => HistoryCubit(
+                    jobsRepository: context.read<JobsRepository>(),
+                    role: JobHistoryRole.customer,
+                  )..load(),
+                  child: const HistoryScreen(),
+                ),
+              ),
             ],
           ),
         ],
@@ -95,6 +110,7 @@ GoRouter createRouter() {
             BlocProvider(
               create: (context) => ActiveJobCubit(
                 jobsRepository: context.read<JobsRepository>(),
+                socket: context.read<CraneSocket?>(),
               ),
             ),
             BlocProvider(
@@ -114,6 +130,16 @@ GoRouter createRouter() {
               GoRoute(
                 path: 'job',
                 builder: (context, state) => const ActiveJobScreen(),
+              ),
+              GoRoute(
+                path: 'history',
+                builder: (context, state) => BlocProvider(
+                  create: (context) => HistoryCubit(
+                    jobsRepository: context.read<JobsRepository>(),
+                    role: JobHistoryRole.driver,
+                  )..load(),
+                  child: const HistoryScreen(),
+                ),
               ),
             ],
           ),

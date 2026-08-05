@@ -59,6 +59,8 @@ dev_dependencies:
   freezed: ^3.2.3
   json_serializable: ^6.11.2
   bloc_test: ^10.0.0
+  async: ^2.13.1
+  stream_channel: ^2.1.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

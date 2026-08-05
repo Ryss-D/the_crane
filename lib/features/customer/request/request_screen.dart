@@ -30,7 +30,17 @@ class RequestScreen extends StatelessWidget {
           previous.activeJob == null && current.activeJob != null,
       listener: (context, state) => context.push(AppRoute.customerMatching),
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.customerHomeTitle)),
+        appBar: AppBar(
+          title: Text(l10n.customerHomeTitle),
+          actions: [
+            IconButton(
+              key: const Key('historyNavButton'),
+              icon: const Icon(Icons.history),
+              tooltip: l10n.historyTitle,
+              onPressed: () => context.push(AppRoute.customerHistory),
+            ),
+          ],
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),

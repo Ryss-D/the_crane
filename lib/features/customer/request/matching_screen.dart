@@ -6,6 +6,7 @@ import '../../../core/models/job.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/labels.dart';
+import '../../shared/rating/rating_dialog.dart';
 import 'request_bloc.dart';
 
 /// CUS-3 skeleton — matching outcome states: searching, assigned driver
@@ -147,6 +148,16 @@ class _AssignedView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
+        if (job.status == JobStatus.completed) ...[
+          // RAT-2: skippable — tapping "back to home" directly leaves the
+          // trip unrated.
+          OutlinedButton(
+            key: const Key('rateTripButton'),
+            onPressed: () => showRatingDialog(context, jobId: job.id),
+            child: Text(l10n.rateTripButton),
+          ),
+          const SizedBox(height: 8),
+        ],
         // TODO(CUS-4): live tracking (driver marker + status timeline)
         // replaces this button once TRK-4 lands.
         FilledButton(onPressed: onDone, child: Text(l10n.backToHomeButton)),

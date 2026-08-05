@@ -233,4 +233,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get jobDoneBody => 'Job finished. Great work!';
+
+  @override
+  String get rateTripButton => 'Rate trip';
+
+  @override
+  String get rateDialogTitle => 'How was your trip?';
+
+  @override
+  String get rateCommentHint => 'Comment (optional)';
+
+  @override
+  String get submitRatingButton => 'Submit rating';
+
+  @override
+  String get skipRatingButton => 'Skip';
+
+  @override
+  String get rateSubmitError =>
+      'We could not submit your rating. Please try again.';
+
+  @override
+  String get historyTitle => 'Trip history';
+
+  @override
+  String get historyEmptyBody => 'You have no trips yet.';
+
+  @override
+  String get historyLoadError =>
+      'We could not load your history. Please try again.';
+
+  @override
+  String get historyLoadMoreButton => 'Load more';
+
+  @override
+  String get historyDetailTitle => 'Trip detail';
+
+  @override
+  String get ratingsSectionTitle => 'Ratings';
+
+  @override
+  String get noRatingsBody => 'No ratings yet.';
+
+  @override
+  String get ratingFromCustomerLabel => 'Rating for the driver';
+
+  @override
+  String get ratingFromDriverLabel => 'Rating for the customer';
 }

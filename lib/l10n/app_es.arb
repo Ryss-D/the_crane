@@ -308,5 +308,65 @@
   "jobDoneBody": "Servicio finalizado. ¡Buen trabajo!",
   "@jobDoneBody": {
     "description": "Shown on the active job screen once completed"
+  },
+  "rateTripButton": "Calificar viaje",
+  "@rateTripButton": {
+    "description": "Opens the RAT-2 rating dialog after a job is completed"
+  },
+  "rateDialogTitle": "¿Cómo estuvo tu viaje?",
+  "@rateDialogTitle": {
+    "description": "Title of the star-rating dialog"
+  },
+  "rateCommentHint": "Comentario (opcional)",
+  "@rateCommentHint": {
+    "description": "Hint for the optional rating comment field"
+  },
+  "submitRatingButton": "Enviar calificación",
+  "@submitRatingButton": {
+    "description": "Submits the rating dialog"
+  },
+  "skipRatingButton": "Omitir",
+  "@skipRatingButton": {
+    "description": "Skips the rating dialog without submitting"
+  },
+  "rateSubmitError": "No pudimos enviar tu calificación. Intenta de nuevo.",
+  "@rateSubmitError": {
+    "description": "Shown in the rating dialog when submission fails"
+  },
+  "historyTitle": "Historial de viajes",
+  "@historyTitle": {
+    "description": "Trip history screen app bar title, and the nav button tooltip"
+  },
+  "historyEmptyBody": "Aún no tienes viajes.",
+  "@historyEmptyBody": {
+    "description": "Trip history empty state"
+  },
+  "historyLoadError": "No pudimos cargar tu historial. Intenta de nuevo.",
+  "@historyLoadError": {
+    "description": "Trip history load error state"
+  },
+  "historyLoadMoreButton": "Cargar más",
+  "@historyLoadMoreButton": {
+    "description": "Loads the next page of trip history"
+  },
+  "historyDetailTitle": "Detalle del viaje",
+  "@historyDetailTitle": {
+    "description": "Trip history detail screen app bar title"
+  },
+  "ratingsSectionTitle": "Calificaciones",
+  "@ratingsSectionTitle": {
+    "description": "Heading above a job's ratings on the history detail screen"
+  },
+  "noRatingsBody": "Sin calificaciones todavía.",
+  "@noRatingsBody": {
+    "description": "Shown when a job has no ratings yet"
+  },
+  "ratingFromCustomerLabel": "Calificación al conductor",
+  "@ratingFromCustomerLabel": {
+    "description": "Label for a rating the customer left for the driver"
+  },
+  "ratingFromDriverLabel": "Calificación al cliente",
+  "@ratingFromDriverLabel": {
+    "description": "Label for a rating the driver left for the customer"
   }
 }

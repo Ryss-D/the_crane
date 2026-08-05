@@ -233,4 +233,51 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get jobDoneBody => 'Servicio finalizado. ¡Buen trabajo!';
+
+  @override
+  String get rateTripButton => 'Calificar viaje';
+
+  @override
+  String get rateDialogTitle => '¿Cómo estuvo tu viaje?';
+
+  @override
+  String get rateCommentHint => 'Comentario (opcional)';
+
+  @override
+  String get submitRatingButton => 'Enviar calificación';
+
+  @override
+  String get skipRatingButton => 'Omitir';
+
+  @override
+  String get rateSubmitError =>
+      'No pudimos enviar tu calificación. Intenta de nuevo.';
+
+  @override
+  String get historyTitle => 'Historial de viajes';
+
+  @override
+  String get historyEmptyBody => 'Aún no tienes viajes.';
+
+  @override
+  String get historyLoadError =>
+      'No pudimos cargar tu historial. Intenta de nuevo.';
+
+  @override
+  String get historyLoadMoreButton => 'Cargar más';
+
+  @override
+  String get historyDetailTitle => 'Detalle del viaje';
+
+  @override
+  String get ratingsSectionTitle => 'Calificaciones';
+
+  @override
+  String get noRatingsBody => 'Sin calificaciones todavía.';
+
+  @override
+  String get ratingFromCustomerLabel => 'Calificación al conductor';
+
+  @override
+  String get ratingFromDriverLabel => 'Calificación al cliente';
 }

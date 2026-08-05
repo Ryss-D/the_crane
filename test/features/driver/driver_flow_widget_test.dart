@@ -84,6 +84,7 @@ void main() {
     expect(find.text('Servicio finalizado. ¡Buen trabajo!'), findsOneWidget);
 
     // Back home, ready for the next job.
+    await tester.ensureVisible(find.byKey(const Key('backToHomeButton')));
     await tester.tap(find.byKey(const Key('backToHomeButton')));
     await tester.pumpAndSettle();
     expect(find.byType(DriverHomeScreen), findsOneWidget);
