@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     # Unset -> pricing falls back to haversine road-distance estimates (JOB-4).
     google_maps_api_key: str | None = None
     env: str = "dev"
+    # DSP-4 guard: background workers (offer-expiry sweep) start in the app
+    # lifespan only when true. Tests set ENABLE_WORKERS=false.
+    enable_workers: bool = True
 
 
 @lru_cache
