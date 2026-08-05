@@ -30,6 +30,7 @@ Runtime control of pricing, commission, settlement, and dispatch — plus driver
   Live jobs map/list with status filter; job detail: full transition + offer trail, config snapshot, manual cancel.
   Design: «Operaciones en vivo» (`docs/design/screen-references.md`)
   *AC: an in-flight seeded job appears live; manual cancel follows state-machine rules.*
+  **Found gap (verified against the real OpenAPI schema, not yet fixed):** the admin UI's mock data assumes `customer_name`/`driver_name`/`driver_name` (on offers) on job rows, but the real `JobRead`/`JobAdminDetail`/`JobOfferRead` schemas only return `customer_id`/`driver_id` (raw UUIDs) — no name join. Flipping off mocks today would show blank/UUID names in Operations, the KPI feed, and the offer trail. Needs a small backend addition: join `users.name`/`phone` into the admin jobs list/detail and offer-trail responses (new fields, additive — no breaking change to the customer-facing `JobRead`). Best done once the admin panel is wired to a live backend so the fix can be visually verified, not guessed at.
 
 - [x] **ADM-6 — Ledger & settlements** *(deps: LED-4)*
   Balances per driver, drill-down to entries, record settlements/adjustments, totals per period (platform revenue).
