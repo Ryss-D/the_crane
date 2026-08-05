@@ -24,16 +24,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.driver import DriverProfile, DriverStatus
-from app.models.job import DriverLocationSnapshot, Job, JobStatus, PaymentMethod
-from app.models.ledger import (
-    DriverLedgerEntry,
-    LedgerEntryType,
-    Payment,
-    PaymentProvider,
-    PaymentStatus,
-)
+from app.models.job import DriverLocationSnapshot, Job, JobStatus
+from app.models.ledger import DriverLedgerEntry, LedgerEntryType
 from app.models.user import User
 from app.services.config import RedisLike, get_config
+from app.services.payments.base import PaymentGateway
+from app.services.payments.cash import CashGateway
 
 
 class JobTransitionError(Exception):
@@ -58,6 +54,18 @@ def get_job_event_hook() -> JobEventHook:
     then transitions are silent.
     """
     return _noop_event_hook
+
+
+_cash_gateway = CashGateway()
+
+
+def get_payment_gateway() -> PaymentGateway:
+    """Dependency returning the gateway completion accrual settles through.
+
+    Cash for the whole MVP; PAY-2 overrides this per-job once Wompi lands
+    (e.g. picking cash vs. wompi from the job's payment_method).
+    """
+    return _cash_gateway
 
 
 ALLOWED_TRANSITIONS: dict[JobStatus, frozenset[JobStatus]] = {
@@ -245,22 +253,19 @@ async def _driver_cancel(
     return await transition(session, job, JobStatus.matching, actor=actor, event_hook=event_hook)
 
 
-def completion_reference(job: Job) -> str:
-    """Unique payment reference for a job's completion accrual (idempotency key)."""
-    return f"job_{job.id}"
-
-
 async def confirm_delivery(
     session: AsyncSession,
     job: Job,
     *,
     actor: User,
     event_hook: JobEventHook | None = None,
+    payment_gateway: PaymentGateway | None = None,
 ) -> Job:
     """CUS-5: the customer confirms delivery + cash handover -> completed + accrual.
 
     Idempotent: retrying after a successful confirm returns the completed job
-    without duplicating the payment/ledger rows (unique `payments.reference`).
+    without duplicating the payment/ledger rows (unique `payments.reference`,
+    enforced by the gateway's create_intent — see _accrue_completion).
     """
     if actor.id != job.customer_id:
         raise JobAccessError("Only the job's customer may confirm delivery")
@@ -273,35 +278,26 @@ async def confirm_delivery(
 
     if job.final_price is None:
         job.final_price = job.quoted_price  # final price = quote, no surge in MVP
-    await _accrue_completion(session, job)
+    await _accrue_completion(session, job, payment_gateway or get_payment_gateway())
     # Accrual rows and the status flip share transition()'s single commit.
     return await transition(session, job, JobStatus.completed, actor=actor, event_hook=event_hook)
 
 
-async def _accrue_completion(session: AsyncSession, job: Job) -> None:
-    """LED-1 accrual: cash payment row + driver ledger earning, exactly once per job.
+async def _accrue_completion(session: AsyncSession, job: Job, gateway: PaymentGateway) -> None:
+    """LED-1 accrual: payment (via `gateway`) + driver ledger earning, exactly
+    once per job — `create_intent`'s `created` flag is the idempotency check.
 
     Commission comes from the job's config_snapshot (never current config), so a
-    rate change after creation cannot rewrite history.
+    rate change after creation cannot rewrite history. Which gateway settled the
+    fare is the gateway's concern; commission/ledger accounting is platform
+    business logic that stays here regardless of gateway (cash today, Wompi later).
     """
-    reference = completion_reference(job)
-    existing = await session.scalar(select(Payment).where(Payment.reference == reference))
-    if existing is not None:
-        return  # retry — payment + ledger already written (reference is unique)
+    _payment, created = await gateway.create_intent(session, job)
+    if not created:
+        return  # retry — payment + ledger already written
 
     amount = int(job.final_price)
     commission = _commission_from_snapshot(job)
-    session.add(
-        Payment(
-            job_id=job.id,
-            provider=PaymentProvider.cash,
-            reference=reference,
-            amount=amount,
-            method=PaymentMethod.cash,
-            status=PaymentStatus.approved,
-            settled_at=_utcnow(),
-        )
-    )
     session.add(
         DriverLedgerEntry(
             driver_id=job.driver_id,
