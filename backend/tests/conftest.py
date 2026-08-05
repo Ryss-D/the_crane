@@ -1,3 +1,4 @@
+import asyncio
 import math
 from collections.abc import AsyncIterator
 from typing import Any
@@ -17,6 +18,7 @@ from app.models.driver import DriverProfile, DriverStatus, Truck, TruckCapacity,
 from app.models.job import Job, JobStatus, VehicleType
 from app.models.user import User, UserRole
 from app.services.config import set_config
+from app.services.connection_manager import ConnectionManager, get_connection_manager
 from app.services.dispatch import add_driver_to_geo
 
 
@@ -46,12 +48,54 @@ def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 _GEO_UNIT_SCALE = {"km": 1.0, "m": 1000.0, "mi": 0.621371, "ft": 3280.84}
 
 
+class _FakePubSub:
+    """Minimal redis.asyncio PubSub emulation (TRK-1): subscribe() registers this
+    session's queue against the shared FakeRedis, get_message() drains it — same
+    polling-loop shape connection_manager.py drives against the real client, so app
+    code is unchanged in prod."""
+
+    def __init__(self, redis: "FakeRedis") -> None:
+        self._redis = redis
+        self._channels: set[str] = set()
+        self._queue: asyncio.Queue[str] = asyncio.Queue()
+
+    async def subscribe(self, *channels: str) -> None:
+        for channel in channels:
+            self._channels.add(channel)
+            self._redis.subscribers.setdefault(channel, []).append(self._queue)
+
+    async def unsubscribe(self, *channels: str) -> None:
+        for channel in channels:
+            self._channels.discard(channel)
+            subs = self._redis.subscribers.get(channel)
+            if subs and self._queue in subs:
+                subs.remove(self._queue)
+
+    async def get_message(
+        self, *, ignore_subscribe_messages: bool = True, timeout: float | None = None
+    ) -> dict[str, str] | None:
+        try:
+            data = (
+                await asyncio.wait_for(self._queue.get(), timeout=timeout)
+                if timeout
+                else self._queue.get_nowait()
+            )
+        except (TimeoutError, asyncio.QueueEmpty):
+            return None
+        return {"type": "message", "data": data}
+
+    async def close(self) -> None:
+        for channel in list(self._channels):
+            await self.unsubscribe(channel)
+
+
 class FakeRedis:
     """In-memory stand-in for redis.asyncio.Redis (decode_responses=True subset).
 
     DSP-1 adds a small GEOADD/GEOSEARCH/ZREM emulation (haversine over stored plain
     lat/lng coords) so the dispatch service can be exercised without a real Redis —
     method signatures mirror redis.asyncio.Redis's so app code is unchanged in prod.
+    TRK-1 adds a small pub/sub emulation (publish/pubsub) for the same reason.
     """
 
     def __init__(self) -> None:
@@ -59,6 +103,17 @@ class FakeRedis:
         self.ttls: dict[str, int | None] = {}
         # geo key -> {member: (lng, lat)}
         self.geo: dict[str, dict[str, tuple[float, float]]] = {}
+        # pub/sub channel -> list of subscribed sessions' queues
+        self.subscribers: dict[str, list[asyncio.Queue[str]]] = {}
+
+    async def publish(self, channel: str, message: str) -> int:
+        queues = self.subscribers.get(channel, [])
+        for queue in queues:
+            queue.put_nowait(message)
+        return len(queues)
+
+    def pubsub(self) -> _FakePubSub:
+        return _FakePubSub(self)
 
     async def get(self, key: str) -> str | None:
         return self.store.get(key)
@@ -135,10 +190,19 @@ def verified_tokens() -> dict[str, dict[str, Any]]:
 
 
 @pytest.fixture
+def connection_manager() -> ConnectionManager:
+    """Fresh WS connection manager per test — mirrors fake_redis's isolation (the
+    default get_connection_manager() is a process-wide singleton in prod, which would
+    otherwise leak subscriptions/relay tasks across tests)."""
+    return ConnectionManager()
+
+
+@pytest.fixture
 def app(
     session_maker: async_sessionmaker[AsyncSession],
     verified_tokens: dict[str, dict[str, Any]],
     fake_redis: FakeRedis,
+    connection_manager: ConnectionManager,
 ) -> FastAPI:
     app = create_app()
 
@@ -154,6 +218,7 @@ def app(
     app.dependency_overrides[get_session] = override_session
     app.dependency_overrides[get_token_verifier] = lambda: fake_verifier
     app.dependency_overrides[get_redis] = lambda: fake_redis
+    app.dependency_overrides[get_connection_manager] = lambda: connection_manager
     return app
 
 

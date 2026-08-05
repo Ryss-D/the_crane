@@ -2,13 +2,21 @@ import asyncio
 import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import admin, auth, drivers, jobs, users, ws
 from app.core.config import get_settings
-from app.core.database import dispose_engine, get_sessionmaker
-from app.core.redis import close_redis, get_redis_client
+from app.core.database import dispose_engine, get_session, get_sessionmaker
+from app.core.redis import close_redis, get_redis, get_redis_client
+from app.models.job import Job, JobOffer, JobStatus
+from app.services.config import RedisLike
+from app.services.connection_manager import ConnectionManager, get_connection_manager
+from app.services.dispatch import OfferNotifier, get_offer_notifier
+from app.services.jobs import JobEventHook, get_job_event_hook
+from app.services.realtime import broadcast_job_event, notify_driver_offer
 from app.workers.offer_expiry import run_offer_expiry_worker
 
 
@@ -32,6 +40,36 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     await close_redis()
 
 
+def _real_job_event_hook(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    redis: Annotated[RedisLike, Depends(get_redis)],
+    manager: Annotated[ConnectionManager, Depends(get_connection_manager)],
+) -> JobEventHook:
+    """TRK-3: production override for `get_job_event_hook` — broadcasts every
+    transition over WS via the connection manager (services/realtime.py). Declared as
+    its own Depends-based dependency (rather than called directly) so its session/
+    redis/manager come from the very same override chain everything else uses,
+    including in tests that swap get_session/get_redis/get_connection_manager."""
+
+    async def hook(job: Job, old_status: JobStatus, new_status: JobStatus) -> None:
+        await broadcast_job_event(session, redis, manager, job, old_status, new_status)
+
+    return hook
+
+
+def _real_offer_notifier(
+    redis: Annotated[RedisLike, Depends(get_redis)],
+    manager: Annotated[ConnectionManager, Depends(get_connection_manager)],
+) -> OfferNotifier:
+    """TRK-3: production override for `get_offer_notifier` — pushes a `job_offer` WS
+    message directly to the offered driver's live connections."""
+
+    async def notifier(offer: JobOffer, job: Job) -> None:
+        await notify_driver_offer(redis, manager, offer, job)
+
+    return notifier
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="The Crane API", version="0.1.0", lifespan=lifespan)
 
@@ -45,7 +83,12 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router, prefix="/v1")
     app.include_router(jobs.track_router, prefix="/v1")  # public share-token tracking
     app.include_router(drivers.router, prefix="/v1")
-    app.include_router(ws.router)
+    app.include_router(ws.router, prefix="/v1")
+
+    # TRK-3: wire the real broadcasters as the actual overrides — the no-op defaults
+    # in jobs.py/dispatch.py only apply where a test explicitly swaps these back.
+    app.dependency_overrides[get_job_event_hook] = _real_job_event_hook
+    app.dependency_overrides[get_offer_notifier] = _real_offer_notifier
     return app
 
 
