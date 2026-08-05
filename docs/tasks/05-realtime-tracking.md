@@ -14,7 +14,7 @@ WebSocket layer for live positions and job events; FCM covers backgrounded apps.
   Every state transition publishes to the job channel and triggers FCM (customer: status changes; driver: offers/cancellations). FCM payloads are data messages with job id for rehydration.
   *AC: app killed → FCM arrives; app open → WS event arrives; no double-handling.*
 
-- [ ] **TRK-4 — Flutter WS client** *(deps: FND-4)*
+- [x] **TRK-4 — Flutter WS client** *(deps: FND-4)*
   `core/ws/`: connect lifecycle bound to auth state, exponential reconnect, typed event stream (freezed events), rehydrate via `GET /jobs/{id}` on reconnect.
   *AC: airplane-mode toggle recovers the stream and reconciles missed events.*
 

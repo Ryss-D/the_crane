@@ -6,11 +6,12 @@ Trust signals and trip records for both roles.
   `ratings` table; `POST /v1/jobs/{id}/rating` — both directions, one per side per job, only after `completed`; updates `rating_avg` on driver profile.
   *AC: duplicate rating rejected; average recomputes correctly.*
 
-- [ ] **RAT-2 — Rating UI (both roles)** *(deps: RAT-1)*
+- [x] **RAT-2 — Rating UI (both roles)** *(deps: RAT-1)*
   Post-completion star + optional comment prompt for customer and driver; skippable.
   *AC: driver's rating shows on the customer's driver card (CUS-3) from real data.*
+  Note: built against the fake repositories (`USE_FAKE_BACKEND`); flips to the real `/v1/jobs/{id}/rating` endpoint via the existing Api/Fake seam once FND-1 wires real auth end to end.
 
-- [ ] **RAT-3 — Trip history screens** *(deps: JOB-5)*
+- [x] **RAT-3 — Trip history screens** *(deps: JOB-5)*
   Customer and driver history lists with paging; detail view: route static-map thumbnail, fare, timestamps, rating given/received.
   Design: «Historial» (`docs/design/screen-references.md`)
   *AC: paging works on 100+ seeded jobs; static maps used (no live map cost).*
