@@ -4,6 +4,7 @@ import type {
   Driver,
   DriverFilters,
   DriverLedgerSummary,
+  Job,
   JobDetail,
   JobFilters,
   LedgerEntry,
@@ -12,12 +13,22 @@ import type {
   SettleResponse,
 } from './types';
 
+/** Every GET list endpoint's real envelope shape (app/schemas/*.py's
+ * *ListResponse models) — HttpApi unwraps `.items`, callers keep working
+ * with plain arrays since nothing here needs total/limit/offset yet. */
+interface Paginated<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 /**
  * The seam every UI component talks through. Two implementations:
  * - MockApi (src/api/mock.ts) — seeded in-memory data, default in dev.
  * - HttpApi (below) — real fetch calls against the FastAPI backend's
- *   /v1/admin/* router (ADM-2, built concurrently — endpoint shapes here
- *   follow docs/PLAN.md §2.6 but are not yet confirmed against the live API).
+ *   /v1/admin/* router. Shapes verified against the backend's actual
+ *   OpenAPI schema (dumped from the running app), not assumed.
  */
 export interface CraneAdminApi {
   getConfig(): Promise<ConfigResponse>;
@@ -28,16 +39,18 @@ export interface CraneAdminApi {
   blockDriver(id: string): Promise<Driver>;
   unblockDriver(id: string): Promise<Driver>;
 
-  getJobs(filters?: JobFilters): Promise<JobDetail[]>;
+  /** GET /v1/admin/jobs — list items have names but no offer trail (that's
+   * the single-job detail endpoint below); typed as `Job[]`, not
+   * `JobDetail[]`, so reading `.offers` on a row is a type error, not a
+   * silent `undefined`. */
+  getJobs(filters?: JobFilters): Promise<Job[]>;
   getJob(id: string): Promise<JobDetail>;
-  cancelJob(id: string, reason?: string): Promise<JobDetail>;
+  /** Returns the plain job (no offer trail/names) — the admin cancel endpoint
+   * doesn't re-send those; callers should invalidate ['job', id] to refetch
+   * full detail rather than cache this directly. */
+  cancelJob(id: string, reason?: string): Promise<Job>;
 
   getLedger(): Promise<DriverLedgerSummary[]>;
-  /**
-   * NOTE: the documented contract only lists GET /v1/admin/ledger (balances).
-   * Per-driver entry drill-down isn't spelled out — HttpApi assumes
-   * ?driver_id= on the same endpoint until the real shape is confirmed.
-   */
   getLedgerEntries(driverId: string): Promise<LedgerEntry[]>;
   settleLedger(driverId: string, body: SettleRequest): Promise<SettleResponse>;
 }
@@ -96,13 +109,14 @@ export class HttpApi implements CraneAdminApi {
     return this.request('PUT', `/v1/admin/config/${encodeURIComponent(key)}`, { body: value });
   }
 
-  getDrivers(filters: DriverFilters = {}): Promise<Driver[]> {
-    return this.request('GET', '/v1/admin/drivers', {
+  async getDrivers(filters: DriverFilters = {}): Promise<Driver[]> {
+    const page = await this.request<Paginated<Driver>>('GET', '/v1/admin/drivers', {
       query: {
         verified: filters.verified === undefined ? undefined : String(filters.verified),
         status: filters.status,
       },
     });
+    return page.items;
   }
 
   verifyDriver(id: string): Promise<Driver> {
@@ -117,26 +131,34 @@ export class HttpApi implements CraneAdminApi {
     return this.request('POST', `/v1/admin/drivers/${encodeURIComponent(id)}/unblock`);
   }
 
-  getJobs(filters: JobFilters = {}): Promise<JobDetail[]> {
-    return this.request('GET', '/v1/admin/jobs', { query: { status: filters.status } });
+  async getJobs(filters: JobFilters = {}): Promise<Job[]> {
+    const page = await this.request<Paginated<Job>>('GET', '/v1/admin/jobs', {
+      query: { status: filters.status },
+    });
+    return page.items;
   }
 
   getJob(id: string): Promise<JobDetail> {
     return this.request('GET', `/v1/admin/jobs/${encodeURIComponent(id)}`);
   }
 
-  cancelJob(id: string, reason?: string): Promise<JobDetail> {
+  cancelJob(id: string, reason?: string): Promise<Job> {
     return this.request('POST', `/v1/admin/jobs/${encodeURIComponent(id)}/cancel`, {
       body: { reason },
     });
   }
 
-  getLedger(): Promise<DriverLedgerSummary[]> {
-    return this.request('GET', '/v1/admin/ledger');
+  async getLedger(): Promise<DriverLedgerSummary[]> {
+    const page = await this.request<Paginated<DriverLedgerSummary>>('GET', '/v1/admin/ledger');
+    return page.items;
   }
 
-  getLedgerEntries(driverId: string): Promise<LedgerEntry[]> {
-    return this.request('GET', '/v1/admin/ledger', { query: { driver_id: driverId } });
+  async getLedgerEntries(driverId: string): Promise<LedgerEntry[]> {
+    const page = await this.request<Paginated<LedgerEntry>>(
+      'GET',
+      `/v1/admin/ledger/${encodeURIComponent(driverId)}/entries`,
+    );
+    return page.items;
   }
 
   settleLedger(driverId: string, body: SettleRequest): Promise<SettleResponse> {

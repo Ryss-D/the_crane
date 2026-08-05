@@ -82,40 +82,45 @@ export interface ConfigResponse {
 // Drivers (ADM-4)
 // ---------------------------------------------------------------------------
 
-export const DRIVER_STATUSES = ['offline', 'available', 'on_job'] as const;
+export const DRIVER_STATUSES = ['offline', 'available', 'on_job', 'blocked'] as const;
 export type DriverStatus = (typeof DRIVER_STATUSES)[number];
 
-export const TRUCK_TYPES = ['moto_only', 'car', 'flatbed'] as const;
+export const TRUCK_TYPES = ['moto_only', 'flatbed', 'standard'] as const;
 export type TruckType = (typeof TRUCK_TYPES)[number];
 
 export const TRUCK_CAPACITIES = ['moto', 'car', 'both'] as const;
 export type TruckCapacity = (typeof TRUCK_CAPACITIES)[number];
 
-/** Placeholder — real file storage (uploads, signed URLs) isn't built yet. */
-export interface DriverDocument {
+/** Matches the backend's TruckRead exactly (app/schemas/driver.py). */
+export interface Truck {
   id: string;
-  label: string;
-  /** TODO: real storage URL once file uploads exist; mock uses a dummy value. */
-  url: string;
-  uploaded_at: string;
+  plate: string;
+  type: TruckType;
+  capacity: TruckCapacity;
+  driver_id: string | null;
+  fleet_id: string | null;
 }
 
+/**
+ * Matches AdminDriverRead exactly (app/schemas/admin.py) — no `id`/`blocked`/
+ * `created_at`/`documents` fields exist on the backend: the primary key is
+ * `user_id`, "blocked" is `status === 'blocked'`, and there's no document
+ * upload system yet — only the two URL fields a driver submits at
+ * registration (AUTH-5), null until they do.
+ */
 export interface Driver {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
+  user_id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
   status: DriverStatus;
   verified: boolean;
-  blocked: boolean;
-  truck_plate: string;
-  truck_type: TruckType;
-  capacity: TruckCapacity;
-  rating_avg: number;
+  rating_avg: number | null;
+  truck: Truck | null;
   /** COP owed to the platform (commission accrual). Positive = owes platform. */
-  balance: number;
-  documents: DriverDocument[];
-  created_at: string;
+  owed_balance: number;
+  license_url: string | null;
+  truck_photo_url: string | null;
 }
 
 export interface DriverFilters {
@@ -152,7 +157,7 @@ export type OfferResponse = (typeof OFFER_RESPONSES)[number];
 export interface JobOffer {
   id: string;
   driver_id: string;
-  driver_name: string;
+  driver_name: string | null;
   offered_at: string;
   responded_at: string | null;
   response: OfferResponse;
@@ -192,27 +197,36 @@ export interface JobFilters {
 // Ledger & settlements (ADM-6)
 // ---------------------------------------------------------------------------
 
-export type LedgerEntryType = 'earning' | 'settlement' | 'adjustment';
+/** Matches DriverLedgerEntry's real enum exactly — "payout", not "settlement". */
+export type LedgerEntryType = 'earning' | 'payout' | 'adjustment';
 
+/**
+ * Matches DriverLedgerEntryRead exactly (app/schemas/admin.py): gross/
+ * commission/net, not a single signed `amount` — and the field is
+ * `entry_type`, not `type`.
+ */
 export interface LedgerEntry {
   id: string;
   driver_id: string;
   job_id: string | null;
-  type: LedgerEntryType;
-  /** COP. Positive = increases what the driver owes; negative = reduces it (settlement/adjustment). */
-  amount: number;
+  gross: number;
+  commission: number;
+  net: number;
+  entry_type: LedgerEntryType;
   note: string | null;
   created_at: string;
 }
 
-/** One row of GET /v1/admin/ledger — balances per driver, sorted desc by balance client-side. */
+/**
+ * One row of GET /v1/admin/ledger — matches AdminLedgerRead exactly.
+ * No balance_cap here (that's a single global value from platform_config,
+ * not per-driver) — LedgerPage reads it from the already-fetched config
+ * instead of expecting the backend to duplicate it onto every row.
+ */
 export interface DriverLedgerSummary {
   driver_id: string;
-  driver_name: string;
-  /** COP currently owed to the platform. */
-  balance: number;
-  /** Cap from platform_config.settlement — surfaced per row for the "capped" indicator. */
-  balance_cap: number | null;
+  name: string | null;
+  owed_balance: number;
 }
 
 export interface SettleRequest {
@@ -221,8 +235,6 @@ export interface SettleRequest {
   note?: string;
 }
 
-export interface SettleResponse {
-  entry: LedgerEntry;
-  /** New balance after the settlement is applied. */
-  balance: number;
-}
+/** POST /v1/admin/ledger/{id}/settle returns the created entry directly —
+ * no wrapper, no fresh balance (refetch ['ledger'] for that). */
+export type SettleResponse = LedgerEntry;

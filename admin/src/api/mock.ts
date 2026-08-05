@@ -7,13 +7,17 @@ import type {
   Driver,
   DriverFilters,
   DriverLedgerSummary,
+  Job,
   JobDetail,
   JobFilters,
   JobOffer,
   LedgerEntry,
+  LedgerEntryType,
   PlatformConfig,
   SettleRequest,
   SettleResponse,
+  Truck,
+  TruckCapacity,
 } from './types';
 import { authClient } from '../auth/singleton';
 
@@ -41,160 +45,120 @@ const DEFAULT_CONFIG: PlatformConfig = {
   dispatch: { offer_ttl_seconds: 30, search_radius_km: 10, radius_widening_steps_km: [15, 25] },
 };
 
-/** Seed drivers — ~8, spanning verification/status/blocked/balance states. */
+/** One `Truck` per driver — matches AdminDriverRead's nested shape. */
+function truck(id: string, plate: string, type: Truck['type'], capacity: TruckCapacity): Truck {
+  return { id, plate, type, capacity, driver_id: id, fleet_id: null };
+}
+
+/** Seed drivers — ~8, spanning verification/status/blocked/balance states.
+ * Matches AdminDriverRead exactly: user_id (not id), no blocked flag (status
+ * IS 'blocked'), truck nested, owed_balance (not balance), no documents
+ * array — just the two URL fields a driver submits at registration. */
 function seedDrivers(): Driver[] {
   return [
     {
-      id: 'drv_1',
+      user_id: 'drv_1',
       name: 'Carlos Restrepo',
       phone: '+57 300 111 2233',
       email: 'carlos.restrepo@example.com',
       status: 'available',
       verified: true,
-      blocked: false,
-      truck_plate: 'TKX-482',
-      truck_type: 'flatbed',
-      capacity: 'both',
+      truck: truck('truck_1', 'TKX-482', 'flatbed', 'both'),
       rating_avg: 4.8,
-      balance: 45000,
-      documents: [
-        { id: 'doc_1a', label: 'Licencia de conducción', url: '#', uploaded_at: daysAgo(90) },
-        { id: 'doc_1b', label: 'Tarjeta de propiedad', url: '#', uploaded_at: daysAgo(90) },
-      ],
-      created_at: daysAgo(120),
+      owed_balance: 45000,
+      license_url: '#',
+      truck_photo_url: '#',
     },
     {
-      id: 'drv_2',
+      user_id: 'drv_2',
       name: 'Andrea Muñoz',
       phone: '+57 301 222 3344',
       email: 'andrea.munoz@example.com',
       status: 'on_job',
       verified: true,
-      blocked: false,
-      truck_plate: 'WQP-119',
-      truck_type: 'car',
-      capacity: 'car',
+      truck: truck('truck_2', 'WQP-119', 'standard', 'car'),
       rating_avg: 4.6,
-      balance: 82000,
-      documents: [
-        { id: 'doc_2a', label: 'Licencia de conducción', url: '#', uploaded_at: daysAgo(80) },
-        { id: 'doc_2b', label: 'Tarjeta de propiedad', url: '#', uploaded_at: daysAgo(80) },
-      ],
-      created_at: daysAgo(110),
+      owed_balance: 82000,
+      license_url: '#',
+      truck_photo_url: '#',
     },
     {
-      id: 'drv_3',
+      user_id: 'drv_3',
       name: 'Jorge Salazar',
       phone: '+57 302 333 4455',
       email: 'jorge.salazar@example.com',
       status: 'offline',
       verified: true,
-      blocked: false,
-      truck_plate: 'MTX-733',
-      truck_type: 'moto_only',
-      capacity: 'moto',
+      truck: truck('truck_3', 'MTX-733', 'moto_only', 'moto'),
       rating_avg: 4.4,
-      balance: 165000,
-      documents: [
-        { id: 'doc_3a', label: 'Licencia de conducción', url: '#', uploaded_at: daysAgo(200) },
-        { id: 'doc_3b', label: 'Tarjeta de propiedad', url: '#', uploaded_at: daysAgo(200) },
-      ],
-      created_at: daysAgo(210),
+      owed_balance: 165000,
+      license_url: '#',
+      truck_photo_url: '#',
     },
     {
-      id: 'drv_4',
+      user_id: 'drv_4',
       name: 'Luisa Fernanda Gómez',
       phone: '+57 303 444 5566',
       email: 'luisa.gomez@example.com',
       status: 'offline',
       verified: false,
-      blocked: false,
-      truck_plate: 'PND-004',
-      truck_type: 'car',
-      capacity: 'car',
-      rating_avg: 0,
-      balance: 0,
-      documents: [
-        { id: 'doc_4a', label: 'Licencia de conducción', url: '#', uploaded_at: daysAgo(1) },
-        { id: 'doc_4b', label: 'Tarjeta de propiedad', url: '#', uploaded_at: daysAgo(1) },
-        { id: 'doc_4c', label: 'SOAT', url: '#', uploaded_at: daysAgo(1) },
-      ],
-      created_at: daysAgo(2),
+      truck: truck('truck_4', 'PND-004', 'standard', 'car'),
+      rating_avg: null,
+      owed_balance: 0,
+      license_url: '#',
+      truck_photo_url: null,
     },
     {
-      id: 'drv_5',
+      user_id: 'drv_5',
       name: 'Miguel Ángel Torres',
       phone: '+57 304 555 6677',
       email: 'miguel.torres@example.com',
-      status: 'offline',
+      status: 'blocked',
       verified: true,
-      blocked: true,
-      truck_plate: 'BKD-501',
-      truck_type: 'flatbed',
-      capacity: 'both',
+      truck: truck('truck_5', 'BKD-501', 'flatbed', 'both'),
       rating_avg: 4.1,
-      balance: 30000,
-      documents: [
-        { id: 'doc_5a', label: 'Licencia de conducción', url: '#', uploaded_at: daysAgo(150) },
-        { id: 'doc_5b', label: 'Tarjeta de propiedad', url: '#', uploaded_at: daysAgo(150) },
-      ],
-      created_at: daysAgo(160),
+      owed_balance: 30000,
+      license_url: '#',
+      truck_photo_url: '#',
     },
     {
-      id: 'drv_6',
+      user_id: 'drv_6',
       name: 'Paula Ramírez',
       phone: '+57 305 666 7788',
       email: 'paula.ramirez@example.com',
       status: 'offline',
       verified: false,
-      blocked: false,
-      truck_plate: 'PND-006',
-      truck_type: 'moto_only',
-      capacity: 'moto',
-      rating_avg: 0,
-      balance: 0,
-      documents: [
-        { id: 'doc_6a', label: 'Licencia de conducción', url: '#', uploaded_at: daysAgo(3) },
-      ],
-      created_at: daysAgo(4),
+      truck: truck('truck_6', 'PND-006', 'moto_only', 'moto'),
+      rating_avg: null,
+      owed_balance: 0,
+      license_url: null,
+      truck_photo_url: null,
     },
     {
-      id: 'drv_7',
+      user_id: 'drv_7',
       name: 'Esteban Cardona',
       phone: '+57 306 777 8899',
       email: 'esteban.cardona@example.com',
       status: 'available',
       verified: true,
-      blocked: false,
-      truck_plate: 'NCV-220',
-      truck_type: 'moto_only',
-      capacity: 'moto',
+      truck: truck('truck_7', 'NCV-220', 'moto_only', 'moto'),
       rating_avg: 4.9,
-      balance: 12000,
-      documents: [
-        { id: 'doc_7a', label: 'Licencia de conducción', url: '#', uploaded_at: daysAgo(60) },
-        { id: 'doc_7b', label: 'Tarjeta de propiedad', url: '#', uploaded_at: daysAgo(60) },
-      ],
-      created_at: daysAgo(70),
+      owed_balance: 12000,
+      license_url: '#',
+      truck_photo_url: '#',
     },
     {
-      id: 'drv_8',
+      user_id: 'drv_8',
       name: 'Natalia Zapata',
       phone: '+57 307 888 9900',
       email: 'natalia.zapata@example.com',
       status: 'on_job',
       verified: true,
-      blocked: false,
-      truck_plate: 'SLR-884',
-      truck_type: 'car',
-      capacity: 'car',
+      truck: truck('truck_8', 'SLR-884', 'standard', 'car'),
       rating_avg: 4.7,
-      balance: 95000,
-      documents: [
-        { id: 'doc_8a', label: 'Licencia de conducción', url: '#', uploaded_at: daysAgo(95) },
-        { id: 'doc_8b', label: 'Tarjeta de propiedad', url: '#', uploaded_at: daysAgo(95) },
-      ],
-      created_at: daysAgo(100),
+      owed_balance: 95000,
+      license_url: '#',
+      truck_photo_url: '#',
     },
   ];
 }
@@ -543,20 +507,33 @@ function seedJobs(): JobDetail[] {
 }
 
 let ledgerSeq = 0;
+/**
+ * `amount` means "commission accrued" for an `earning` row or "amount
+ * settled" for `payout`/`adjustment` — matching how the real backend's
+ * driver_owed_balance actually sums entries (app/services/ledger.py):
+ * + earning.commission, − payout|adjustment.net. `gross`/`net` are derived
+ * so an earning row looks like a real fare (commission ≈ 15% of gross).
+ */
 function ledgerEntry(
   driverId: string,
-  type: LedgerEntry['type'],
+  entryType: LedgerEntryType,
   amount: number,
   createdDaysAgo: number,
   jobId: string | null = null,
   note: string | null = null,
 ): LedgerEntry {
+  const isEarning = entryType === 'earning';
+  const commission = isEarning ? amount : 0;
+  const gross = isEarning ? Math.round(amount / 0.15) : amount;
+  const net = isEarning ? gross - commission : amount;
   return {
     id: `ldg_${++ledgerSeq}`,
     driver_id: driverId,
     job_id: jobId,
-    type,
-    amount,
+    gross,
+    commission,
+    net,
+    entry_type: entryType,
     note,
     created_at: daysAgo(createdDaysAgo),
   };
@@ -567,7 +544,7 @@ function seedLedgerEntries(): LedgerEntry[] {
     // drv_1 Carlos — target balance 45000
     ledgerEntry('drv_1', 'earning', 30000, 20, null, 'Comisiones período anterior'),
     ledgerEntry('drv_1', 'earning', 15000, 4.5 / 24, 'job_9'),
-    ledgerEntry('drv_1', 'settlement', -25000, 12, null, 'Pago Nequi parcial'),
+    ledgerEntry('drv_1', 'payout', 25000, 12, null, 'Pago Nequi parcial'),
     ledgerEntry('drv_1', 'earning', 25000, 6, null, 'Comisiones semana previa'),
     // drv_2 Andrea — target balance 82000
     ledgerEntry('drv_2', 'earning', 40000, 15, null, 'Comisiones período anterior'),
@@ -579,7 +556,7 @@ function seedLedgerEntries(): LedgerEntry[] {
     ledgerEntry('drv_3', 'earning', 35000, 9, null, 'Comisiones semana previa'),
     // drv_5 Miguel (blocked) — target balance 30000
     ledgerEntry('drv_5', 'earning', 50000, 20, null, 'Comisiones período anterior'),
-    ledgerEntry('drv_5', 'settlement', -20000, 10, null, 'Liquidación semanal'),
+    ledgerEntry('drv_5', 'payout', 20000, 10, null, 'Liquidación semanal'),
     // drv_7 Esteban — target balance 12000
     ledgerEntry('drv_7', 'earning', 8625, 5.5 / 24, 'job_10'),
     ledgerEntry('drv_7', 'earning', 3375, 7, null, 'Comisiones semana previa'),
@@ -647,7 +624,7 @@ function seedConfigHistory(config: PlatformConfig): ConfigAuditEntry[] {
 export class MockApi implements CraneAdminApi {
   private config: PlatformConfig = clone(DEFAULT_CONFIG);
   private history: ConfigAuditEntry[] = seedConfigHistory(this.config);
-  private readonly drivers = new Map<string, Driver>(seedDrivers().map((d) => [d.id, d]));
+  private readonly drivers = new Map<string, Driver>(seedDrivers().map((d) => [d.user_id, d]));
   private readonly jobs = new Map<string, JobDetail>(seedJobs().map((j) => [j.id, j]));
   private ledger: LedgerEntry[] = seedLedgerEntries();
 
@@ -715,7 +692,7 @@ export class MockApi implements CraneAdminApi {
   async blockDriver(id: string): Promise<Driver> {
     await this.delay();
     const driver = this.requireDriver(id);
-    const updated: Driver = { ...driver, blocked: true, status: 'offline' };
+    const updated: Driver = { ...driver, status: 'blocked' };
     this.drivers.set(id, updated);
     return clone(updated);
   }
@@ -723,21 +700,23 @@ export class MockApi implements CraneAdminApi {
   async unblockDriver(id: string): Promise<Driver> {
     await this.delay();
     const driver = this.requireDriver(id);
-    const updated: Driver = { ...driver, blocked: false };
+    const updated: Driver = { ...driver, status: 'offline' };
     this.drivers.set(id, updated);
     return clone(updated);
   }
 
   // -- Jobs / operations ------------------------------------------------------
 
-  async getJobs(filters: JobFilters = {}): Promise<JobDetail[]> {
+  async getJobs(filters: JobFilters = {}): Promise<Job[]> {
     await this.delay();
     let list = [...this.jobs.values()];
     if (filters.status !== undefined) list = list.filter((j) => j.status === filters.status);
     list = list.sort(
       (a, b) => new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime(),
     );
-    return clone(list);
+    // The real list endpoint doesn't include the offer trail — only the
+    // single-job detail endpoint (getJob) does.
+    return clone(list.map(({ offers: _offers, ...job }) => job));
   }
 
   async getJob(id: string): Promise<JobDetail> {
@@ -747,7 +726,7 @@ export class MockApi implements CraneAdminApi {
     return clone(job);
   }
 
-  async cancelJob(id: string, reason?: string): Promise<JobDetail> {
+  async cancelJob(id: string, reason?: string): Promise<Job> {
     await this.delay();
     const job = this.jobs.get(id);
     if (!job) throw new ApiError(404, `job ${id} not found`);
@@ -761,26 +740,28 @@ export class MockApi implements CraneAdminApi {
       cancel_reason: reason ?? 'Cancelado por administrador',
     };
     this.jobs.set(id, updated);
-    return clone(updated);
+    const { offers: _offers, ...jobOnly } = updated;
+    return clone(jobOnly);
   }
 
   // -- Ledger / settlements ----------------------------------------------------
 
+  /** Mirrors driver_owed_balance (app/services/ledger.py) exactly: earning
+   * commissions accrue, payout/adjustment nets reduce. No denormalized
+   * balance field on Driver — this is computed fresh, same as the backend. */
   private driverBalance(driverId: string): number {
     return this.ledger
       .filter((e) => e.driver_id === driverId)
-      .reduce((sum, e) => sum + e.amount, 0);
+      .reduce((sum, e) => sum + (e.entry_type === 'earning' ? e.commission : -e.net), 0);
   }
 
   async getLedger(): Promise<DriverLedgerSummary[]> {
     await this.delay();
-    const cap = this.config.settlement.balance_cap;
     return clone(
       [...this.drivers.values()].map((d) => ({
-        driver_id: d.id,
-        driver_name: d.name,
-        balance: this.driverBalance(d.id),
-        balance_cap: cap,
+        driver_id: d.user_id,
+        name: d.name,
+        owed_balance: this.driverBalance(d.user_id),
       })),
     );
   }
@@ -798,17 +779,13 @@ export class MockApi implements CraneAdminApi {
     this.requireDriver(driverId);
     const entry = ledgerEntry(
       driverId,
-      'settlement',
-      -Math.abs(body.amount),
+      'payout',
+      Math.abs(body.amount),
       0,
       null,
       body.note ?? null,
     );
     this.ledger = [entry, ...this.ledger];
-    // Keep the driver's denormalized balance field (Driver.balance) in sync.
-    const driver = this.requireDriver(driverId);
-    const balance = this.driverBalance(driverId);
-    this.drivers.set(driverId, { ...driver, balance });
-    return { entry: clone(entry), balance };
+    return clone(entry);
   }
 }

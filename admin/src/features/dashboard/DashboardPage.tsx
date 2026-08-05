@@ -79,7 +79,9 @@ export function DashboardPage() {
   const { jobs, drivers, config } = data;
 
   const tripsToday = jobs.filter((j) => isWithinLastDay(j.requested_at)).length;
-  const activeTrucks = drivers.filter((d) => !d.blocked && d.status !== 'offline').length;
+  const activeTrucks = drivers.filter(
+    (d) => d.status === 'available' || d.status === 'on_job',
+  ).length;
 
   const assignmentDurationsMin = jobs
     .filter((j): j is typeof j & { assigned_at: string } => j.assigned_at !== null)

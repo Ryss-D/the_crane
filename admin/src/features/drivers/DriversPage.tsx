@@ -9,10 +9,11 @@ import { Badge, Button, Card, Modal, Table, TBody, Td, Th, THead, Tr } from '../
 type VerifiedFilter = 'all' | 'verified' | 'unverified';
 type StatusFilter = 'all' | DriverStatus;
 
-const statusTone: Record<DriverStatus, 'neutral' | 'success' | 'info'> = {
+const statusTone: Record<DriverStatus, 'neutral' | 'success' | 'info' | 'danger'> = {
   offline: 'neutral',
   available: 'success',
   on_job: 'info',
+  blocked: 'danger',
 };
 
 export function DriversPage() {
@@ -33,7 +34,7 @@ export function DriversPage() {
 
   function updateDriverCache(updated: Driver) {
     queryClient.setQueriesData<Driver[]>({ queryKey: ['drivers'] }, (old) =>
-      old ? old.map((d) => (d.id === updated.id ? updated : d)) : old,
+      old ? old.map((d) => (d.user_id === updated.user_id ? updated : d)) : old,
     );
   }
 
@@ -116,24 +117,19 @@ export function DriversPage() {
           </THead>
           <TBody>
             {drivers.map((driver) => (
-              <Tr key={driver.id}>
+              <Tr key={driver.user_id}>
                 <Td>
                   <div className="font-medium text-slate-100">{driver.name}</div>
                   <div className="text-xs text-slate-500">{driver.phone}</div>
                 </Td>
                 <Td>
-                  <div>{driver.truck_plate}</div>
-                  <div className="text-xs text-slate-500">{driver.truck_type}</div>
+                  <div>{driver.truck?.plate ?? '—'}</div>
+                  <div className="text-xs text-slate-500">{driver.truck?.type ?? '—'}</div>
                 </Td>
                 <Td>
                   <Badge tone={statusTone[driver.status]}>
                     {strings.driverStatuses[driver.status]}
                   </Badge>
-                  {driver.blocked && (
-                    <span className="ml-1.5">
-                      <Badge tone="danger">{strings.drivers.blocked}</Badge>
-                    </span>
-                  )}
                 </Td>
                 <Td>
                   {driver.verified ? (
@@ -151,32 +147,36 @@ export function DriversPage() {
                     </div>
                   )}
                 </Td>
-                <Td>{formatCOP(driver.balance)}</Td>
-                <Td>{driver.rating_avg > 0 ? driver.rating_avg.toFixed(1) : '—'}</Td>
+                <Td>{formatCOP(driver.owed_balance)}</Td>
+                <Td>
+                  {driver.rating_avg !== null && driver.rating_avg > 0
+                    ? driver.rating_avg.toFixed(1)
+                    : '—'}
+                </Td>
                 <Td>
                   <div className="flex flex-wrap gap-1.5">
                     {!driver.verified && (
                       <Button
                         variant="secondary"
-                        disabled={busyId === driver.id}
-                        onClick={() => verifyMutation.mutate(driver.id)}
+                        disabled={busyId === driver.user_id}
+                        onClick={() => verifyMutation.mutate(driver.user_id)}
                       >
                         {strings.drivers.verify}
                       </Button>
                     )}
-                    {driver.blocked ? (
+                    {driver.status === 'blocked' ? (
                       <Button
                         variant="secondary"
-                        disabled={busyId === driver.id}
-                        onClick={() => unblockMutation.mutate(driver.id)}
+                        disabled={busyId === driver.user_id}
+                        onClick={() => unblockMutation.mutate(driver.user_id)}
                       >
                         {strings.drivers.unblock}
                       </Button>
                     ) : (
                       <Button
                         variant="danger"
-                        disabled={busyId === driver.id}
-                        onClick={() => blockMutation.mutate(driver.id)}
+                        disabled={busyId === driver.user_id}
+                        onClick={() => blockMutation.mutate(driver.user_id)}
                       >
                         {strings.drivers.block}
                       </Button>
@@ -194,17 +194,40 @@ export function DriversPage() {
           title={`${strings.drivers.documents} — ${docsDriver.name}`}
           onClose={() => setDocsDriver(null)}
         >
-          <Card className="border-dashed">
-            <p className="text-sm text-slate-400">{strings.drivers.documentsPlaceholder}</p>
-          </Card>
-          <ul className="mt-3 flex flex-col gap-1.5 text-sm text-slate-300">
-            {docsDriver.documents.map((doc) => (
-              <li key={doc.id} className="flex items-center justify-between">
-                <span>{doc.label}</span>
-                <span className="text-xs text-slate-500">{doc.uploaded_at.slice(0, 10)}</span>
-              </li>
-            ))}
-          </ul>
+          {docsDriver.license_url === null && docsDriver.truck_photo_url === null ? (
+            <Card className="border-dashed">
+              <p className="text-sm text-slate-400">{strings.drivers.documentsPlaceholder}</p>
+            </Card>
+          ) : (
+            <ul className="flex flex-col gap-1.5 text-sm text-slate-300">
+              {docsDriver.license_url !== null && (
+                <li className="flex items-center justify-between">
+                  <span>{strings.drivers.licenseDocument}</span>
+                  <a
+                    href={docsDriver.license_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-400 hover:text-amber-300"
+                  >
+                    {strings.drivers.viewDocument}
+                  </a>
+                </li>
+              )}
+              {docsDriver.truck_photo_url !== null && (
+                <li className="flex items-center justify-between">
+                  <span>{strings.drivers.truckPhotoDocument}</span>
+                  <a
+                    href={docsDriver.truck_photo_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-400 hover:text-amber-300"
+                  >
+                    {strings.drivers.viewDocument}
+                  </a>
+                </li>
+              )}
+            </ul>
+          )}
         </Modal>
       )}
     </div>

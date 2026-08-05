@@ -96,7 +96,10 @@ export const strings = {
     unblock: 'Desbloquear',
     blocked: 'Bloqueado',
     documents: 'Documentos',
-    documentsPlaceholder: 'TODO: visor de documentos (subida y URLs firmadas) — pendiente.',
+    documentsPlaceholder: 'Este conductor aún no ha subido ningún documento.',
+    licenseDocument: 'Licencia de conducción',
+    truckPhotoDocument: 'Foto de la grúa',
+    viewDocument: 'Ver',
     noDrivers: 'No hay conductores para este filtro.',
     actionError: 'No se pudo completar la acción.',
   },
@@ -150,7 +153,7 @@ export const strings = {
     settleError: 'No se pudo registrar la liquidación.',
     entryTypes: {
       earning: 'Comisión',
-      settlement: 'Liquidación',
+      payout: 'Liquidación',
       adjustment: 'Ajuste',
     },
   },
@@ -165,6 +168,7 @@ export const strings = {
     offline: 'Desconectado',
     available: 'Disponible',
     on_job: 'En servicio',
+    blocked: 'Bloqueado',
   } satisfies Record<DriverStatus, string>,
 
   jobStatuses: {
