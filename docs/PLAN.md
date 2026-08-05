@@ -330,6 +330,13 @@ Auth is the same Firebase login — the backend's admin router checks `role=admi
 ### Phase 5 — Post-MVP backlog
 - Card/PSE payments via Wompi (see §6), photos of vehicle at pickup (damage evidence), scheduled tows, surge/zones pricing, broadcast dispatch, driver payout automation, SOS/support chat, SMS status fallback for web users.
 
+### Phase 6 — Fleet owners
+New role for owners of multiple grúas (see `docs/tasks/14-fleet-owner.md` and the fleet frames in the [design artifact](https://claude.ai/code/artifact/690138b9-1ac4-46eb-99ba-3aa26d444ac8)):
+- `fleet_owner` role; `fleets` + `trucks` tables (truck fields migrate off `driver_profiles` so trucks exist independently of drivers)
+- Ledger rolls up per fleet: one consolidated commission balance, one settlement clears all member drivers; balance-cap gating evaluates at fleet level
+- Owner screens in the Flutter app: fleet status board, assign/invite driver to truck, fleet earnings
+- Admin side: fleets & owners view (ADM-7)
+
 ---
 
 ## 6. Payments infrastructure (Phase 2 of payments — after cash MVP)

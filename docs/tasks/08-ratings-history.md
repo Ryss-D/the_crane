@@ -12,6 +12,7 @@ Trust signals and trip records for both roles.
 
 - [ ] **RAT-3 — Trip history screens** *(deps: JOB-5)*
   Customer and driver history lists with paging; detail view: route static-map thumbnail, fare, timestamps, rating given/received.
+  Design: «Historial» (`docs/design/screen-references.md`)
   *AC: paging works on 100+ seeded jobs; static maps used (no live map cost).*
 
 - [ ] **RAT-4 — es-CO localization pass** *(deps: —)*

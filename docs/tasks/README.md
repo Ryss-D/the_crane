@@ -28,6 +28,7 @@ The plan (`docs/PLAN.md`) split into features and tasks. One file per feature; e
 | 11 | [Super admin panel](11-admin-panel.md) | ADM | 3–4 | LED, JOB |
 | 12 | [Payments (Wompi)](12-payments-wompi.md) | PAY | 5 | LED |
 | 13 | [DevOps & CI](13-devops.md) | OPS | 0+ | — |
+| 14 | [Fleet owner](14-fleet-owner.md) | FLT | 6 | AUTH, LED |
 
 ## Conventions
 
@@ -35,3 +36,4 @@ The plan (`docs/PLAN.md`) split into features and tasks. One file per feature; e
 - **Branches:** `feature/<id>-<slug>` off `dev` (e.g. `feature/job-3-state-machine`), PR into `dev`.
 - **Definition of done:** acceptance criteria met, tests for backend logic, `flutter analyze` / `ruff` clean, reviewed.
 - Config values (fares, commission, dispatch tuning) are **never hardcoded** — they live in `platform_config` (see JOB-2, ADM-3).
+- **Designs:** screens link to frames in the [design artifact](https://claude.ai/code/artifact/690138b9-1ac4-46eb-99ba-3aa26d444ac8); mapping in `docs/design/screen-references.md`.

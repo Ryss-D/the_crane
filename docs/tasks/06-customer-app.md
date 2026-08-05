@@ -20,8 +20,10 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
 
 - [ ] **CUS-5 — Delivery confirmation + cash payment** *(deps: CUS-4, LED-1)*
   On `delivered`: fare summary, "paid in cash" confirmation → job `completed` → rating prompt.
+  Design: «Entrega y pago en efectivo» (`docs/design/screen-references.md`)
   *AC: completion writes the ledger entry (driver commission) exactly once.*
 
 - [ ] **CUS-6 — Saved vehicles** *(deps: AUTH-2)*
   CRUD for customer vehicles (type, make, model, plate) to speed repeat requests.
+  Design: «Vehículos guardados» (`docs/design/screen-references.md`)
   *AC: saved vehicle preselects type in CUS-2.*
