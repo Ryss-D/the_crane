@@ -14,6 +14,11 @@ class DriverStatus(enum.StrEnum):
     offline = "offline"
     available = "available"
     on_job = "on_job"
+    # ADM-2: admin-set hold — verified stays true, but the driver cannot go available
+    # until an admin unblocks them (app/api/admin.py block/unblock). Plain VARCHAR
+    # column (native_enum=False, no DB CHECK constraint — see 0006 migration), so
+    # adding this value is a Python-only change; no DDL required.
+    blocked = "blocked"
 
 
 class TruckType(enum.StrEnum):

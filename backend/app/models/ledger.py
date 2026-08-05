@@ -105,4 +105,8 @@ class DriverLedgerEntry(Base):
         Enum(LedgerEntryType, name="ledger_entry_type", native_enum=False, length=20)
     )
     payout_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("payouts.id"))
+    # ADM-2: optional free-text memo for admin-recorded settlements/adjustments
+    # (POST /v1/admin/ledger/{driver_id}/settle) — nullable so LED-1's accrual writes
+    # (earning rows) are unaffected.
+    note: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

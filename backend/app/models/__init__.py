@@ -23,6 +23,7 @@ from app.models.ledger import (
     PayoutStatus,
 )
 from app.models.platform_config import PlatformConfig, PlatformConfigAudit
+from app.models.rating import Rating
 from app.models.user import User, UserRole
 
 __all__ = [
@@ -46,6 +47,7 @@ __all__ = [
     "PayoutStatus",
     "PlatformConfig",
     "PlatformConfigAudit",
+    "Rating",
     "Truck",
     "TruckCapacity",
     "TruckType",
