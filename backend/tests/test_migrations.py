@@ -30,6 +30,7 @@ EXPECTED_TABLES = {
     "payouts",
     "platform_config",
     "platform_config_audit",
+    "ratings",
 }
 
 
@@ -56,7 +57,11 @@ def test_upgrade_head_on_sqlite(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
         assert columns["name"][3] == 0  # notnull flag off
         assert columns["phone"][3] == 0
 
+        # 0006: driver_ledger gains a nullable `note` column (ADM-2 settlement memos).
+        ledger_columns = {row[1]: row for row in conn.execute("PRAGMA table_info(driver_ledger)")}
+        assert ledger_columns["note"][3] == 0  # notnull flag off
+
         head = conn.execute("SELECT version_num FROM alembic_version").fetchone()
-        assert head == ("0005",)
+        assert head == ("0006",)
     finally:
         conn.close()

@@ -114,10 +114,11 @@ async def update_driver_status(
 ) -> DriverProfileRead:
     """DSP-1: flip available/offline and mirror membership into the Redis geo index.
 
-    403 unverified, 409 on_job (mid-job — status is driven by the job lifecycle
-    instead), 422 if going available without lat/lng, 403 if the driver's owed
-    balance is at or over settlement.balance_cap (same "not allowed to work" class
-    as unverified, so it shares the 403).
+    403 unverified, 403 blocked (ADM-2 admin hold — an admin must unblock first),
+    409 on_job (mid-job — status is driven by the job lifecycle instead), 422 if
+    going available without lat/lng, 403 if the driver's owed balance is at or over
+    settlement.balance_cap (same "not allowed to work" class as unverified, so it
+    shares the 403).
     """
     if body.status not in (DriverStatus.available, DriverStatus.offline):
         raise HTTPException(
@@ -128,6 +129,11 @@ async def update_driver_status(
     if not profile.verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Driver is not verified yet"
+        )
+    if profile.status is DriverStatus.blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Driver is blocked — contact an admin to unblock",
         )
     if profile.status is DriverStatus.on_job:
         raise HTTPException(
