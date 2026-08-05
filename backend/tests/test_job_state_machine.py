@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.models.driver import DriverProfile, DriverStatus
 from app.models.job import DriverLocationSnapshot, Job, JobStatus
 from app.models.user import User
 from app.services.config import set_config
@@ -17,6 +18,24 @@ from app.services.jobs import (
     transition,
 )
 from tests.conftest import FakeRedis, _create_user, make_job
+
+
+async def _put_driver_on_job(session_maker: async_sessionmaker[AsyncSession], driver: User) -> None:
+    async with session_maker() as session:
+        session.add(DriverProfile(user_id=driver.id, status=DriverStatus.on_job, verified=True))
+        await session.commit()
+
+
+async def _driver_status(
+    session_maker: async_sessionmaker[AsyncSession], driver: User
+) -> DriverStatus:
+    async with session_maker() as session:
+        profile = await session.scalar(
+            select(DriverProfile).where(DriverProfile.user_id == driver.id)
+        )
+        assert profile is not None
+        return profile.status
+
 
 LEGAL_TRANSITIONS = [
     (old, new) for old, targets in ALLOWED_TRANSITIONS.items() for new in sorted(targets)
@@ -240,6 +259,60 @@ async def test_driver_cancel_returns_job_to_matching(
         await cancel_job(session, fake_redis, job, actor=driver_user)
     assert job.status is JobStatus.matching
     assert job.driver_id is None  # released for re-dispatch (DSP-2)
+
+
+@pytest.mark.parametrize("status", [JobStatus.assigned, JobStatus.en_route_pickup])
+async def test_driver_cancel_releases_driver_from_on_job(
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+    customer_user: User,
+    driver_user: User,
+    status: JobStatus,
+) -> None:
+    """Regression: a driver who bails must become available again, not stay
+    on_job forever (nothing else in the system ever released them)."""
+    await _put_driver_on_job(session_maker, driver_user)
+    job = await make_job(session_maker, customer_user, status=status, driver=driver_user)
+    async with session_maker() as session:
+        job = await session.merge(job)
+        await cancel_job(session, fake_redis, job, actor=driver_user)
+    assert await _driver_status(session_maker, driver_user) is DriverStatus.available
+
+
+async def test_completion_releases_driver_from_on_job(
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+    driver_user: User,
+) -> None:
+    """Regression: completing a job must free the driver for the next dispatch."""
+    await _put_driver_on_job(session_maker, driver_user)
+    job = await make_job(
+        session_maker, customer_user, status=JobStatus.delivered, driver=driver_user
+    )
+    async with session_maker() as session:
+        job = await session.merge(job)
+        await transition(session, job, JobStatus.completed, actor=customer_user)
+    assert await _driver_status(session_maker, driver_user) is DriverStatus.available
+
+
+async def test_customer_cancel_after_assign_releases_driver_from_on_job(
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+    customer_user: User,
+    driver_user: User,
+) -> None:
+    """Regression: a late customer cancel (job stays assigned to the driver on
+    the record) must still free the driver, not strand them on_job."""
+    await _put_driver_on_job(session_maker, driver_user)
+    job = await make_job(
+        session_maker, customer_user, status=JobStatus.assigned, driver=driver_user
+    )
+    async with session_maker() as session:
+        job = await session.merge(job)
+        await cancel_job(session, fake_redis, job, actor=customer_user)
+    assert job.status is JobStatus.cancelled
+    assert job.driver_id == driver_user.id  # historical record kept, unlike the bail edge
+    assert await _driver_status(session_maker, driver_user) is DriverStatus.available
 
 
 async def test_driver_cancel_after_loading_rejected(

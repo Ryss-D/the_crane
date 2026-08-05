@@ -308,6 +308,15 @@ async def _admin_cancel_job(session: AsyncSession, job: Job, event_hook: JobEven
     job.cancel_reason = "admin"
     job.cancelled_at = _utcnow()
     job.status = JobStatus.cancelled
+    if job.driver_id is not None:
+        # Mirrors transition()'s RELEASES_DRIVER handling, which this manual
+        # path bypasses along with the rest of ALLOWED_TRANSITIONS.
+        driver_profile = await session.scalar(
+            select(DriverProfile).where(DriverProfile.user_id == job.driver_id)
+        )
+        if driver_profile is not None and driver_profile.status is DriverStatus.on_job:
+            driver_profile.status = DriverStatus.available
+            session.add(driver_profile)
     await session.commit()
     await event_hook(job, old, JobStatus.cancelled)
     return job

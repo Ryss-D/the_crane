@@ -327,6 +327,35 @@ async def test_admin_cancel_from_any_non_terminal_status(
     assert body["cancelled_at"] is not None
 
 
+async def test_admin_cancel_releases_driver_from_on_job(
+    client: AsyncClient,
+    tokens: dict,
+    customer_user: User,
+    driver_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
+    """Regression: the admin-cancel path bypasses the state machine for
+    mid-flight statuses (see _admin_cancel_job's docstring) and must mirror
+    its driver-release side effect manually — otherwise an admin-cancelled
+    mid-flight job strands its driver on_job forever."""
+    async with session_maker() as session:
+        session.add(
+            DriverProfile(user_id=driver_user.id, status=DriverStatus.on_job, verified=True)
+        )
+        await session.commit()
+    job = await make_job(
+        session_maker, customer_user, driver=driver_user, status=JobStatus.en_route_pickup
+    )
+    response = await client.post(f"/v1/admin/jobs/{job.id}/cancel", headers=AUTH_ADMIN)
+    assert response.status_code == 200
+    async with session_maker() as session:
+        profile = await session.scalar(
+            select(DriverProfile).where(DriverProfile.user_id == driver_user.id)
+        )
+        assert profile is not None
+        assert profile.status is DriverStatus.available
+
+
 @pytest.mark.parametrize("status_value", [JobStatus.completed, JobStatus.cancelled])
 async def test_admin_cancel_terminal_status_is_409(
     client: AsyncClient,

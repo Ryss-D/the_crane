@@ -23,6 +23,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.driver import DriverProfile, DriverStatus
 from app.models.job import DriverLocationSnapshot, Job, JobStatus, PaymentMethod
 from app.models.ledger import (
     DriverLedgerEntry,
@@ -104,6 +105,11 @@ _TIMESTAMP_COLUMNS: dict[JobStatus, str] = {
 # Fallback when dispatch config lacks `cancel_grace_seconds`.
 DEFAULT_CANCEL_GRACE_SECONDS = 60
 
+# Statuses that end a driver's engagement with a job: they stop being "on_job" and
+# become available for the next dispatch. `matching` here means the bail edge (old
+# was NOT requested — see the check in transition()), not the initial dispatch entry.
+RELEASES_DRIVER = frozenset({JobStatus.completed, JobStatus.cancelled, JobStatus.matching})
+
 
 def _utcnow() -> datetime:
     return datetime.now(UTC)
@@ -145,6 +151,20 @@ async def transition(
                 job_status=new_status,
             )
         )
+
+    if job.driver_id is not None and new_status in RELEASES_DRIVER:
+        # Job is leaving this driver's hands (bail, cancel, or completion): they
+        # stop being "on_job" so dispatch can offer them the next one. (When
+        # new_status is `matching` via the requested->matching initial entry,
+        # job.driver_id is always None here, so that case never reaches this
+        # branch — only the driver-bail edge does.) Without this a driver's
+        # first job would strand them on_job forever.
+        driver_profile = await session.scalar(
+            select(DriverProfile).where(DriverProfile.user_id == job.driver_id)
+        )
+        if driver_profile is not None and driver_profile.status is DriverStatus.on_job:
+            driver_profile.status = DriverStatus.available
+            session.add(driver_profile)
 
     if new_status is JobStatus.matching and old is not JobStatus.requested:
         # Driver bailed: release the job back to the pool.
