@@ -27,6 +27,28 @@ async def session_maker() -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     await engine.dispose()
 
 
+class FakeRedis:
+    """In-memory stand-in for redis.asyncio.Redis (decode_responses=True subset)."""
+
+    def __init__(self) -> None:
+        self.store: dict[str, str] = {}
+
+    async def get(self, key: str) -> str | None:
+        return self.store.get(key)
+
+    async def set(self, key: str, value: str, ex: int | None = None) -> None:
+        self.store[key] = value
+
+    async def delete(self, *keys: str) -> None:
+        for key in keys:
+            self.store.pop(key, None)
+
+
+@pytest.fixture
+def fake_redis() -> FakeRedis:
+    return FakeRedis()
+
+
 @pytest.fixture
 def verified_tokens() -> dict[str, dict[str, Any]]:
     """Map of accepted bearer tokens -> fake Firebase claims. Tests add entries."""

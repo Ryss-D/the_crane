@@ -24,8 +24,9 @@ class User(Base):
         Enum(UserRole, name="user_role", native_enum=False, length=20),
         default=UserRole.customer,
     )
-    name: Mapped[str] = mapped_column(String(120))
-    phone: Mapped[str] = mapped_column(String(32))
+    # Nullable: /v1/auth/sync may run before profile completion (AUTH-2 / AUTH-3).
+    name: Mapped[str | None] = mapped_column(String(120))
+    phone: Mapped[str | None] = mapped_column(String(32))
     email: Mapped[str | None] = mapped_column(String(254))
     fcm_token: Mapped[str | None] = mapped_column(String(512))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

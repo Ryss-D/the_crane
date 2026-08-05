@@ -61,12 +61,11 @@ def _unauthorized(detail: str) -> HTTPException:
     )
 
 
-async def get_current_user(
+async def get_verified_claims(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)],
     verifier: Annotated[TokenVerifier, Depends(get_token_verifier)],
-    session: Annotated[AsyncSession, Depends(get_session)],
-) -> User:
-    """Resolve `Authorization: Bearer <firebase_id_token>` to a users row."""
+) -> dict[str, Any]:
+    """Verify the bearer token and return its claims (guaranteed to carry a uid/sub)."""
     if credentials is None:
         raise _unauthorized("Missing bearer token")
     try:
@@ -76,11 +75,22 @@ async def get_current_user(
     except Exception as exc:
         raise _unauthorized("Invalid or expired token") from exc
 
-    firebase_uid = claims.get("uid") or claims.get("sub")
-    if not firebase_uid:
+    if not (claims.get("uid") or claims.get("sub")):
         raise _unauthorized("Token has no uid claim")
+    return claims
 
-    user = await session.scalar(select(User).where(User.firebase_uid == firebase_uid))
+
+def claims_uid(claims: dict[str, Any]) -> str:
+    """Firebase uid from verified claims (`uid` in firebase_admin, `sub` in raw JWTs)."""
+    return claims.get("uid") or claims["sub"]
+
+
+async def get_current_user(
+    claims: Annotated[dict[str, Any], Depends(get_verified_claims)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> User:
+    """Resolve `Authorization: Bearer <firebase_id_token>` to a users row."""
+    user = await session.scalar(select(User).where(User.firebase_uid == claims_uid(claims)))
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -100,5 +110,6 @@ async def require_admin(
     return user
 
 
+VerifiedClaims = Annotated[dict[str, Any], Depends(get_verified_claims)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 AdminUser = Annotated[User, Depends(require_admin)]
