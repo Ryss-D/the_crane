@@ -18,7 +18,7 @@
 | Technology | Role | Why |
 |---|---|---|
 | Flutter | Single app, role switch (customer/driver/fleet-owner) | One codebase + one store listing at MVP scale |
-| Riverpod (+ codegen) | State management | Compile-safe DI, testable, async-first |
+| flutter_bloc | State management (user-mandated) | Blocs/Cubits with sealed freezed states; DI via RepositoryProvider; bloc_test for unit tests |
 | go_router | Routing with auth + role guards | Declarative redirect logic per auth/role state |
 | dio | HTTP | Interceptor injects/refreshes Firebase ID token |
 | freezed + json_serializable | Models | Immutable models mirroring API schemas |

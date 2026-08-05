@@ -177,7 +177,7 @@ Auth: `Authorization: Bearer <firebase_id_token>` on every call; FastAPI depende
 
 | Concern | Package |
 |---|---|
-| State management | `flutter_riverpod` (+ codegen) |
+| State management | `flutter_bloc` (Blocs/Cubits, sealed freezed states; DI via RepositoryProvider) |
 | Routing | `go_router` (auth + role guards) |
 | HTTP | `dio` (interceptor injects Firebase ID token) |
 | WebSocket | `web_socket_channel` |
