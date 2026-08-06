@@ -36,6 +36,16 @@ jobs:
       - name: Ruff format check
         run: uv run ruff format --check .
 
+      # WEB-1: catches the checked-in openapi.json snapshot (which
+      # web-client's client:generate/client:check read instead of a live
+      # server) drifting from the actual routes/schemas in app/. Needs no
+      # DB/Redis -- create_app() only registers routes at import time, every
+      # DB/Redis dependency is a lazy Depends (see scripts/dump_openapi.py).
+      - name: Check OpenAPI snapshot is up to date
+        run: |
+          uv run python scripts/dump_openapi.py /tmp/openapi.json
+          diff -u openapi.json /tmp/openapi.json
+
   test:
     name: Test (pytest)
     runs-on: ubuntu-latest

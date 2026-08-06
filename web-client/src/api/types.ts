@@ -1,10 +1,14 @@
 /**
  * Hand-written types mirroring the FastAPI backend contract.
  *
- * TODO(openapi): this file gets REPLACED by `npm run client:generate`
- * (openapi-typescript against the backend's /openapi.json) once the spec
- * stabilizes (WEB-1 acceptance). Keep field names snake_case to match the
- * backend JSON exactly so the swap is mechanical.
+ * TODO(openapi): this file is a candidate to be REPLACED by the generated
+ * `src/api/generated.ts` (openapi-typescript against the backend's
+ * /openapi.json snapshot, `npm run client:generate`/`client:check` — see
+ * src/api/README.md). WEB-1 shipped the generator + a CI drift check but
+ * deliberately did NOT do the full swap yet (bigger, riskier change than
+ * fit alongside that session's other work — see the README for the full
+ * rationale). Keep field names snake_case to match the backend JSON
+ * exactly so the eventual swap stays mechanical.
  */
 
 export const JOB_STATUSES = [

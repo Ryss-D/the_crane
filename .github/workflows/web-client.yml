@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "web-client/**"
+      - "backend/openapi.json"
       - ".github/workflows/web-client.yml"
   push:
     branches: [dev, main]
     paths:
       - "web-client/**"
+      - "backend/openapi.json"
       - ".github/workflows/web-client.yml"
 
 jobs:
@@ -39,3 +41,15 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # WEB-1: catches src/api/generated.ts drifting from the checked-in
+      # backend/openapi.json spec snapshot (regenerates to a temp file and
+      # diffs). Deliberately checks against the committed snapshot, not a
+      # live backend -- no service containers needed here, at the cost of
+      # only catching "generated.ts is stale vs the snapshot" rather than
+      # "vs the CURRENT backend". backend.yml's "OpenAPI snapshot" step
+      # closes that other half by checking the snapshot itself against the
+      # live backend code (no DB/Redis needed for that either -- see
+      # backend/scripts/dump_openapi.py).
+      - name: Check generated OpenAPI client is in sync
+        run: npm run client:check

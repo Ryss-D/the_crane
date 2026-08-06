@@ -1,0 +1,5133 @@
+{
+  "components": {
+    "schemas": {
+      "AdminDriverListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminDriverRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "AdminDriverListResponse",
+        "type": "object"
+      },
+      "AdminDriverRead": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "license_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Url"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "owed_balance": {
+            "title": "Owed Balance",
+            "type": "integer"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "rating_avg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating Avg"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DriverStatus"
+          },
+          "truck": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TruckRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truck_photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Truck Photo Url"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "user_id",
+          "name",
+          "phone",
+          "email",
+          "status",
+          "verified",
+          "rating_avg",
+          "truck",
+          "owed_balance",
+          "license_url",
+          "truck_photo_url"
+        ],
+        "title": "AdminDriverRead",
+        "type": "object"
+      },
+      "AdminFleetListItem": {
+        "description": "GET /v1/admin/fleets row \u2014 enough to pick a fleet before drilling into its\nbalance (GET /v1/admin/fleets/{id}/balance) or settling it.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owed_balance": {
+            "title": "Owed Balance",
+            "type": "integer"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name"
+          },
+          "owner_user_id": {
+            "format": "uuid",
+            "title": "Owner User Id",
+            "type": "string"
+          },
+          "truck_count": {
+            "title": "Truck Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "owner_user_id",
+          "owner_name",
+          "name",
+          "truck_count",
+          "owed_balance",
+          "created_at"
+        ],
+        "title": "AdminFleetListItem",
+        "type": "object"
+      },
+      "AdminJobListItem": {
+        "description": "GET /v1/admin/jobs list item \u2014 every JobRead field plus names joined\nfrom users. Built by hand (not subclassing JobRead) for the same reason\nas JobAdminDetail below: these two name fields aren't ORM attributes on\nJob, so from_attributes can't reach them \u2014 the endpoint constructs each\nitem from a JobRead dict merged with a batch user-name lookup.",
+        "properties": {
+          "assigned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned At"
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel Reason"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "config_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Snapshot"
+          },
+          "customer_id": {
+            "format": "uuid",
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name"
+          },
+          "customer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Phone"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          },
+          "driver_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Id"
+          },
+          "driver_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Name"
+          },
+          "dropoff_address": {
+            "title": "Dropoff Address",
+            "type": "string"
+          },
+          "dropoff_lat": {
+            "title": "Dropoff Lat",
+            "type": "number"
+          },
+          "dropoff_lng": {
+            "title": "Dropoff Lng",
+            "type": "number"
+          },
+          "final_price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Price"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "picked_up_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picked Up At"
+          },
+          "pickup_address": {
+            "title": "Pickup Address",
+            "type": "string"
+          },
+          "pickup_lat": {
+            "title": "Pickup Lat",
+            "type": "number"
+          },
+          "pickup_lng": {
+            "title": "Pickup Lng",
+            "type": "number"
+          },
+          "quoted_price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quoted Price"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "share_token": {
+            "format": "uuid",
+            "title": "Share Token",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "id",
+          "customer_id",
+          "customer_name",
+          "customer_phone",
+          "driver_id",
+          "driver_name",
+          "vehicle_type",
+          "status",
+          "pickup_lat",
+          "pickup_lng",
+          "dropoff_lat",
+          "dropoff_lng",
+          "pickup_address",
+          "dropoff_address",
+          "distance_km",
+          "quoted_price",
+          "final_price",
+          "payment_method",
+          "config_snapshot",
+          "requested_at",
+          "assigned_at",
+          "picked_up_at",
+          "completed_at",
+          "cancelled_at",
+          "cancel_reason",
+          "share_token"
+        ],
+        "title": "AdminJobListItem",
+        "type": "object"
+      },
+      "AdminJobListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminJobListItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "AdminJobListResponse",
+        "type": "object"
+      },
+      "AdminLedgerListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminLedgerRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "AdminLedgerListResponse",
+        "type": "object"
+      },
+      "AdminLedgerRead": {
+        "properties": {
+          "driver_id": {
+            "format": "uuid",
+            "title": "Driver Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "owed_balance": {
+            "title": "Owed Balance",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "driver_id",
+          "name",
+          "owed_balance"
+        ],
+        "title": "AdminLedgerRead",
+        "type": "object"
+      },
+      "AuthSyncRequest": {
+        "description": "Optional profile fields sent alongside /v1/auth/sync (token claims are fallback).",
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "title": "AuthSyncRequest",
+        "type": "object"
+      },
+      "ConfigAuditRead": {
+        "properties": {
+          "changed_at": {
+            "format": "date-time",
+            "title": "Changed At",
+            "type": "string"
+          },
+          "changed_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed By"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "new_value": {
+            "title": "New Value"
+          },
+          "old_value": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Value"
+          }
+        },
+        "required": [
+          "id",
+          "old_value",
+          "new_value",
+          "changed_by",
+          "changed_at"
+        ],
+        "title": "ConfigAuditRead",
+        "type": "object"
+      },
+      "ConfigRead": {
+        "properties": {
+          "audit": {
+            "items": {
+              "$ref": "#/components/schemas/ConfigAuditRead"
+            },
+            "title": "Audit",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "required": [
+          "key",
+          "value",
+          "updated_by",
+          "updated_at",
+          "audit"
+        ],
+        "title": "ConfigRead",
+        "type": "object"
+      },
+      "ConfigUpdate": {
+        "description": "PUT /v1/admin/config/{key} body \u2014 upserts (unknown keys create a new row).",
+        "properties": {
+          "value": {
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "ConfigUpdate",
+        "type": "object"
+      },
+      "DriverBalanceRead": {
+        "description": "GET /v1/drivers/me/balance (DRV-5): current owed balance, the settlement\ncap it's gated against (null if disabled), and recent settlement history.",
+        "properties": {
+          "balance_cap_cents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance Cap Cents"
+          },
+          "owed_cents": {
+            "title": "Owed Cents",
+            "type": "integer"
+          },
+          "recent_settlements": {
+            "items": {
+              "$ref": "#/components/schemas/DriverSettlementRead"
+            },
+            "title": "Recent Settlements",
+            "type": "array"
+          }
+        },
+        "required": [
+          "owed_cents",
+          "balance_cap_cents",
+          "recent_settlements"
+        ],
+        "title": "DriverBalanceRead",
+        "type": "object"
+      },
+      "DriverLedgerEntryListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DriverLedgerEntryRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "DriverLedgerEntryListResponse",
+        "type": "object"
+      },
+      "DriverLedgerEntryRead": {
+        "properties": {
+          "commission": {
+            "title": "Commission",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "driver_id": {
+            "format": "uuid",
+            "title": "Driver Id",
+            "type": "string"
+          },
+          "entry_type": {
+            "$ref": "#/components/schemas/LedgerEntryType"
+          },
+          "gross": {
+            "title": "Gross",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "net": {
+            "title": "Net",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "id",
+          "driver_id",
+          "job_id",
+          "gross",
+          "commission",
+          "net",
+          "entry_type",
+          "note",
+          "created_at"
+        ],
+        "title": "DriverLedgerEntryRead",
+        "type": "object"
+      },
+      "DriverLocationSnapshotRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "driver_id": {
+            "format": "uuid",
+            "title": "Driver Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "lat": {
+            "title": "Lat",
+            "type": "number"
+          },
+          "lng": {
+            "title": "Lng",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "driver_id",
+          "lat",
+          "lng",
+          "job_status",
+          "created_at"
+        ],
+        "title": "DriverLocationSnapshotRead",
+        "type": "object"
+      },
+      "DriverProfileRead": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "license_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Url"
+          },
+          "rating_avg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating Avg"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DriverStatus"
+          },
+          "truck": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TruckRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truck_photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Truck Photo Url"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "verified": {
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "status",
+          "verified",
+          "license_url",
+          "truck_photo_url",
+          "rating_avg"
+        ],
+        "title": "DriverProfileRead",
+        "type": "object"
+      },
+      "DriverRegisterRequest": {
+        "description": "POST /v1/drivers/me/register body (AUTH-5, `invite_token` added by FLT-4).\n\nDocument upload to object storage is out of scope for this task \u2014 license/truck\nphoto URLs are accepted as plain strings for now; a later task wires real upload\nand replaces these with signed URLs from that flow.\n\nTwo mutually exclusive shapes: bring your own truck (`plate`/`truck_type`/\n`capacity`, the original AUTH-5 flow -- all three required), or redeem a fleet\nowner's invite (`invite_token` from POST /v1/fleets/me/invites), which already\npre-provisioned the truck -- `plate`/`truck_type`/`capacity` are ignored (and\nmust be left null) in that case. The endpoint 422s if both shapes are mixed.",
+        "properties": {
+          "capacity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TruckCapacity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "invite_token": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Token"
+          },
+          "license_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Url"
+          },
+          "plate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plate"
+          },
+          "truck_photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Truck Photo Url"
+          },
+          "truck_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TruckType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "DriverRegisterRequest",
+        "type": "object"
+      },
+      "DriverSettlementRead": {
+        "description": "One entry in GET /v1/drivers/me/balance's recent-settlements list \u2014 built\nfrom a `payout` driver_ledger row (see app/services/ledger.py's docstring on\nthe earning/payout/adjustment convention).",
+        "properties": {
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "settled_at": {
+            "format": "date-time",
+            "title": "Settled At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "amount_cents",
+          "settled_at",
+          "note"
+        ],
+        "title": "DriverSettlementRead",
+        "type": "object"
+      },
+      "DriverStatus": {
+        "enum": [
+          "offline",
+          "available",
+          "on_job",
+          "blocked"
+        ],
+        "title": "DriverStatus",
+        "type": "string"
+      },
+      "DriverStatusUpdate": {
+        "description": "PATCH /v1/drivers/me/status body (DSP-1).\n\nlat/lng are required when going `available` (they seed the Redis geo entry);\n`offline` ignores them. `on_job` is not a valid value here \u2014 it's set internally\nby the accept flow (DSP-3).",
+        "properties": {
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DriverStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "DriverStatusUpdate",
+        "type": "object"
+      },
+      "FleetBalanceRead": {
+        "description": "Consolidated balance across every driver whose truck belongs to the fleet.",
+        "properties": {
+          "fleet_id": {
+            "format": "uuid",
+            "title": "Fleet Id",
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/FleetMemberBalance"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "owed_balance": {
+            "title": "Owed Balance",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "owed_balance",
+          "members"
+        ],
+        "title": "FleetBalanceRead",
+        "type": "object"
+      },
+      "FleetCreate": {
+        "description": "POST /v1/fleets/me body.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "FleetCreate",
+        "type": "object"
+      },
+      "FleetMemberBalance": {
+        "properties": {
+          "driver_id": {
+            "format": "uuid",
+            "title": "Driver Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "owed_balance": {
+            "title": "Owed Balance",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "driver_id",
+          "name",
+          "owed_balance"
+        ],
+        "title": "FleetMemberBalance",
+        "type": "object"
+      },
+      "FleetRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner_user_id": {
+            "format": "uuid",
+            "title": "Owner User Id",
+            "type": "string"
+          },
+          "trucks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TruckRead"
+            },
+            "title": "Trucks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "owner_user_id",
+          "name",
+          "created_at"
+        ],
+        "title": "FleetRead",
+        "type": "object"
+      },
+      "FleetSettleRequest": {
+        "description": "POST /v1/admin/fleets/{fleet_id}/settle body \u2014 one payment apportioned across\nthe fleet's member drivers, proportional to each driver's current owed balance\n(largest-remainder rounding so the per-driver shares sum exactly to `amount`).",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "title": "FleetSettleRequest",
+        "type": "object"
+      },
+      "FleetSettleResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/FleetSettlementEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "fleet_id": {
+            "format": "uuid",
+            "title": "Fleet Id",
+            "type": "string"
+          },
+          "total_amount": {
+            "title": "Total Amount",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "total_amount",
+          "entries"
+        ],
+        "title": "FleetSettleResponse",
+        "type": "object"
+      },
+      "FleetSettlementEntry": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "driver_id": {
+            "format": "uuid",
+            "title": "Driver Id",
+            "type": "string"
+          },
+          "ledger_entry_id": {
+            "format": "uuid",
+            "title": "Ledger Entry Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "driver_id",
+          "ledger_entry_id",
+          "amount"
+        ],
+        "title": "FleetSettlementEntry",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "InviteCreate": {
+        "description": "POST /v1/fleets/me/invites body.\n\nMirrors DriverRegisterRequest's truck fields exactly (same types, reused from\napp/schemas/driver.py) -- this pre-provisions the same Truck row AUTH-5's own\nregistration would otherwise create, just with no driver_id yet.",
+        "properties": {
+          "capacity": {
+            "$ref": "#/components/schemas/TruckCapacity"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "plate": {
+            "title": "Plate",
+            "type": "string"
+          },
+          "truck_type": {
+            "$ref": "#/components/schemas/TruckType"
+          }
+        },
+        "required": [
+          "phone",
+          "plate",
+          "truck_type",
+          "capacity"
+        ],
+        "title": "InviteCreate",
+        "type": "object"
+      },
+      "InviteRead": {
+        "description": "Returned by POST /v1/fleets/me/invites and GET /v1/fleets/me/invites.\n\n`invite_token` is what the invited driver passes as `invite_token` on\nPOST /v1/drivers/me/register to redeem it.",
+        "properties": {
+          "invite_token": {
+            "format": "uuid",
+            "title": "Invite Token",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "truck_id": {
+            "format": "uuid",
+            "title": "Truck Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invite_token",
+          "truck_id",
+          "phone"
+        ],
+        "title": "InviteRead",
+        "type": "object"
+      },
+      "JobAdminDetail": {
+        "description": "GET /v1/admin/jobs/{id} \u2014 AdminJobListItem plus the full offer trail\nand recent location snapshots.",
+        "properties": {
+          "assigned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned At"
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel Reason"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "config_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Snapshot"
+          },
+          "customer_id": {
+            "format": "uuid",
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name"
+          },
+          "customer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Phone"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          },
+          "driver_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Id"
+          },
+          "driver_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Name"
+          },
+          "dropoff_address": {
+            "title": "Dropoff Address",
+            "type": "string"
+          },
+          "dropoff_lat": {
+            "title": "Dropoff Lat",
+            "type": "number"
+          },
+          "dropoff_lng": {
+            "title": "Dropoff Lng",
+            "type": "number"
+          },
+          "final_price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Price"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "location_snapshots": {
+            "items": {
+              "$ref": "#/components/schemas/DriverLocationSnapshotRead"
+            },
+            "title": "Location Snapshots",
+            "type": "array"
+          },
+          "offers": {
+            "items": {
+              "$ref": "#/components/schemas/JobOfferRead"
+            },
+            "title": "Offers",
+            "type": "array"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "picked_up_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picked Up At"
+          },
+          "pickup_address": {
+            "title": "Pickup Address",
+            "type": "string"
+          },
+          "pickup_lat": {
+            "title": "Pickup Lat",
+            "type": "number"
+          },
+          "pickup_lng": {
+            "title": "Pickup Lng",
+            "type": "number"
+          },
+          "quoted_price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quoted Price"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "share_token": {
+            "format": "uuid",
+            "title": "Share Token",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "id",
+          "customer_id",
+          "customer_name",
+          "customer_phone",
+          "driver_id",
+          "driver_name",
+          "vehicle_type",
+          "status",
+          "pickup_lat",
+          "pickup_lng",
+          "dropoff_lat",
+          "dropoff_lng",
+          "pickup_address",
+          "dropoff_address",
+          "distance_km",
+          "quoted_price",
+          "final_price",
+          "payment_method",
+          "config_snapshot",
+          "requested_at",
+          "assigned_at",
+          "picked_up_at",
+          "completed_at",
+          "cancelled_at",
+          "cancel_reason",
+          "share_token",
+          "offers",
+          "location_snapshots"
+        ],
+        "title": "JobAdminDetail",
+        "type": "object"
+      },
+      "JobCreate": {
+        "properties": {
+          "customer_vehicle_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Vehicle Id"
+          },
+          "dropoff": {
+            "$ref": "#/components/schemas/LocationIn"
+          },
+          "pickup": {
+            "$ref": "#/components/schemas/LocationIn"
+          },
+          "quote_id": {
+            "format": "uuid",
+            "title": "Quote Id",
+            "type": "string"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "quote_id",
+          "vehicle_type",
+          "pickup",
+          "dropoff"
+        ],
+        "title": "JobCreate",
+        "type": "object"
+      },
+      "JobDriverInfo": {
+        "description": "Assigned-driver summary embedded in `JobRead` once a job has one \u2014\nmatches the Flutter app's `JobDriverSummary` field-for-field\n(`lib/core/models/job.dart`); the customer request/matching/active-job\nscreens have expected this shape all along, but nothing populated it\nagainst the real backend until now (only the `FakeJobsRepository` seed\never had one).",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "rating_avg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating Avg"
+          },
+          "truck_plate": {
+            "title": "Truck Plate",
+            "type": "string"
+          },
+          "truck_type": {
+            "$ref": "#/components/schemas/TruckType"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "truck_plate",
+          "truck_type",
+          "rating_avg"
+        ],
+        "title": "JobDriverInfo",
+        "type": "object"
+      },
+      "JobListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/JobRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "JobListResponse",
+        "type": "object"
+      },
+      "JobOfferRead": {
+        "properties": {
+          "driver_id": {
+            "format": "uuid",
+            "title": "Driver Id",
+            "type": "string"
+          },
+          "driver_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Name"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offered_at": {
+            "format": "date-time",
+            "title": "Offered At",
+            "type": "string"
+          },
+          "responded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responded At"
+          },
+          "response": {
+            "$ref": "#/components/schemas/OfferResponse"
+          }
+        },
+        "required": [
+          "id",
+          "driver_id",
+          "driver_name",
+          "offered_at",
+          "responded_at",
+          "response"
+        ],
+        "title": "JobOfferRead",
+        "type": "object"
+      },
+      "JobRatingsResponse": {
+        "description": "GET /v1/jobs/{id}/ratings \u2014 both sides' ratings, if given (oldest first).",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RatingRead"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "JobRatingsResponse",
+        "type": "object"
+      },
+      "JobRead": {
+        "properties": {
+          "assigned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned At"
+          },
+          "cancel_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancel Reason"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "config_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Snapshot"
+          },
+          "customer_id": {
+            "format": "uuid",
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          },
+          "driver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobDriverInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "driver_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Id"
+          },
+          "dropoff_address": {
+            "title": "Dropoff Address",
+            "type": "string"
+          },
+          "dropoff_lat": {
+            "title": "Dropoff Lat",
+            "type": "number"
+          },
+          "dropoff_lng": {
+            "title": "Dropoff Lng",
+            "type": "number"
+          },
+          "final_price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Price"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "picked_up_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Picked Up At"
+          },
+          "pickup_address": {
+            "title": "Pickup Address",
+            "type": "string"
+          },
+          "pickup_lat": {
+            "title": "Pickup Lat",
+            "type": "number"
+          },
+          "pickup_lng": {
+            "title": "Pickup Lng",
+            "type": "number"
+          },
+          "quoted_price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quoted Price"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "share_token": {
+            "format": "uuid",
+            "title": "Share Token",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "id",
+          "customer_id",
+          "driver_id",
+          "vehicle_type",
+          "status",
+          "pickup_lat",
+          "pickup_lng",
+          "dropoff_lat",
+          "dropoff_lng",
+          "pickup_address",
+          "dropoff_address",
+          "distance_km",
+          "quoted_price",
+          "final_price",
+          "payment_method",
+          "config_snapshot",
+          "requested_at",
+          "assigned_at",
+          "picked_up_at",
+          "completed_at",
+          "cancelled_at",
+          "cancel_reason",
+          "share_token"
+        ],
+        "title": "JobRead",
+        "type": "object"
+      },
+      "JobStatus": {
+        "enum": [
+          "requested",
+          "matching",
+          "assigned",
+          "en_route_pickup",
+          "arrived_pickup",
+          "loading",
+          "in_transit",
+          "delivered",
+          "completed",
+          "cancelled",
+          "no_drivers"
+        ],
+        "title": "JobStatus",
+        "type": "string"
+      },
+      "JobStatusUpdate": {
+        "description": "POST /v1/jobs/{id}/status body \u2014 assigned driver advances the machine.",
+        "properties": {
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "JobStatusUpdate",
+        "type": "object"
+      },
+      "LatLng": {
+        "properties": {
+          "lat": {
+            "title": "Lat",
+            "type": "number"
+          },
+          "lng": {
+            "title": "Lng",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "LatLng",
+        "type": "object"
+      },
+      "LedgerEntryType": {
+        "enum": [
+          "earning",
+          "payout",
+          "adjustment"
+        ],
+        "title": "LedgerEntryType",
+        "type": "string"
+      },
+      "LedgerSettleRequest": {
+        "description": "POST /v1/admin/ledger/{driver_id}/settle body \u2014 records a payout entry that\nreduces the driver's owed balance.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "title": "LedgerSettleRequest",
+        "type": "object"
+      },
+      "LocationIn": {
+        "description": "A point plus its human-readable address (job creation).",
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "lat": {
+            "title": "Lat",
+            "type": "number"
+          },
+          "lng": {
+            "title": "Lng",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "address"
+        ],
+        "title": "LocationIn",
+        "type": "object"
+      },
+      "OfferResponse": {
+        "enum": [
+          "pending",
+          "accepted",
+          "rejected",
+          "timeout"
+        ],
+        "title": "OfferResponse",
+        "type": "string"
+      },
+      "PaymentMethod": {
+        "enum": [
+          "cash",
+          "card",
+          "pse",
+          "nequi",
+          "wallet"
+        ],
+        "title": "PaymentMethod",
+        "type": "string"
+      },
+      "QuoteRequest": {
+        "properties": {
+          "dropoff": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "pickup": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "vehicle_type",
+          "pickup",
+          "dropoff"
+        ],
+        "title": "QuoteRequest",
+        "type": "object"
+      },
+      "QuoteResponse": {
+        "properties": {
+          "distance_km": {
+            "title": "Distance Km",
+            "type": "number"
+          },
+          "eta_minutes": {
+            "title": "Eta Minutes",
+            "type": "integer"
+          },
+          "expires_in_seconds": {
+            "default": 600,
+            "title": "Expires In Seconds",
+            "type": "integer"
+          },
+          "price": {
+            "title": "Price",
+            "type": "integer"
+          },
+          "quote_id": {
+            "format": "uuid",
+            "title": "Quote Id",
+            "type": "string"
+          },
+          "vehicle_type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "quote_id",
+          "vehicle_type",
+          "price",
+          "distance_km",
+          "eta_minutes"
+        ],
+        "title": "QuoteResponse",
+        "type": "object"
+      },
+      "RatingCreate": {
+        "description": "POST /v1/jobs/{id}/rating body \u2014 `to_user_id` is inferred server-side from\nthe job (customer rates the driver, driver rates the customer), never taken\nfrom the request.",
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "stars": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Stars",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "stars"
+        ],
+        "title": "RatingCreate",
+        "type": "object"
+      },
+      "RatingRead": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "from_user_id": {
+            "format": "uuid",
+            "title": "From User Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "stars": {
+            "title": "Stars",
+            "type": "integer"
+          },
+          "to_user_id": {
+            "format": "uuid",
+            "title": "To User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "from_user_id",
+          "to_user_id",
+          "stars",
+          "comment",
+          "created_at"
+        ],
+        "title": "RatingRead",
+        "type": "object"
+      },
+      "TrackDriver": {
+        "description": "The only driver PII a public share link exposes.",
+        "properties": {
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "truck_plate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Truck Plate"
+          }
+        },
+        "required": [
+          "first_name",
+          "truck_plate"
+        ],
+        "title": "TrackDriver",
+        "type": "object"
+      },
+      "TrackResponse": {
+        "description": "Public tracking payload (GET /v1/track/{share_token}) \u2014 no auth, minimal PII.",
+        "properties": {
+          "driver": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrackDriver"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "driver_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LatLng"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dropoff": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "pickup": {
+            "$ref": "#/components/schemas/LatLng"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          }
+        },
+        "required": [
+          "status",
+          "pickup",
+          "dropoff",
+          "driver",
+          "driver_location"
+        ],
+        "title": "TrackResponse",
+        "type": "object"
+      },
+      "TruckCapacity": {
+        "enum": [
+          "moto",
+          "car",
+          "both"
+        ],
+        "title": "TruckCapacity",
+        "type": "string"
+      },
+      "TruckRead": {
+        "properties": {
+          "capacity": {
+            "$ref": "#/components/schemas/TruckCapacity"
+          },
+          "driver_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Id"
+          },
+          "driver_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Name"
+          },
+          "driver_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DriverStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fleet_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "plate": {
+            "title": "Plate",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TruckType"
+          }
+        },
+        "required": [
+          "id",
+          "plate",
+          "type",
+          "capacity",
+          "driver_id",
+          "fleet_id"
+        ],
+        "title": "TruckRead",
+        "type": "object"
+      },
+      "TruckType": {
+        "enum": [
+          "moto_only",
+          "flatbed",
+          "car"
+        ],
+        "title": "TruckType",
+        "type": "string"
+      },
+      "UserRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "fcm_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fcm Token"
+          },
+          "firebase_uid": {
+            "title": "Firebase Uid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          }
+        },
+        "required": [
+          "id",
+          "firebase_uid",
+          "role",
+          "name",
+          "phone",
+          "email",
+          "fcm_token",
+          "created_at"
+        ],
+        "title": "UserRead",
+        "type": "object"
+      },
+      "UserRole": {
+        "enum": [
+          "customer",
+          "driver",
+          "admin",
+          "fleet_owner"
+        ],
+        "title": "UserRole",
+        "type": "string"
+      },
+      "UserUpdate": {
+        "description": "PATCH /v1/me body \u2014 only provided fields are updated.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "fcm_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fcm Token"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "UserUpdate",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VehicleCreate": {
+        "description": "POST /v1/me/vehicles body.",
+        "properties": {
+          "make": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Make"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "plate": {
+            "title": "Plate",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "type",
+          "plate"
+        ],
+        "title": "VehicleCreate",
+        "type": "object"
+      },
+      "VehicleRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "make": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Make"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "plate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plate"
+          },
+          "type": {
+            "$ref": "#/components/schemas/VehicleType"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "make",
+          "model",
+          "plate",
+          "created_at"
+        ],
+        "title": "VehicleRead",
+        "type": "object"
+      },
+      "VehicleType": {
+        "enum": [
+          "moto",
+          "car",
+          "suv"
+        ],
+        "title": "VehicleType",
+        "type": "string"
+      },
+      "VehicleUpdate": {
+        "description": "PATCH /v1/me/vehicles/{id} body \u2014 any subset; absent fields are untouched.",
+        "properties": {
+          "make": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Make"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "plate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plate"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VehicleType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "VehicleUpdate",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "The Crane API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/v1/admin/config": {
+      "get": {
+        "description": "All platform_config rows, each with its last 5 audit entries.",
+        "operationId": "list_config_v1_admin_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConfigRead"
+                  },
+                  "title": "Response List Config V1 Admin Config Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Config",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/config/{key}": {
+      "put": {
+        "description": "Upsert `key` (unknown keys are created, not 404ed) with the acting admin as\n`updated_by`; busts the Redis cache via the existing config service.",
+        "operationId": "update_config_v1_admin_config__key__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Config",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/drivers": {
+      "get": {
+        "operationId": "list_drivers_v1_admin_drivers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "verified",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Verified"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DriverStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDriverListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Drivers",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/drivers/{driver_id}/block": {
+      "post": {
+        "description": "Sets status -> blocked; a currently-available driver is pulled out of the\nRedis geo index too, so dispatch stops offering them jobs immediately.",
+        "operationId": "block_driver_v1_admin_drivers__driver_id__block_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "driver_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Driver Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDriverRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Block Driver",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/drivers/{driver_id}/unblock": {
+      "post": {
+        "description": "Sets status -> offline; the driver must go available themselves afterward\n(PATCH /v1/drivers/me/status), same as any other offline driver.",
+        "operationId": "unblock_driver_v1_admin_drivers__driver_id__unblock_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "driver_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Driver Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDriverRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unblock Driver",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/drivers/{driver_id}/verify": {
+      "post": {
+        "description": "Flips driver_profiles.verified = true (mirrors how tests/test_drivers_api.py's\n`_register_and_verify` helper sets it directly today).",
+        "operationId": "verify_driver_v1_admin_drivers__driver_id__verify_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "driver_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Driver Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDriverRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify Driver",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/fleets": {
+      "get": {
+        "description": "All fleets on the platform (ADM-7) \u2014 no ownership filter, admin sees all, same\nconvention as job listing. Unpaginated: fleets are expected to stay few for MVP\nscale, same assumption GET /v1/fleets/me's truck list already makes.",
+        "operationId": "list_fleets_v1_admin_fleets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminFleetListItem"
+                  },
+                  "title": "Response List Fleets V1 Admin Fleets Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Fleets",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/fleets/{fleet_id}/balance": {
+      "get": {
+        "description": "Consolidated owed balance across the fleet's member drivers, same rollup the\nfleet owner sees at GET /v1/fleets/me/balance (app/services/ledger.py).",
+        "operationId": "get_fleet_balance_v1_admin_fleets__fleet_id__balance_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fleet Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetBalanceRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Fleet Balance",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/fleets/{fleet_id}/settle": {
+      "post": {
+        "description": "Records ONE settlement for the whole fleet, apportioned across its member\ndrivers' ledgers (`app/services/ledger.py`'s `apportion` \u2014 proportional to each\ndriver's current owed balance, largest-remainder rounded so the per-driver\npayout rows sum to exactly `amount`). Each driver still gets their own `payout`\ndriver_ledger row (same shape LED-4's per-driver settle writes) so\ndriver_owed_balance and GET /v1/drivers/me/balance need no special-casing \u2014\na fleet settlement just looks like several ordinary settlements that happened\nto land at once, which is also why one settlement unblocks every capped member\n(DSP-1's balance-cap gate reads the fleet total via fleet_owed_balance).",
+        "operationId": "settle_fleet_v1_admin_fleets__fleet_id__settle_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Fleet Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FleetSettleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetSettleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Settle Fleet",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/jobs": {
+      "get": {
+        "description": "Every job, newest first \u2014 no ownership filter (admin sees all).",
+        "operationId": "list_jobs_admin_v1_admin_jobs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/JobStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminJobListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Jobs Admin",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/jobs/{job_id}": {
+      "get": {
+        "description": "Full detail: job fields + its job_offers trail + recent driver_location_\nsnapshots + the config_snapshot it was created with (already a JobRead field).",
+        "operationId": "get_job_admin_v1_admin_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAdminDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Job Admin",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancel_job_admin_v1_admin_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Job Admin",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/ledger": {
+      "get": {
+        "description": "Owed balance per driver (app/services/ledger.py), paginated over drivers.",
+        "operationId": "list_ledger_v1_admin_ledger_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLedgerListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Ledger",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/ledger/{driver_id}/entries": {
+      "get": {
+        "description": "Drill-down for one driver's balance (ADM-6): every earning/payout/\nadjustment row, newest first.",
+        "operationId": "list_driver_ledger_entries_v1_admin_ledger__driver_id__entries_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "driver_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Driver Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverLedgerEntryListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Driver Ledger Entries",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/ledger/{driver_id}/settle": {
+      "post": {
+        "description": "Writes a `payout` driver_ledger row, reducing the driver's owed balance by\n`amount` (driver_owed_balance subtracts payout/adjustment `net` from accrued\nearning commissions \u2014 see app/services/ledger.py's docstring).",
+        "operationId": "settle_driver_v1_admin_ledger__driver_id__settle_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "driver_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Driver Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LedgerSettleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverLedgerEntryRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Settle Driver",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/ping": {
+      "get": {
+        "description": "Minimal admin-only route proving `require_admin`.",
+        "operationId": "admin_ping_v1_admin_ping_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Admin Ping V1 Admin Ping Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Ping",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/auth/sync": {
+      "post": {
+        "description": "Create the users row for a fresh Firebase account, or return the existing one.\n\nName/phone come from the request body when provided, falling back to token claims;\nboth may stay null until profile completion (AUTH-3).",
+        "operationId": "auth_sync_v1_auth_sync_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AuthSyncRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Auth Sync",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/drivers/me/balance": {
+      "get": {
+        "description": "DRV-5: the calling driver's current owed balance plus recent settlement\nhistory (backs the Flutter earnings & balance screen).\n\n\"Recent settlements\" is every `payout` driver_ledger row for this driver, newest\nfirst, capped at 20 \u2014 the same row shape both LED-4's per-driver settle and\nFLT-2's fleet settle write, so a fleet settlement shows up here too.",
+        "operationId": "get_my_balance_v1_drivers_me_balance_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverBalanceRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get My Balance",
+        "tags": [
+          "drivers"
+        ]
+      }
+    },
+    "/v1/drivers/me/register": {
+      "post": {
+        "description": "AUTH-5: create driver_profiles (unverified, offline) + trucks, flip role -> driver.\n\nTwo mutually exclusive shapes (see DriverRegisterRequest's docstring): bring your\nown truck (`plate`/`truck_type`/`capacity`), or redeem a fleet owner's invite\n(`invite_token`, FLT-4) which already pre-provisioned the truck \u2014 mixing the two\nis 422. Redeeming an invite additionally requires the caller's verified Firebase\nphone claim to match the phone the invite was created for (403 otherwise), and\nmarks the invite consumed so it can't be redeemed twice (409 if it already was,\n404 if the token doesn't exist).\n\n409 if the caller is already a driver. Document upload is out of scope (see the\nschema docstring); license_url/truck_photo_url are accepted as-is.",
+        "operationId": "register_driver_v1_drivers_me_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverRegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverProfileRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Register Driver",
+        "tags": [
+          "drivers"
+        ]
+      }
+    },
+    "/v1/drivers/me/status": {
+      "patch": {
+        "description": "DSP-1: flip available/offline and mirror membership into the Redis geo index.\n\n403 unverified, 403 blocked (ADM-2 admin hold \u2014 an admin must unblock first),\n409 on_job (mid-job \u2014 status is driven by the job lifecycle instead), 422 if\ngoing available without lat/lng, 403 if the driver's owed balance is at or over\nsettlement.balance_cap (same \"not allowed to work\" class as unverified, so it\nshares the 403).",
+        "operationId": "update_driver_status_v1_drivers_me_status_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverStatusUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverProfileRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Driver Status",
+        "tags": [
+          "drivers"
+        ]
+      }
+    },
+    "/v1/fleets/me": {
+      "get": {
+        "description": "The caller's fleet plus every truck currently attached to it.",
+        "operationId": "get_my_fleet_v1_fleets_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get My Fleet",
+        "tags": [
+          "fleets"
+        ]
+      },
+      "post": {
+        "description": "FLT-1: create the caller's fleet and flip role -> fleet_owner.\n\n409 if the caller already owns a fleet (one fleet per owner, same convention as\ndriver_profiles' unique user_id).",
+        "operationId": "create_fleet_v1_fleets_me_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FleetCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Fleet",
+        "tags": [
+          "fleets"
+        ]
+      }
+    },
+    "/v1/fleets/me/balance": {
+      "get": {
+        "description": "FLT-2: consolidated owed balance across every driver in the caller's fleet,\nplus the per-driver breakdown it's built from (app/services/ledger.py).",
+        "operationId": "get_my_fleet_balance_v1_fleets_me_balance_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetBalanceRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get My Fleet Balance",
+        "tags": [
+          "fleets"
+        ]
+      }
+    },
+    "/v1/fleets/me/invites": {
+      "get": {
+        "description": "Pending invites the caller's fleet has outstanding (not yet redeemed).",
+        "operationId": "list_my_invites_v1_fleets_me_invites_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InviteRead"
+                  },
+                  "title": "Response List My Invites V1 Fleets Me Invites Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List My Invites",
+        "tags": [
+          "fleets"
+        ]
+      },
+      "post": {
+        "description": "FLT-4: invite a driver who doesn't have a truck (or an account) yet.\n\nPre-provisions the Truck row up front (unclaimed by a driver, `fleet_id` = the\ncaller's fleet) and hands back a token; the invited driver redeems it via\n`invite_token` on POST /v1/drivers/me/register, which links them onto this exact\ntruck instead of creating a new one.\n\n409 if `phone` already has a pending invite (redeem or let it be superseded\nfirst), or if `plate` is already taken \u2014 mirrors AUTH-5's plate-uniqueness\nIntegrityError handling in app/api/drivers.py's register_driver.",
+        "operationId": "create_invite_v1_fleets_me_invites_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Invite",
+        "tags": [
+          "fleets"
+        ]
+      }
+    },
+    "/v1/fleets/me/trucks/{truck_id}": {
+      "delete": {
+        "description": "Detach a truck from the caller's fleet. 404 if it isn't currently a member.",
+        "operationId": "remove_truck_from_fleet_v1_fleets_me_trucks__truck_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "truck_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Truck Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Truck From Fleet",
+        "tags": [
+          "fleets"
+        ]
+      },
+      "post": {
+        "description": "Attach an unclaimed truck (fleet_id is null) to the caller's fleet.\n\n404 if the caller has no fleet or the truck doesn't exist; 409 if the truck\nalready belongs to a fleet (its own or someone else's \u2014 detach it first).",
+        "operationId": "add_truck_to_fleet_v1_fleets_me_trucks__truck_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "truck_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Truck Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Truck To Fleet",
+        "tags": [
+          "fleets"
+        ]
+      }
+    },
+    "/v1/fleets/trucks/by-plate/{plate}": {
+      "get": {
+        "description": "FLT-4: look up a truck before attaching it -- a fleet owner knows a driver's\nplate, not their truck's UUID. Any authenticated user may look up any plate\n(plates aren't secret; this doesn't expose anything `add_truck_to_fleet` below\nwouldn't already reveal via its 404/409 either way) -- callers only get to act\non the result via the existing per-fleet attach endpoint's own checks.",
+        "operationId": "find_truck_by_plate_v1_fleets_trucks_by_plate__plate__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "plate",
+            "required": true,
+            "schema": {
+              "title": "Plate",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TruckRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Find Truck By Plate",
+        "tags": [
+          "fleets"
+        ]
+      }
+    },
+    "/v1/jobs": {
+      "get": {
+        "description": "JOB-5: the caller's job history (as customer or driver), newest first.",
+        "operationId": "list_jobs_v1_jobs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "default": "customer",
+              "enum": [
+                "customer",
+                "driver"
+              ],
+              "title": "Role",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Jobs",
+        "tags": [
+          "jobs"
+        ]
+      },
+      "post": {
+        "description": "JOB-5: create a job from a quote; snapshots config and moves to `matching`.",
+        "operationId": "create_job_v1_jobs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/quote": {
+      "post": {
+        "description": "JOB-4: price a trip from live config; the quote is Redis-cached for 10 minutes.",
+        "operationId": "create_quote_v1_jobs_quote_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Quote",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}": {
+      "get": {
+        "description": "JOB-5: customer sees own, driver sees assigned, admin any.",
+        "operationId": "get_job_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/accept": {
+      "post": {
+        "description": "DSP-3: the offered driver accepts \u2014 first accept wins, job -> assigned.\n\nRace safety: on Postgres this re-reads the job with SELECT ... FOR UPDATE,\nserializing concurrent acceptors on the row. SQLite has no row-level locking\n(and the test harness shares one connection/StaticPool across sessions), so the\nactual exclusivity guarantee for BOTH dialects is the atomic conditional UPDATE\nbelow \u2014 its WHERE clause (status='matching' AND driver_id IS NULL) can only ever\nmatch for one writer regardless of lock semantics, so the FOR UPDATE re-read is\nbelt-and-suspenders on Postgres rather than the sole safety net.",
+        "operationId": "accept_job_v1_jobs__job_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Accept Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/cancel": {
+      "post": {
+        "description": "JOB-5: cancel per JOB-3 rules (customer -> cancelled, driver -> back to matching).",
+        "operationId": "cancel_job_endpoint_v1_jobs__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Job Endpoint",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/confirm-delivery": {
+      "post": {
+        "description": "CUS-5/LED-1: customer confirms delivery + cash payment -> completed + accrual.",
+        "operationId": "confirm_delivery_endpoint_v1_jobs__job_id__confirm_delivery_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Confirm Delivery Endpoint",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/rating": {
+      "post": {
+        "description": "Only the job's customer or assigned driver may rate, only once each, only\nafter the job is `completed`. `to_user_id` is inferred, not accepted here.",
+        "operationId": "rate_job_v1_jobs__job_id__rating_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatingCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rate Job",
+        "tags": [
+          "ratings"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/ratings": {
+      "get": {
+        "description": "Visible only to the job's customer/driver/admin.",
+        "operationId": "list_job_ratings_v1_jobs__job_id__ratings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRatingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Job Ratings",
+        "tags": [
+          "ratings"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/reject": {
+      "post": {
+        "description": "DSP-3: the offered driver declines \u2014 DSP-2 advances to the next candidate.",
+        "operationId": "reject_job_v1_jobs__job_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reject Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/retry": {
+      "post": {
+        "description": "DSP-5: the customer retries a `no_drivers` job \u2014 a fresh matching round.",
+        "operationId": "retry_job_v1_jobs__job_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}/status": {
+      "post": {
+        "description": "JOB-6: the assigned driver advances the machine (optionally with a location fix).",
+        "operationId": "update_job_status_v1_jobs__job_id__status_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobStatusUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Job Status",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "description": "Return the authenticated user's profile.",
+        "operationId": "read_me_v1_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read Me",
+        "tags": [
+          "users"
+        ]
+      },
+      "patch": {
+        "description": "Update name/email/fcm_token; fields absent from the body are left untouched.",
+        "operationId": "update_me_v1_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Me",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/me/vehicles": {
+      "get": {
+        "description": "Every saved vehicle for the caller, most-recently-created first.",
+        "operationId": "list_my_vehicles_v1_me_vehicles_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VehicleRead"
+                  },
+                  "title": "Response List My Vehicles V1 Me Vehicles Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List My Vehicles",
+        "tags": [
+          "vehicles"
+        ]
+      },
+      "post": {
+        "operationId": "create_my_vehicle_v1_me_vehicles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create My Vehicle",
+        "tags": [
+          "vehicles"
+        ]
+      }
+    },
+    "/v1/me/vehicles/{vehicle_id}": {
+      "delete": {
+        "description": "404 if the vehicle doesn't exist or isn't the caller's.",
+        "operationId": "delete_my_vehicle_v1_me_vehicles__vehicle_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete My Vehicle",
+        "tags": [
+          "vehicles"
+        ]
+      },
+      "patch": {
+        "description": "404 if the vehicle doesn't exist or isn't the caller's. Fields absent from the\nbody (as opposed to explicitly null) are left untouched, same convention as\nPATCH /v1/me (app/api/users.py).",
+        "operationId": "update_my_vehicle_v1_me_vehicles__vehicle_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update My Vehicle",
+        "tags": [
+          "vehicles"
+        ]
+      }
+    },
+    "/v1/track/{share_token}": {
+      "get": {
+        "description": "TRK-6 (poll half): public tracking by share token \u2014 no auth, minimal PII.\n\nExposes only the job status, pickup/dropoff coords, the driver's first name\n+ truck plate once assigned, and the last known driver location snapshot.\nThe WebSocket half arrives with the TRK tasks.",
+        "operationId": "track_job_v1_track__share_token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "share_token",
+            "required": true,
+            "schema": {
+              "title": "Share Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Track Job",
+        "tags": [
+          "track"
+        ]
+      }
+    }
+  }
+}

@@ -12,7 +12,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "client:generate": "echo 'TODO: openapi-typescript http://localhost:8000/openapi.json -o src/api/generated.ts — replaces the hand-written types in src/api/types.ts once the backend OpenAPI spec stabilizes (see src/api/README.md)' && exit 1"
+    "client:generate": "openapi-typescript ../backend/openapi.json -o src/api/generated.ts",
+    "client:check": "tmp=$(mktemp -d) && openapi-typescript ../backend/openapi.json -o \"$tmp/generated.ts\" && diff -u src/api/generated.ts \"$tmp/generated.ts\" && rm -rf \"$tmp\" && echo 'client:check OK — src/api/generated.ts matches backend/openapi.json'",
+    "spec:refresh": "cd ../backend && uv run python scripts/dump_openapi.py"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
@@ -37,6 +39,7 @@
     "eslint-plugin-react-refresh": "^0.4.16",
     "globals": "^15.13.0",
     "jsdom": "^25.0.1",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.4.2",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.7.2",
