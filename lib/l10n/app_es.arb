@@ -421,5 +421,198 @@
   "ratingFromDriverLabel": "Calificación al cliente",
   "@ratingFromDriverLabel": {
     "description": "Label for a rating the driver left for the customer"
+  },
+  "settingsTitle": "Configuración",
+  "@settingsTitle": {
+    "description": "Settings screen app bar title, and the nav button tooltip"
+  },
+  "becomeDriverMenuItem": "Convertirme en conductor",
+  "@becomeDriverMenuItem": {
+    "description": "Settings menu item leading to the AUTH-5 driver registration screen"
+  },
+  "becomeDriverTitle": "Conviértete en conductor",
+  "@becomeDriverTitle": {
+    "description": "Become-a-driver screen app bar title"
+  },
+  "becomeDriverIntro": "Registra tu grúa para empezar a recibir servicios.",
+  "@becomeDriverIntro": {
+    "description": "Become-a-driver screen intro copy"
+  },
+  "plateFieldLabel": "Placa",
+  "@plateFieldLabel": {
+    "description": "Truck plate field label"
+  },
+  "plateFieldHint": "ABC123",
+  "@plateFieldHint": {
+    "description": "Truck plate field placeholder"
+  },
+  "truckTypeFieldLabel": "Tipo de grúa",
+  "@truckTypeFieldLabel": {
+    "description": "Truck type selector label on the become-a-driver screen"
+  },
+  "capacityFieldLabel": "Capacidad de la grúa",
+  "@capacityFieldLabel": {
+    "description": "Truck capacity selector label on the become-a-driver screen"
+  },
+  "capacityMoto": "Motos",
+  "@capacityMoto": {
+    "description": "Truck capacity: motorcycles only"
+  },
+  "capacityCar": "Carros",
+  "@capacityCar": {
+    "description": "Truck capacity: cars only"
+  },
+  "capacityBoth": "Motos y carros",
+  "@capacityBoth": {
+    "description": "Truck capacity: both motorcycles and cars"
+  },
+  "licenseUrlFieldLabel": "URL de la licencia (opcional)",
+  "@licenseUrlFieldLabel": {
+    "description": "Optional driver license document URL field"
+  },
+  "truckPhotoUrlFieldLabel": "URL de foto de la grúa (opcional)",
+  "@truckPhotoUrlFieldLabel": {
+    "description": "Optional truck photo URL field"
+  },
+  "becomeDriverSubmitButton": "Enviar registro",
+  "@becomeDriverSubmitButton": {
+    "description": "Submits the become-a-driver registration form"
+  },
+  "becomeDriverSubmitError": "No pudimos completar el registro. Intenta de nuevo.",
+  "@becomeDriverSubmitError": {
+    "description": "Shown when driver registration fails"
+  },
+  "cashPaymentPendingBody": "Confirma que recibiste el pago en efectivo para finalizar el servicio.",
+  "@cashPaymentPendingBody": {
+    "description": "CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation"
+  },
+  "cashConfirmButton": "Pagado en efectivo",
+  "@cashConfirmButton": {
+    "description": "CUS-5: confirms cash payment was received, completing the job"
+  },
+  "cashPaymentConfirmError": "No pudimos confirmar el pago. Intenta de nuevo.",
+  "@cashPaymentConfirmError": {
+    "description": "CUS-5: shown when confirm-delivery fails"
+  },
+  "waitingCashConfirmationBody": "Esperando que el cliente confirme el pago en efectivo.",
+  "@waitingCashConfirmationBody": {
+    "description": "DRV-4: shown to the driver once a job is delivered, since only the customer can complete it"
+  },
+  "savedVehiclesMenuItem": "Mis vehículos guardados",
+  "@savedVehiclesMenuItem": {
+    "description": "Settings menu item leading to the CUS-6 saved-vehicles screen"
+  },
+  "savedVehiclesTitle": "Vehículos guardados",
+  "@savedVehiclesTitle": {
+    "description": "Saved-vehicles screen app bar title"
+  },
+  "noSavedVehiclesBody": "Aún no tienes vehículos guardados.",
+  "@noSavedVehiclesBody": {
+    "description": "Saved-vehicles empty state"
+  },
+  "loadVehiclesError": "No pudimos cargar tus vehículos. Intenta de nuevo.",
+  "@loadVehiclesError": {
+    "description": "Saved-vehicles load error state"
+  },
+  "addVehicleButton": "Agregar vehículo",
+  "@addVehicleButton": {
+    "description": "Add-vehicle FAB tooltip and form dialog title"
+  },
+  "editVehicleTitle": "Editar vehículo",
+  "@editVehicleTitle": {
+    "description": "Edit-vehicle form dialog title"
+  },
+  "vehicleMakeFieldLabel": "Marca (opcional)",
+  "@vehicleMakeFieldLabel": {
+    "description": "Saved-vehicle make field label"
+  },
+  "vehicleModelFieldLabel": "Modelo (opcional)",
+  "@vehicleModelFieldLabel": {
+    "description": "Saved-vehicle model field label"
+  },
+  "vehicleSaveButton": "Guardar",
+  "@vehicleSaveButton": {
+    "description": "Saves the vehicle form"
+  },
+  "vehicleSaveError": "No pudimos guardar el vehículo. Intenta de nuevo.",
+  "@vehicleSaveError": {
+    "description": "Shown when creating/updating a saved vehicle fails"
+  },
+  "deleteVehicleConfirmTitle": "¿Eliminar vehículo?",
+  "@deleteVehicleConfirmTitle": {
+    "description": "Delete-vehicle confirmation dialog title"
+  },
+  "deleteVehicleConfirmBody": "Esta acción no se puede deshacer.",
+  "@deleteVehicleConfirmBody": {
+    "description": "Delete-vehicle confirmation dialog body"
+  },
+  "deleteButton": "Eliminar",
+  "@deleteButton": {
+    "description": "Generic delete/confirm-delete button"
+  },
+  "savedVehiclePickerLabel": "Vehículo guardado (opcional)",
+  "@savedVehiclePickerLabel": {
+    "description": "CUS-6: label above the saved-vehicle picker on the request screen"
+  },
+  "earningsTitle": "Ganancias y saldo",
+  "@earningsTitle": {
+    "description": "DRV-5: earnings/balance screen app bar title, and the nav button tooltip"
+  },
+  "earningsOwedLabel": "Saldo pendiente",
+  "@earningsOwedLabel": {
+    "description": "DRV-5: label above the driver's owed commission balance"
+  },
+  "earningsCapLabel": "Límite de saldo antes de bloquear disponibilidad",
+  "@earningsCapLabel": {
+    "description": "DRV-5: label above the balance cap, when the platform has one configured"
+  },
+  "earningsSettlementsTitle": "Liquidaciones recientes",
+  "@earningsSettlementsTitle": {
+    "description": "DRV-5: heading above the recent-settlements list"
+  },
+  "earningsNoSettlementsBody": "Aún no hay liquidaciones.",
+  "@earningsNoSettlementsBody": {
+    "description": "DRV-5: shown when there are no recent settlements"
+  },
+  "earningsLoadError": "No pudimos cargar tus ganancias. Intenta de nuevo.",
+  "@earningsLoadError": {
+    "description": "DRV-5: shown when loading the balance fails"
+  },
+  "jobCommissionLabel": "Comisión de este servicio",
+  "@jobCommissionLabel": {
+    "description": "DRV-4: label for the commission accrued on a just-completed job"
+  },
+  "runningBalanceLabel": "Nuevo saldo pendiente",
+  "@runningBalanceLabel": {
+    "description": "DRV-4: label for the driver's updated running balance after a job completes"
+  },
+  "servicesPeriodTitle": "Servicios por período",
+  "@servicesPeriodTitle": {
+    "description": "DRV-6: services-per-period screen app bar title, and the nav button tooltip"
+  },
+  "servicesPeriodEmptyBody": "Aún no tienes servicios completados.",
+  "@servicesPeriodEmptyBody": {
+    "description": "DRV-6: shown when there are no completed jobs yet"
+  },
+  "servicesPeriodLoadError": "No pudimos cargar tus servicios. Intenta de nuevo.",
+  "@servicesPeriodLoadError": {
+    "description": "DRV-6: shown when loading services-per-period fails"
+  },
+  "servicesCountLabel": "{count} servicios",
+  "@servicesCountLabel": {
+    "description": "DRV-6: count of completed jobs for a given day",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "servicesEarningsLabel": "Efectivo cobrado",
+  "@servicesEarningsLabel": {
+    "description": "DRV-6: total cash fare collected for a given day"
+  },
+  "servicesCommissionLabel": "Comisión",
+  "@servicesCommissionLabel": {
+    "description": "DRV-6: total commission owed for a given day"
   }
 }

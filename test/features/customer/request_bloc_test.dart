@@ -134,4 +134,58 @@ void main() {
       await bloc.close();
     });
   });
+
+  group('RequestBloc CUS-5 delivery confirmation', () {
+    Future<RequestBloc> deliveredBloc() async {
+      final repo = instantFakeJobs();
+      final bloc = RequestBloc(jobsRepository: repo);
+      bloc
+        ..add(const RequestPickupChanged('Calle 10 #43E-31'))
+        ..add(const RequestDropoffChanged('Cra. 48, Envigado'));
+      await tick(30);
+      bloc.add(const RequestConfirmed());
+      await tick(60); // matching resolves -> assigned
+      final jobId = bloc.state.activeJob!.id;
+      var job = bloc.state.activeJob!;
+      while (job.status != JobStatus.delivered) {
+        job = await repo.updateJobStatus(jobId, job.status.nextDriverStatus!);
+      }
+      await tick(); // watch stream picks up the driver-side advances
+      expect(bloc.state.activeJob!.status, JobStatus.delivered);
+      return bloc;
+    }
+
+    test('confirming delivery completes the job', () async {
+      final bloc = await deliveredBloc();
+
+      bloc.add(const RequestDeliveryConfirmed());
+      await tick();
+
+      expect(bloc.state.activeJob!.status, JobStatus.completed);
+      expect(bloc.state.activeJob!.completedAt, isNotNull);
+      expect(bloc.state.isConfirmingDelivery, isFalse);
+      expect(bloc.state.confirmDeliveryFailed, isFalse);
+
+      await bloc.close();
+    });
+
+    test('is a no-op when the job is not yet delivered', () async {
+      final repo = instantFakeJobs();
+      final bloc = RequestBloc(jobsRepository: repo);
+      bloc
+        ..add(const RequestPickupChanged('Calle 10 #43E-31'))
+        ..add(const RequestDropoffChanged('Cra. 48, Envigado'));
+      await tick(30);
+      bloc.add(const RequestConfirmed());
+      await tick(60); // assigned, not delivered
+      expect(bloc.state.activeJob!.status, JobStatus.assigned);
+
+      bloc.add(const RequestDeliveryConfirmed());
+      await tick();
+      expect(bloc.state.activeJob!.status, JobStatus.assigned);
+      expect(bloc.state.isConfirmingDelivery, isFalse);
+
+      await bloc.close();
+    });
+  });
 }

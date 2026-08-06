@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
+import '../../../core/api/vehicles_repository.dart';
 import '../../../core/models/job.dart';
 import '../../../core/models/quote.dart';
+import '../../../core/models/saved_vehicle.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/labels.dart';
@@ -39,6 +41,12 @@ class RequestScreen extends StatelessWidget {
               tooltip: l10n.historyTitle,
               onPressed: () => context.push(AppRoute.customerHistory),
             ),
+            IconButton(
+              key: const Key('settingsNavButton'),
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: l10n.settingsTitle,
+              onPressed: () => context.push(AppRoute.customerSettings),
+            ),
           ],
         ),
         body: SafeArea(
@@ -71,6 +79,11 @@ class RequestScreen extends StatelessWidget {
                     prefixIcon: const Icon(Icons.place_outlined),
                     border: const OutlineInputBorder(),
                   ),
+                ),
+                const SizedBox(height: 16),
+                _SavedVehiclePicker(
+                  onSelected: (vehicle) =>
+                      bloc.add(RequestVehicleTypeChanged(vehicle.type)),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -204,6 +217,68 @@ class _QuoteCard extends StatelessWidget {
           child: child,
         ),
       ),
+    );
+  }
+}
+
+/// CUS-6 — a saved vehicle preselects its type in the quote step above.
+/// Purely a convenience picker: selecting a chip just dispatches
+/// [RequestVehicleTypeChanged], the same event the type selector itself
+/// uses: there is no separate "chosen saved vehicle" concept tracked by
+/// [RequestBloc].
+class _SavedVehiclePicker extends StatefulWidget {
+  const _SavedVehiclePicker({required this.onSelected});
+
+  final ValueChanged<SavedVehicle> onSelected;
+
+  @override
+  State<_SavedVehiclePicker> createState() => _SavedVehiclePickerState();
+}
+
+class _SavedVehiclePickerState extends State<_SavedVehiclePicker> {
+  late final Future<List<SavedVehicle>> _future =
+      context.read<VehiclesRepository>().listVehicles();
+  String? _selectedId;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return FutureBuilder<List<SavedVehicle>>(
+      future: _future,
+      builder: (context, snapshot) {
+        final vehicles = snapshot.data ?? const <SavedVehicle>[];
+        if (vehicles.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.savedVehiclePickerLabel,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: vehicles.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final vehicle = vehicles[index];
+                  return ChoiceChip(
+                    key: Key('savedVehicleChip_${vehicle.id}'),
+                    label: Text('${vehicle.type.label(l10n)} · ${vehicle.plate}'),
+                    selected: _selectedId == vehicle.id,
+                    onSelected: (_) {
+                      setState(() => _selectedId = vehicle.id);
+                      widget.onSelected(vehicle);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -7,7 +7,9 @@ import '../core/api/drivers_repository.dart';
 import '../core/api/fake_auth_repository.dart';
 import '../core/api/fake_drivers_repository.dart';
 import '../core/api/fake_jobs_repository.dart';
+import '../core/api/fake_vehicles_repository.dart';
 import '../core/api/jobs_repository.dart';
+import '../core/api/vehicles_repository.dart';
 import '../core/auth/fake_phone_auth_gateway.dart';
 import '../core/auth/fake_push_token_gateway.dart';
 import '../core/auth/phone_auth_gateway.dart';
@@ -32,6 +34,7 @@ class AppDependencies {
     required this.dio,
     required this.jobsRepository,
     required this.driversRepository,
+    required this.vehiclesRepository,
     required this.authCubit,
     this.socket,
     this.locationSource,
@@ -59,13 +62,19 @@ class AppDependencies {
     final dio = createDio(baseUrl: Env.apiBaseUrl);
     if (Env.useFakeBackend) {
       final jobs = FakeJobsRepository();
+      // Shared with the drivers fake so AUTH-5's `registerDriver` can flip
+      // this same fake user's role to driver, mirroring the real backend's
+      // single-request role flip (see `FakeAuthRepository.debugPromoteToDriver`).
+      final authRepository = FakeAuthRepository();
       return AppDependencies(
         dio: dio,
         jobsRepository: jobs,
-        driversRepository: FakeDriversRepository(jobs: jobs),
+        driversRepository:
+            FakeDriversRepository(jobs: jobs, auth: authRepository),
+        vehiclesRepository: FakeVehiclesRepository(),
         authCubit: AuthCubit(
           gateway: FakePhoneAuthGateway(),
-          authRepository: FakeAuthRepository(),
+          authRepository: authRepository,
           pushTokenGateway: FakePushTokenGateway(),
         ),
       );
@@ -75,6 +84,7 @@ class AppDependencies {
       dio: dio,
       jobsRepository: ApiJobsRepository(dio, socket),
       driversRepository: ApiDriversRepository(dio, socket),
+      vehiclesRepository: ApiVehiclesRepository(dio),
       socket: socket,
       locationSource: GeolocatorLocationSource(),
       authCubit: AuthCubit(
@@ -88,6 +98,7 @@ class AppDependencies {
   final Dio dio;
   final JobsRepository jobsRepository;
   final DriversRepository driversRepository;
+  final VehiclesRepository vehiclesRepository;
   final AuthCubit authCubit;
 
   /// Null when [Env.useFakeBackend] is true — the fakes don't use a socket.

@@ -5,6 +5,7 @@ import 'package:the_crane/core/api/api_client.dart';
 import 'package:the_crane/core/api/fake_auth_repository.dart';
 import 'package:the_crane/core/api/fake_drivers_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
+import 'package:the_crane/core/api/fake_vehicles_repository.dart';
 import 'package:the_crane/core/auth/fake_phone_auth_gateway.dart';
 import 'package:the_crane/core/auth/fake_push_token_gateway.dart';
 import 'package:the_crane/core/models/app_user.dart';
@@ -35,9 +36,14 @@ FakeJobsRepository fastFakeJobs({
 AppDependencies testDependencies({
   FakeJobsRepository? jobs,
   FakeDriversRepository? drivers,
+  FakeVehiclesRepository? vehicles,
   UserRole authRole = UserRole.customer,
 }) {
   final jobsRepository = jobs ?? fastFakeJobs();
+  final authRepository = FakeAuthRepository(
+    delay: const Duration(milliseconds: 10),
+    role: authRole,
+  );
   return AppDependencies(
     dio: createDio(baseUrl: 'http://localhost:8000'),
     jobsRepository: jobsRepository,
@@ -45,16 +51,16 @@ AppDependencies testDependencies({
         drivers ??
         FakeDriversRepository(
           jobs: jobsRepository,
+          auth: authRepository,
           actionDelay: const Duration(milliseconds: 20),
         ),
+    vehiclesRepository:
+        vehicles ?? FakeVehiclesRepository(delay: const Duration(milliseconds: 10)),
     authCubit: AuthCubit(
       gateway: FakePhoneAuthGateway(
         sendDelay: const Duration(milliseconds: 10),
       ),
-      authRepository: FakeAuthRepository(
-        delay: const Duration(milliseconds: 10),
-        role: authRole,
-      ),
+      authRepository: authRepository,
       pushTokenGateway: FakePushTokenGateway(),
     ),
   );

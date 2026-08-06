@@ -183,6 +183,24 @@ class FakeJobsRepository implements JobsRepository {
   }
 
   @override
+  Future<Job> confirmDelivery(String id) async {
+    await Future<void>.delayed(actionDelay);
+    final job = _jobs[id];
+    if (job == null) throw StateError('Unknown job: $id');
+    if (job.status != JobStatus.delivered) {
+      throw StateError(
+        'Illegal transition ${job.status.wire} → ${JobStatus.completed.wire}',
+      );
+    }
+    final completed = job.copyWith(
+      status: JobStatus.completed,
+      completedAt: DateTime.now(),
+    );
+    _put(completed);
+    return completed;
+  }
+
+  @override
   Future<void> submitRating(
     String jobId, {
     required int stars,

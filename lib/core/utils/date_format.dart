@@ -12,3 +12,13 @@ String formatHistoryDate(DateTime dateTime) {
   return '${two(local.day)}/${two(local.month)}/${local.year} '
       '${two(local.hour)}:${two(local.minute)}';
 }
+
+/// Formats a day-only [DateTime] as `dd/MM/yyyy` in local time (no
+/// time-of-day) — used by DRV-6's per-day services grouping. Same
+/// hand-rolled approach as [formatHistoryDate], for the same reason (no
+/// `intl` locale-data initialization needed).
+String formatDay(DateTime dateTime) {
+  final local = dateTime.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(local.day)}/${two(local.month)}/${local.year}';
+}

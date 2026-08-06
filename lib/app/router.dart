@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/api/drivers_repository.dart';
 import '../core/api/jobs_repository.dart';
+import '../core/api/vehicles_repository.dart';
 import '../core/location/location_source.dart';
 import '../core/models/app_user.dart';
 import '../core/ws/crane_socket.dart';
@@ -17,6 +18,14 @@ import '../features/auth/sign_in_screen.dart';
 import '../features/customer/request/matching_screen.dart';
 import '../features/customer/request/request_bloc.dart';
 import '../features/customer/request/request_screen.dart';
+import '../features/customer/settings/become_driver_screen.dart';
+import '../features/customer/settings/saved_vehicles_cubit.dart';
+import '../features/customer/settings/saved_vehicles_screen.dart';
+import '../features/customer/settings/settings_screen.dart';
+import '../features/driver/earnings/driver_balance_cubit.dart';
+import '../features/driver/earnings/earnings_screen.dart';
+import '../features/driver/earnings/services_period_cubit.dart';
+import '../features/driver/earnings/services_period_screen.dart';
 import '../features/driver/home/driver_home_cubit.dart';
 import '../features/driver/home/driver_home_screen.dart';
 import '../features/driver/home/offer_cubit.dart';
@@ -33,9 +42,14 @@ abstract final class AppRoute {
   static const customerHome = '/customer';
   static const customerMatching = '/customer/matching';
   static const customerHistory = '/customer/history';
+  static const customerSettings = '/customer/settings';
+  static const customerBecomeDriver = '/customer/settings/become-driver';
+  static const customerVehicles = '/customer/settings/vehicles';
   static const driverHome = '/driver';
   static const driverJob = '/driver/job';
   static const driverHistory = '/driver/history';
+  static const driverEarnings = '/driver/earnings';
+  static const driverServicesPeriod = '/driver/earnings/services';
 }
 
 const _authRoutes = {AppRoute.signIn, AppRoute.otp, AppRoute.completeProfile};
@@ -58,10 +72,19 @@ String? routerRedirect(GoRouterState state, AuthCubit authCubit) {
     case AuthPhase.needsProfile:
       return loc == AppRoute.completeProfile ? null : AppRoute.completeProfile;
     case AuthPhase.authenticated:
-      final home = authState.user?.role == UserRole.driver
-          ? AppRoute.driverHome
-          : AppRoute.customerHome;
-      return _authRoutes.contains(loc) ? home : null;
+      final isDriver = authState.user?.role == UserRole.driver;
+      final home = isDriver ? AppRoute.driverHome : AppRoute.customerHome;
+      if (_authRoutes.contains(loc)) return home;
+      // AUTH-5: becoming a driver flips the role while the app is still
+      // sitting inside the customer shell (e.g. on the become-driver
+      // screen itself) — bounce out of whichever shell no longer matches
+      // the current role once `AuthCubit.refreshUser` picks that up. A
+      // customer can never be inside `/driver/...` in the first place, so
+      // this is one-directional in practice, but is written symmetrically.
+      final inWrongShell = isDriver
+          ? loc.startsWith(AppRoute.customerHome)
+          : loc.startsWith(AppRoute.driverHome);
+      return inWrongShell ? home : null;
   }
 }
 
@@ -131,6 +154,25 @@ GoRouter createRouter(AuthCubit authCubit) {
                   child: const HistoryScreen(),
                 ),
               ),
+              GoRoute(
+                path: 'settings',
+                builder: (context, state) => const SettingsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'become-driver',
+                    builder: (context, state) => const BecomeDriverScreen(),
+                  ),
+                  GoRoute(
+                    path: 'vehicles',
+                    builder: (context, state) => BlocProvider(
+                      create: (context) => SavedVehiclesCubit(
+                        vehiclesRepository: context.read<VehiclesRepository>(),
+                      )..load(),
+                      child: const SavedVehiclesScreen(),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ],
@@ -178,6 +220,26 @@ GoRouter createRouter(AuthCubit authCubit) {
                   )..load(),
                   child: const HistoryScreen(),
                 ),
+              ),
+              GoRoute(
+                path: 'earnings',
+                builder: (context, state) => BlocProvider(
+                  create: (context) => DriverBalanceCubit(
+                    driversRepository: context.read<DriversRepository>(),
+                  )..load(),
+                  child: const EarningsScreen(),
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'services',
+                    builder: (context, state) => BlocProvider(
+                      create: (context) => ServicesPeriodCubit(
+                        jobsRepository: context.read<JobsRepository>(),
+                      )..load(),
+                      child: const ServicesPeriodScreen(),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

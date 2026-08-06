@@ -21,7 +21,7 @@ void main() {
       ]);
     });
 
-    test('driver advance cycle walks the happy path in order', () {
+    test('driver advance cycle walks the happy path up to delivered', () {
       final visited = <JobStatus>[];
       JobStatus? current = JobStatus.assigned;
       while (current != null) {
@@ -35,9 +35,14 @@ void main() {
         JobStatus.loading,
         JobStatus.inTransit,
         JobStatus.delivered,
-        JobStatus.completed,
       ]);
     });
+
+    test(
+      'delivered -> completed is customer-only: the driver has no further '
+      'action once delivered',
+      () => expect(JobStatus.delivered.nextDriverStatus, isNull),
+    );
 
     test('terminal states have no driver action', () {
       expect(JobStatus.completed.nextDriverStatus, isNull);

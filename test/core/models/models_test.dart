@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/core/models/driver_balance.dart';
 import 'package:the_crane/core/models/driver_profile.dart';
 import 'package:the_crane/core/models/job.dart';
 import 'package:the_crane/core/models/job_offer.dart';
 import 'package:the_crane/core/models/lat_lng.dart';
 import 'package:the_crane/core/models/quote.dart';
+import 'package:the_crane/core/models/saved_vehicle.dart';
 import 'package:the_crane/core/models/truck.dart';
 
 void main() {
@@ -36,6 +38,7 @@ void main() {
     const backendPayload = {
       'id': 'trk-9',
       'driver_id': 'drv-001',
+      'fleet_id': null,
       'plate': 'TGX 123',
       'type': 'moto_only',
       'capacity': 'moto',
@@ -47,6 +50,7 @@ void main() {
       final truck = Truck.fromJson(backendPayload);
       expect(truck.type, TruckType.motoOnly);
       expect(truck.capacity, TruckCapacity.moto);
+      expect(truck.fleetId, isNull);
       expect(Truck.fromJson(truck.toJson()), truck);
       expect(truck.toJson()['type'], 'moto_only');
       expect(truck.toJson()['driver_id'], 'drv-001');
@@ -54,35 +58,127 @@ void main() {
   });
 
   group('DriverProfile', () {
+    // Backend shape (`DriverProfileRead` in
+    // `backend/app/schemas/driver.py`): truck info nests under `truck`
+    // (a `TruckRead`), not flat `truck_plate`/`truck_type`/`capacity` keys —
+    // an earlier version of `DriverProfile` had those flat fields instead,
+    // which silently parsed to null against this exact payload.
     const backendPayload = {
+      'id': 'drv-profile-1',
       'user_id': 'drv-001',
       'status': 'on_job',
       'verified': true,
       'license_url': null,
-      'truck_plate': 'TGX 123',
-      'truck_type': 'flatbed',
-      'capacity': 'both',
+      'truck_photo_url': null,
       'rating_avg': 4.8,
+      'truck': {
+        'id': 'trk-1',
+        'driver_id': 'drv-001',
+        'fleet_id': null,
+        'plate': 'TGX 123',
+        'type': 'flatbed',
+        'capacity': 'both',
+      },
     };
 
     test('parses and round-trips a backend payload', () {
       final profile = DriverProfile.fromJson(backendPayload);
       expect(profile.status, DriverStatus.onJob);
       expect(profile.verified, isTrue);
-      expect(profile.capacity, TruckCapacity.both);
+      expect(profile.truck, isNotNull);
+      expect(profile.truck!.plate, 'TGX 123');
+      expect(profile.truck!.type, TruckType.flatbed);
+      expect(profile.truck!.capacity, TruckCapacity.both);
       expect(DriverProfile.fromJson(profile.toJson()), profile);
       expect(profile.toJson()['status'], 'on_job');
       expect(profile.toJson()['rating_avg'], 4.8);
+      expect((profile.toJson()['truck'] as Map)['plate'], 'TGX 123');
     });
 
-    test('rating defaults to 0 when missing', () {
+    test('rating defaults to 0 and truck is null when missing', () {
       final profile = DriverProfile.fromJson(const {
         'user_id': 'drv-002',
         'status': 'offline',
         'verified': false,
       });
       expect(profile.ratingAvg, 0);
-      expect(profile.truckType, isNull);
+      expect(profile.truck, isNull);
+    });
+  });
+
+  group('SavedVehicle (CUS-6)', () {
+    // Matches the `vehicles` API contract exactly:
+    // GET /v1/me/vehicles -> [{"id", "type", "make", "model", "plate"}].
+    const backendPayload = {
+      'id': 'veh-1',
+      'type': 'car',
+      'make': 'Chevrolet',
+      'model': 'Spark',
+      'plate': 'ABC123',
+    };
+
+    test('parses and round-trips a backend payload', () {
+      final vehicle = SavedVehicle.fromJson(backendPayload);
+      expect(vehicle.type, VehicleType.car);
+      expect(vehicle.make, 'Chevrolet');
+      expect(vehicle.model, 'Spark');
+      expect(vehicle.plate, 'ABC123');
+      expect(SavedVehicle.fromJson(vehicle.toJson()), vehicle);
+      expect(vehicle.toJson()['type'], 'car');
+    });
+
+    test('make/model are nullable', () {
+      final vehicle = SavedVehicle.fromJson(const {
+        'id': 'veh-2',
+        'type': 'moto',
+        'make': null,
+        'model': null,
+        'plate': 'XYZ987',
+      });
+      expect(vehicle.make, isNull);
+      expect(vehicle.model, isNull);
+      expect(vehicle.type, VehicleType.moto);
+    });
+  });
+
+  group('DriverBalance (DRV-5)', () {
+    // Matches GET /v1/drivers/me/balance exactly.
+    const backendPayload = {
+      'owed_cents': 45000,
+      'balance_cap_cents': 200000,
+      'recent_settlements': [
+        {
+          'id': 'set-1',
+          'amount_cents': 180000,
+          'settled_at': '2026-07-28T10:00:00.000Z',
+          'note': 'Liquidación semanal',
+        },
+      ],
+    };
+
+    test('parses and round-trips a backend payload', () {
+      final balance = DriverBalance.fromJson(backendPayload);
+      expect(balance.owedCents, 45000);
+      expect(balance.balanceCapCents, 200000);
+      expect(balance.recentSettlements, hasLength(1));
+      expect(balance.recentSettlements.single.amountCents, 180000);
+      expect(balance.recentSettlements.single.note, 'Liquidación semanal');
+      expect(DriverBalance.fromJson(balance.toJson()), balance);
+      expect(balance.toJson()['owed_cents'], 45000);
+      expect(
+        (balance.toJson()['recent_settlements'] as List).single['amount_cents'],
+        180000,
+      );
+    });
+
+    test('balanceCapCents null and empty settlements parse cleanly', () {
+      final balance = DriverBalance.fromJson(const {
+        'owed_cents': 0,
+        'balance_cap_cents': null,
+        'recent_settlements': <Map<String, dynamic>>[],
+      });
+      expect(balance.balanceCapCents, isNull);
+      expect(balance.recentSettlements, isEmpty);
     });
   });
 

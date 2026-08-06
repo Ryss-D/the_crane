@@ -31,13 +31,16 @@ enum TruckCapacity {
 
 /// A tow truck registered on the platform (AUTH-5 `trucks` table).
 ///
-/// Kept fleet-ready: `driverId` is the driver currently operating it, while
-/// ownership (fleet owner) lives server-side.
+/// Kept fleet-ready: `driverId` is the driver currently operating it,
+/// `fleetId` is the owning fleet once FLT-1 lands (both nullable from day
+/// one — see `backend/app/schemas/driver.py::TruckRead` — so attaching a
+/// fleet later never needs a migration on this table).
 @freezed
 abstract class Truck with _$Truck {
   const factory Truck({
     required String id,
     String? driverId,
+    String? fleetId,
     required String plate,
     required TruckType type,
     required TruckCapacity capacity,

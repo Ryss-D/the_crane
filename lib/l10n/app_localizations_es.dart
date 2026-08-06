@@ -320,4 +320,157 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get ratingFromDriverLabel => 'Calificación al cliente';
+
+  @override
+  String get settingsTitle => 'Configuración';
+
+  @override
+  String get becomeDriverMenuItem => 'Convertirme en conductor';
+
+  @override
+  String get becomeDriverTitle => 'Conviértete en conductor';
+
+  @override
+  String get becomeDriverIntro =>
+      'Registra tu grúa para empezar a recibir servicios.';
+
+  @override
+  String get plateFieldLabel => 'Placa';
+
+  @override
+  String get plateFieldHint => 'ABC123';
+
+  @override
+  String get truckTypeFieldLabel => 'Tipo de grúa';
+
+  @override
+  String get capacityFieldLabel => 'Capacidad de la grúa';
+
+  @override
+  String get capacityMoto => 'Motos';
+
+  @override
+  String get capacityCar => 'Carros';
+
+  @override
+  String get capacityBoth => 'Motos y carros';
+
+  @override
+  String get licenseUrlFieldLabel => 'URL de la licencia (opcional)';
+
+  @override
+  String get truckPhotoUrlFieldLabel => 'URL de foto de la grúa (opcional)';
+
+  @override
+  String get becomeDriverSubmitButton => 'Enviar registro';
+
+  @override
+  String get becomeDriverSubmitError =>
+      'No pudimos completar el registro. Intenta de nuevo.';
+
+  @override
+  String get cashPaymentPendingBody =>
+      'Confirma que recibiste el pago en efectivo para finalizar el servicio.';
+
+  @override
+  String get cashConfirmButton => 'Pagado en efectivo';
+
+  @override
+  String get cashPaymentConfirmError =>
+      'No pudimos confirmar el pago. Intenta de nuevo.';
+
+  @override
+  String get waitingCashConfirmationBody =>
+      'Esperando que el cliente confirme el pago en efectivo.';
+
+  @override
+  String get savedVehiclesMenuItem => 'Mis vehículos guardados';
+
+  @override
+  String get savedVehiclesTitle => 'Vehículos guardados';
+
+  @override
+  String get noSavedVehiclesBody => 'Aún no tienes vehículos guardados.';
+
+  @override
+  String get loadVehiclesError =>
+      'No pudimos cargar tus vehículos. Intenta de nuevo.';
+
+  @override
+  String get addVehicleButton => 'Agregar vehículo';
+
+  @override
+  String get editVehicleTitle => 'Editar vehículo';
+
+  @override
+  String get vehicleMakeFieldLabel => 'Marca (opcional)';
+
+  @override
+  String get vehicleModelFieldLabel => 'Modelo (opcional)';
+
+  @override
+  String get vehicleSaveButton => 'Guardar';
+
+  @override
+  String get vehicleSaveError =>
+      'No pudimos guardar el vehículo. Intenta de nuevo.';
+
+  @override
+  String get deleteVehicleConfirmTitle => '¿Eliminar vehículo?';
+
+  @override
+  String get deleteVehicleConfirmBody => 'Esta acción no se puede deshacer.';
+
+  @override
+  String get deleteButton => 'Eliminar';
+
+  @override
+  String get savedVehiclePickerLabel => 'Vehículo guardado (opcional)';
+
+  @override
+  String get earningsTitle => 'Ganancias y saldo';
+
+  @override
+  String get earningsOwedLabel => 'Saldo pendiente';
+
+  @override
+  String get earningsCapLabel =>
+      'Límite de saldo antes de bloquear disponibilidad';
+
+  @override
+  String get earningsSettlementsTitle => 'Liquidaciones recientes';
+
+  @override
+  String get earningsNoSettlementsBody => 'Aún no hay liquidaciones.';
+
+  @override
+  String get earningsLoadError =>
+      'No pudimos cargar tus ganancias. Intenta de nuevo.';
+
+  @override
+  String get jobCommissionLabel => 'Comisión de este servicio';
+
+  @override
+  String get runningBalanceLabel => 'Nuevo saldo pendiente';
+
+  @override
+  String get servicesPeriodTitle => 'Servicios por período';
+
+  @override
+  String get servicesPeriodEmptyBody => 'Aún no tienes servicios completados.';
+
+  @override
+  String get servicesPeriodLoadError =>
+      'No pudimos cargar tus servicios. Intenta de nuevo.';
+
+  @override
+  String servicesCountLabel(int count) {
+    return '$count servicios';
+  }
+
+  @override
+  String get servicesEarningsLabel => 'Efectivo cobrado';
+
+  @override
+  String get servicesCommissionLabel => 'Comisión';
 }

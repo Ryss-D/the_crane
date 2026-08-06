@@ -320,4 +320,156 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ratingFromDriverLabel => 'Rating for the customer';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get becomeDriverMenuItem => 'Become a driver';
+
+  @override
+  String get becomeDriverTitle => 'Become a driver';
+
+  @override
+  String get becomeDriverIntro =>
+      'Register your tow truck to start receiving jobs.';
+
+  @override
+  String get plateFieldLabel => 'Plate';
+
+  @override
+  String get plateFieldHint => 'ABC123';
+
+  @override
+  String get truckTypeFieldLabel => 'Truck type';
+
+  @override
+  String get capacityFieldLabel => 'Truck capacity';
+
+  @override
+  String get capacityMoto => 'Motorcycles';
+
+  @override
+  String get capacityCar => 'Cars';
+
+  @override
+  String get capacityBoth => 'Motorcycles and cars';
+
+  @override
+  String get licenseUrlFieldLabel => 'License document URL (optional)';
+
+  @override
+  String get truckPhotoUrlFieldLabel => 'Truck photo URL (optional)';
+
+  @override
+  String get becomeDriverSubmitButton => 'Submit registration';
+
+  @override
+  String get becomeDriverSubmitError =>
+      'We could not complete registration. Please try again.';
+
+  @override
+  String get cashPaymentPendingBody =>
+      'Confirm you received the cash payment to finish the job.';
+
+  @override
+  String get cashConfirmButton => 'Paid in cash';
+
+  @override
+  String get cashPaymentConfirmError =>
+      'We could not confirm the payment. Please try again.';
+
+  @override
+  String get waitingCashConfirmationBody =>
+      'Waiting for the customer to confirm the cash payment.';
+
+  @override
+  String get savedVehiclesMenuItem => 'My saved vehicles';
+
+  @override
+  String get savedVehiclesTitle => 'Saved vehicles';
+
+  @override
+  String get noSavedVehiclesBody => 'You have no saved vehicles yet.';
+
+  @override
+  String get loadVehiclesError =>
+      'We could not load your vehicles. Please try again.';
+
+  @override
+  String get addVehicleButton => 'Add vehicle';
+
+  @override
+  String get editVehicleTitle => 'Edit vehicle';
+
+  @override
+  String get vehicleMakeFieldLabel => 'Make (optional)';
+
+  @override
+  String get vehicleModelFieldLabel => 'Model (optional)';
+
+  @override
+  String get vehicleSaveButton => 'Save';
+
+  @override
+  String get vehicleSaveError =>
+      'We could not save the vehicle. Please try again.';
+
+  @override
+  String get deleteVehicleConfirmTitle => 'Delete vehicle?';
+
+  @override
+  String get deleteVehicleConfirmBody => 'This action cannot be undone.';
+
+  @override
+  String get deleteButton => 'Delete';
+
+  @override
+  String get savedVehiclePickerLabel => 'Saved vehicle (optional)';
+
+  @override
+  String get earningsTitle => 'Earnings & balance';
+
+  @override
+  String get earningsOwedLabel => 'Owed balance';
+
+  @override
+  String get earningsCapLabel => 'Balance cap before availability is blocked';
+
+  @override
+  String get earningsSettlementsTitle => 'Recent settlements';
+
+  @override
+  String get earningsNoSettlementsBody => 'No settlements yet.';
+
+  @override
+  String get earningsLoadError =>
+      'We could not load your earnings. Please try again.';
+
+  @override
+  String get jobCommissionLabel => 'Commission for this job';
+
+  @override
+  String get runningBalanceLabel => 'New owed balance';
+
+  @override
+  String get servicesPeriodTitle => 'Services per period';
+
+  @override
+  String get servicesPeriodEmptyBody => 'You have no completed services yet.';
+
+  @override
+  String get servicesPeriodLoadError =>
+      'We could not load your services. Please try again.';
+
+  @override
+  String servicesCountLabel(int count) {
+    return '$count services';
+  }
+
+  @override
+  String get servicesEarningsLabel => 'Cash collected';
+
+  @override
+  String get servicesCommissionLabel => 'Commission';
 }

@@ -685,6 +685,288 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Calificación al cliente'**
   String get ratingFromDriverLabel;
+
+  /// Settings screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Configuración'**
+  String get settingsTitle;
+
+  /// Settings menu item leading to the AUTH-5 driver registration screen
+  ///
+  /// In es, this message translates to:
+  /// **'Convertirme en conductor'**
+  String get becomeDriverMenuItem;
+
+  /// Become-a-driver screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Conviértete en conductor'**
+  String get becomeDriverTitle;
+
+  /// Become-a-driver screen intro copy
+  ///
+  /// In es, this message translates to:
+  /// **'Registra tu grúa para empezar a recibir servicios.'**
+  String get becomeDriverIntro;
+
+  /// Truck plate field label
+  ///
+  /// In es, this message translates to:
+  /// **'Placa'**
+  String get plateFieldLabel;
+
+  /// Truck plate field placeholder
+  ///
+  /// In es, this message translates to:
+  /// **'ABC123'**
+  String get plateFieldHint;
+
+  /// Truck type selector label on the become-a-driver screen
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo de grúa'**
+  String get truckTypeFieldLabel;
+
+  /// Truck capacity selector label on the become-a-driver screen
+  ///
+  /// In es, this message translates to:
+  /// **'Capacidad de la grúa'**
+  String get capacityFieldLabel;
+
+  /// Truck capacity: motorcycles only
+  ///
+  /// In es, this message translates to:
+  /// **'Motos'**
+  String get capacityMoto;
+
+  /// Truck capacity: cars only
+  ///
+  /// In es, this message translates to:
+  /// **'Carros'**
+  String get capacityCar;
+
+  /// Truck capacity: both motorcycles and cars
+  ///
+  /// In es, this message translates to:
+  /// **'Motos y carros'**
+  String get capacityBoth;
+
+  /// Optional driver license document URL field
+  ///
+  /// In es, this message translates to:
+  /// **'URL de la licencia (opcional)'**
+  String get licenseUrlFieldLabel;
+
+  /// Optional truck photo URL field
+  ///
+  /// In es, this message translates to:
+  /// **'URL de foto de la grúa (opcional)'**
+  String get truckPhotoUrlFieldLabel;
+
+  /// Submits the become-a-driver registration form
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar registro'**
+  String get becomeDriverSubmitButton;
+
+  /// Shown when driver registration fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos completar el registro. Intenta de nuevo.'**
+  String get becomeDriverSubmitError;
+
+  /// CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation
+  ///
+  /// In es, this message translates to:
+  /// **'Confirma que recibiste el pago en efectivo para finalizar el servicio.'**
+  String get cashPaymentPendingBody;
+
+  /// CUS-5: confirms cash payment was received, completing the job
+  ///
+  /// In es, this message translates to:
+  /// **'Pagado en efectivo'**
+  String get cashConfirmButton;
+
+  /// CUS-5: shown when confirm-delivery fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos confirmar el pago. Intenta de nuevo.'**
+  String get cashPaymentConfirmError;
+
+  /// DRV-4: shown to the driver once a job is delivered, since only the customer can complete it
+  ///
+  /// In es, this message translates to:
+  /// **'Esperando que el cliente confirme el pago en efectivo.'**
+  String get waitingCashConfirmationBody;
+
+  /// Settings menu item leading to the CUS-6 saved-vehicles screen
+  ///
+  /// In es, this message translates to:
+  /// **'Mis vehículos guardados'**
+  String get savedVehiclesMenuItem;
+
+  /// Saved-vehicles screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Vehículos guardados'**
+  String get savedVehiclesTitle;
+
+  /// Saved-vehicles empty state
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no tienes vehículos guardados.'**
+  String get noSavedVehiclesBody;
+
+  /// Saved-vehicles load error state
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar tus vehículos. Intenta de nuevo.'**
+  String get loadVehiclesError;
+
+  /// Add-vehicle FAB tooltip and form dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar vehículo'**
+  String get addVehicleButton;
+
+  /// Edit-vehicle form dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'Editar vehículo'**
+  String get editVehicleTitle;
+
+  /// Saved-vehicle make field label
+  ///
+  /// In es, this message translates to:
+  /// **'Marca (opcional)'**
+  String get vehicleMakeFieldLabel;
+
+  /// Saved-vehicle model field label
+  ///
+  /// In es, this message translates to:
+  /// **'Modelo (opcional)'**
+  String get vehicleModelFieldLabel;
+
+  /// Saves the vehicle form
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar'**
+  String get vehicleSaveButton;
+
+  /// Shown when creating/updating a saved vehicle fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos guardar el vehículo. Intenta de nuevo.'**
+  String get vehicleSaveError;
+
+  /// Delete-vehicle confirmation dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar vehículo?'**
+  String get deleteVehicleConfirmTitle;
+
+  /// Delete-vehicle confirmation dialog body
+  ///
+  /// In es, this message translates to:
+  /// **'Esta acción no se puede deshacer.'**
+  String get deleteVehicleConfirmBody;
+
+  /// Generic delete/confirm-delete button
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get deleteButton;
+
+  /// CUS-6: label above the saved-vehicle picker on the request screen
+  ///
+  /// In es, this message translates to:
+  /// **'Vehículo guardado (opcional)'**
+  String get savedVehiclePickerLabel;
+
+  /// DRV-5: earnings/balance screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Ganancias y saldo'**
+  String get earningsTitle;
+
+  /// DRV-5: label above the driver's owed commission balance
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo pendiente'**
+  String get earningsOwedLabel;
+
+  /// DRV-5: label above the balance cap, when the platform has one configured
+  ///
+  /// In es, this message translates to:
+  /// **'Límite de saldo antes de bloquear disponibilidad'**
+  String get earningsCapLabel;
+
+  /// DRV-5: heading above the recent-settlements list
+  ///
+  /// In es, this message translates to:
+  /// **'Liquidaciones recientes'**
+  String get earningsSettlementsTitle;
+
+  /// DRV-5: shown when there are no recent settlements
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay liquidaciones.'**
+  String get earningsNoSettlementsBody;
+
+  /// DRV-5: shown when loading the balance fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar tus ganancias. Intenta de nuevo.'**
+  String get earningsLoadError;
+
+  /// DRV-4: label for the commission accrued on a just-completed job
+  ///
+  /// In es, this message translates to:
+  /// **'Comisión de este servicio'**
+  String get jobCommissionLabel;
+
+  /// DRV-4: label for the driver's updated running balance after a job completes
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo saldo pendiente'**
+  String get runningBalanceLabel;
+
+  /// DRV-6: services-per-period screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Servicios por período'**
+  String get servicesPeriodTitle;
+
+  /// DRV-6: shown when there are no completed jobs yet
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no tienes servicios completados.'**
+  String get servicesPeriodEmptyBody;
+
+  /// DRV-6: shown when loading services-per-period fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar tus servicios. Intenta de nuevo.'**
+  String get servicesPeriodLoadError;
+
+  /// DRV-6: count of completed jobs for a given day
+  ///
+  /// In es, this message translates to:
+  /// **'{count} servicios'**
+  String servicesCountLabel(int count);
+
+  /// DRV-6: total cash fare collected for a given day
+  ///
+  /// In es, this message translates to:
+  /// **'Efectivo cobrado'**
+  String get servicesEarningsLabel;
+
+  /// DRV-6: total commission owed for a given day
+  ///
+  /// In es, this message translates to:
+  /// **'Comisión'**
+  String get servicesCommissionLabel;
 }
 
 class _AppLocalizationsDelegate

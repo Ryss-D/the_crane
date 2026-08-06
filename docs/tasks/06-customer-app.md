@@ -22,6 +22,21 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   On `delivered`: fare summary, "paid in cash" confirmation → job `completed` → rating prompt.
   Design: «Entrega y pago en efectivo» (`docs/design/screen-references.md`)
   *AC: completion writes the ledger entry (driver commission) exactly once.*
+  Built: `JobStatus.nextDriverStatus` no longer maps `delivered → completed` — the
+  backend already firmly restricts `confirm-delivery` to the job's customer
+  (`backend/app/services/jobs.py`), so the driver's cycle now stops at
+  `delivered`. `MatchingScreen`'s assigned-driver card shows the fare
+  (`finalPrice ?? quotedPrice`) and a "pagado en efectivo" button once
+  `delivered`, dispatching a new `RequestDeliveryConfirmed` event that calls
+  the new `JobsRepository.confirmDelivery` (real dio `POST
+  /v1/jobs/{id}/confirm-delivery` + fake, both added). The existing
+  `watchJob` subscription then carries the job to `completed` live, and the
+  pre-existing rating-button UI (RAT-2) picks it up unchanged. Also updated
+  `ActiveJobCubit`/`ActiveJobScreen` (DRV-4 side) so the driver app stays
+  consistent with the new state machine — see `07-driver-app.md`. Verified
+  against the fakes (60 tests). Not yet verified: that the backend's
+  `confirm-delivery` actually writes the ledger entry exactly once end to
+  end (LED-1 lands the ledger itself; this task only wires the client call).
 
 - [ ] **CUS-6 — Saved vehicles** *(deps: AUTH-2)*
   CRUD for customer vehicles (type, make, model, plate) to speed repeat requests.
@@ -40,3 +55,19 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
 
   `VehicleRead`: `{"id": "uuid", "type": "moto"|"car"|"suv", "make": str|null, "model": str|null, "plate": str|null, "created_at": "ISO8601 datetime"}`.
   Migration 0008 added `customer_vehicles.created_at` (the table didn't have it before -- nothing needed it until this ordering requirement). 9 new tests in `tests/test_vehicles_api.py`.
+
+  Built (Flutter): `SavedVehicle` freezed model (reuses the existing `VehicleType`
+  enum/wire-mapping from `job.dart`, per the contract), `VehiclesRepository`
+  (real dio + fake, matching `GET/POST /v1/me/vehicles` and
+  `PATCH/DELETE /v1/me/vehicles/{id}` exactly), `SavedVehiclesCubit`, and a
+  list/add/edit/delete screen reachable from the new settings screen
+  (alongside AUTH-5's entry). A saved-vehicle chip picker was added to the
+  request screen's quote step — selecting one dispatches the existing
+  `RequestVehicleTypeChanged` event, preselecting its type (AC met). Wired
+  into `AppDependencies`/`main.dart`/`test_dependencies.dart` the same way
+  every other repository is. Verified against the fake (77 tests, later 88
+  once DRV-6 landed). The backend's real `/v1/me/vehicles` endpoints above
+  match this contract exactly (both built in parallel, independently, to
+  the same spec) — `ApiVehiclesRepository` has not yet been run against a
+  live server end to end, that's the one remaining gap before checking
+  this off.

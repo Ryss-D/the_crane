@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Truck {
 
- String get id; String? get driverId; String get plate; TruckType get type; TruckCapacity get capacity; String? get make; String? get model;
+ String get id; String? get driverId; String? get fleetId; String get plate; TruckType get type; TruckCapacity get capacity; String? get make; String? get model;
 /// Create a copy of Truck
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $TruckCopyWith<Truck> get copyWith => _$TruckCopyWithImpl<Truck>(this as Truck, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Truck&&(identical(other.id, id) || other.id == id)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.type, type) || other.type == type)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.make, make) || other.make == make)&&(identical(other.model, model) || other.model == model));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Truck&&(identical(other.id, id) || other.id == id)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.fleetId, fleetId) || other.fleetId == fleetId)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.type, type) || other.type == type)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.make, make) || other.make == make)&&(identical(other.model, model) || other.model == model));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,driverId,plate,type,capacity,make,model);
+int get hashCode => Object.hash(runtimeType,id,driverId,fleetId,plate,type,capacity,make,model);
 
 @override
 String toString() {
-  return 'Truck(id: $id, driverId: $driverId, plate: $plate, type: $type, capacity: $capacity, make: $make, model: $model)';
+  return 'Truck(id: $id, driverId: $driverId, fleetId: $fleetId, plate: $plate, type: $type, capacity: $capacity, make: $make, model: $model)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $TruckCopyWith<$Res>  {
   factory $TruckCopyWith(Truck value, $Res Function(Truck) _then) = _$TruckCopyWithImpl;
 @useResult
 $Res call({
- String id, String? driverId, String plate, TruckType type, TruckCapacity capacity, String? make, String? model
+ String id, String? driverId, String? fleetId, String plate, TruckType type, TruckCapacity capacity, String? make, String? model
 });
 
 
@@ -65,10 +65,11 @@ class _$TruckCopyWithImpl<$Res>
 
 /// Create a copy of Truck
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? driverId = freezed,Object? plate = null,Object? type = null,Object? capacity = null,Object? make = freezed,Object? model = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? driverId = freezed,Object? fleetId = freezed,Object? plate = null,Object? type = null,Object? capacity = null,Object? make = freezed,Object? model = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,driverId: freezed == driverId ? _self.driverId : driverId // ignore: cast_nullable_to_non_nullable
+as String?,fleetId: freezed == fleetId ? _self.fleetId : fleetId // ignore: cast_nullable_to_non_nullable
 as String?,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TruckType,capacity: null == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
@@ -159,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? driverId,  String plate,  TruckType type,  TruckCapacity capacity,  String? make,  String? model)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? driverId,  String? fleetId,  String plate,  TruckType type,  TruckCapacity capacity,  String? make,  String? model)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Truck() when $default != null:
-return $default(_that.id,_that.driverId,_that.plate,_that.type,_that.capacity,_that.make,_that.model);case _:
+return $default(_that.id,_that.driverId,_that.fleetId,_that.plate,_that.type,_that.capacity,_that.make,_that.model);case _:
   return orElse();
 
 }
@@ -180,10 +181,10 @@ return $default(_that.id,_that.driverId,_that.plate,_that.type,_that.capacity,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? driverId,  String plate,  TruckType type,  TruckCapacity capacity,  String? make,  String? model)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? driverId,  String? fleetId,  String plate,  TruckType type,  TruckCapacity capacity,  String? make,  String? model)  $default,) {final _that = this;
 switch (_that) {
 case _Truck():
-return $default(_that.id,_that.driverId,_that.plate,_that.type,_that.capacity,_that.make,_that.model);case _:
+return $default(_that.id,_that.driverId,_that.fleetId,_that.plate,_that.type,_that.capacity,_that.make,_that.model);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +201,10 @@ return $default(_that.id,_that.driverId,_that.plate,_that.type,_that.capacity,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? driverId,  String plate,  TruckType type,  TruckCapacity capacity,  String? make,  String? model)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? driverId,  String? fleetId,  String plate,  TruckType type,  TruckCapacity capacity,  String? make,  String? model)?  $default,) {final _that = this;
 switch (_that) {
 case _Truck() when $default != null:
-return $default(_that.id,_that.driverId,_that.plate,_that.type,_that.capacity,_that.make,_that.model);case _:
+return $default(_that.id,_that.driverId,_that.fleetId,_that.plate,_that.type,_that.capacity,_that.make,_that.model);case _:
   return null;
 
 }
@@ -215,11 +216,12 @@ return $default(_that.id,_that.driverId,_that.plate,_that.type,_that.capacity,_t
 @JsonSerializable()
 
 class _Truck implements Truck {
-  const _Truck({required this.id, this.driverId, required this.plate, required this.type, required this.capacity, this.make, this.model});
+  const _Truck({required this.id, this.driverId, this.fleetId, required this.plate, required this.type, required this.capacity, this.make, this.model});
   factory _Truck.fromJson(Map<String, dynamic> json) => _$TruckFromJson(json);
 
 @override final  String id;
 @override final  String? driverId;
+@override final  String? fleetId;
 @override final  String plate;
 @override final  TruckType type;
 @override final  TruckCapacity capacity;
@@ -239,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Truck&&(identical(other.id, id) || other.id == id)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.type, type) || other.type == type)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.make, make) || other.make == make)&&(identical(other.model, model) || other.model == model));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Truck&&(identical(other.id, id) || other.id == id)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.fleetId, fleetId) || other.fleetId == fleetId)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.type, type) || other.type == type)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.make, make) || other.make == make)&&(identical(other.model, model) || other.model == model));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,driverId,plate,type,capacity,make,model);
+int get hashCode => Object.hash(runtimeType,id,driverId,fleetId,plate,type,capacity,make,model);
 
 @override
 String toString() {
-  return 'Truck(id: $id, driverId: $driverId, plate: $plate, type: $type, capacity: $capacity, make: $make, model: $model)';
+  return 'Truck(id: $id, driverId: $driverId, fleetId: $fleetId, plate: $plate, type: $type, capacity: $capacity, make: $make, model: $model)';
 }
 
 
@@ -259,7 +261,7 @@ abstract mixin class _$TruckCopyWith<$Res> implements $TruckCopyWith<$Res> {
   factory _$TruckCopyWith(_Truck value, $Res Function(_Truck) _then) = __$TruckCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? driverId, String plate, TruckType type, TruckCapacity capacity, String? make, String? model
+ String id, String? driverId, String? fleetId, String plate, TruckType type, TruckCapacity capacity, String? make, String? model
 });
 
 
@@ -276,10 +278,11 @@ class __$TruckCopyWithImpl<$Res>
 
 /// Create a copy of Truck
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? driverId = freezed,Object? plate = null,Object? type = null,Object? capacity = null,Object? make = freezed,Object? model = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? driverId = freezed,Object? fleetId = freezed,Object? plate = null,Object? type = null,Object? capacity = null,Object? make = freezed,Object? model = freezed,}) {
   return _then(_Truck(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,driverId: freezed == driverId ? _self.driverId : driverId // ignore: cast_nullable_to_non_nullable
+as String?,fleetId: freezed == fleetId ? _self.fleetId : fleetId // ignore: cast_nullable_to_non_nullable
 as String?,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TruckType,capacity: null == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable

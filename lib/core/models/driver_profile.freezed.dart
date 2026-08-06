@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DriverProfile {
 
- String get userId; DriverStatus get status; bool get verified; String? get licenseUrl; String? get truckPlate; TruckType? get truckType; TruckCapacity? get capacity; double get ratingAvg;
+ String? get id; String get userId; DriverStatus get status; bool get verified; String? get licenseUrl; String? get truckPhotoUrl; Truck? get truck; double get ratingAvg;
 /// Create a copy of DriverProfile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $DriverProfileCopyWith<DriverProfile> get copyWith => _$DriverProfileCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DriverProfile&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.status, status) || other.status == status)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.licenseUrl, licenseUrl) || other.licenseUrl == licenseUrl)&&(identical(other.truckPlate, truckPlate) || other.truckPlate == truckPlate)&&(identical(other.truckType, truckType) || other.truckType == truckType)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DriverProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.status, status) || other.status == status)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.licenseUrl, licenseUrl) || other.licenseUrl == licenseUrl)&&(identical(other.truckPhotoUrl, truckPhotoUrl) || other.truckPhotoUrl == truckPhotoUrl)&&(identical(other.truck, truck) || other.truck == truck)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,userId,status,verified,licenseUrl,truckPlate,truckType,capacity,ratingAvg);
+int get hashCode => Object.hash(runtimeType,id,userId,status,verified,licenseUrl,truckPhotoUrl,truck,ratingAvg);
 
 @override
 String toString() {
-  return 'DriverProfile(userId: $userId, status: $status, verified: $verified, licenseUrl: $licenseUrl, truckPlate: $truckPlate, truckType: $truckType, capacity: $capacity, ratingAvg: $ratingAvg)';
+  return 'DriverProfile(id: $id, userId: $userId, status: $status, verified: $verified, licenseUrl: $licenseUrl, truckPhotoUrl: $truckPhotoUrl, truck: $truck, ratingAvg: $ratingAvg)';
 }
 
 
@@ -48,11 +48,11 @@ abstract mixin class $DriverProfileCopyWith<$Res>  {
   factory $DriverProfileCopyWith(DriverProfile value, $Res Function(DriverProfile) _then) = _$DriverProfileCopyWithImpl;
 @useResult
 $Res call({
- String userId, DriverStatus status, bool verified, String? licenseUrl, String? truckPlate, TruckType? truckType, TruckCapacity? capacity, double ratingAvg
+ String? id, String userId, DriverStatus status, bool verified, String? licenseUrl, String? truckPhotoUrl, Truck? truck, double ratingAvg
 });
 
 
-
+$TruckCopyWith<$Res>? get truck;
 
 }
 /// @nodoc
@@ -65,20 +65,32 @@ class _$DriverProfileCopyWithImpl<$Res>
 
 /// Create a copy of DriverProfile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? userId = null,Object? status = null,Object? verified = null,Object? licenseUrl = freezed,Object? truckPlate = freezed,Object? truckType = freezed,Object? capacity = freezed,Object? ratingAvg = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? userId = null,Object? status = null,Object? verified = null,Object? licenseUrl = freezed,Object? truckPhotoUrl = freezed,Object? truck = freezed,Object? ratingAvg = null,}) {
   return _then(_self.copyWith(
-userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as DriverStatus,verified: null == verified ? _self.verified : verified // ignore: cast_nullable_to_non_nullable
 as bool,licenseUrl: freezed == licenseUrl ? _self.licenseUrl : licenseUrl // ignore: cast_nullable_to_non_nullable
-as String?,truckPlate: freezed == truckPlate ? _self.truckPlate : truckPlate // ignore: cast_nullable_to_non_nullable
-as String?,truckType: freezed == truckType ? _self.truckType : truckType // ignore: cast_nullable_to_non_nullable
-as TruckType?,capacity: freezed == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
-as TruckCapacity?,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
+as String?,truckPhotoUrl: freezed == truckPhotoUrl ? _self.truckPhotoUrl : truckPhotoUrl // ignore: cast_nullable_to_non_nullable
+as String?,truck: freezed == truck ? _self.truck : truck // ignore: cast_nullable_to_non_nullable
+as Truck?,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
+/// Create a copy of DriverProfile
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TruckCopyWith<$Res>? get truck {
+    if (_self.truck == null) {
+    return null;
+  }
 
+  return $TruckCopyWith<$Res>(_self.truck!, (value) {
+    return _then(_self.copyWith(truck: value));
+  });
+}
 }
 
 
@@ -160,10 +172,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String userId,  DriverStatus status,  bool verified,  String? licenseUrl,  String? truckPlate,  TruckType? truckType,  TruckCapacity? capacity,  double ratingAvg)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? id,  String userId,  DriverStatus status,  bool verified,  String? licenseUrl,  String? truckPhotoUrl,  Truck? truck,  double ratingAvg)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DriverProfile() when $default != null:
-return $default(_that.userId,_that.status,_that.verified,_that.licenseUrl,_that.truckPlate,_that.truckType,_that.capacity,_that.ratingAvg);case _:
+return $default(_that.id,_that.userId,_that.status,_that.verified,_that.licenseUrl,_that.truckPhotoUrl,_that.truck,_that.ratingAvg);case _:
   return orElse();
 
 }
@@ -181,10 +193,10 @@ return $default(_that.userId,_that.status,_that.verified,_that.licenseUrl,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String userId,  DriverStatus status,  bool verified,  String? licenseUrl,  String? truckPlate,  TruckType? truckType,  TruckCapacity? capacity,  double ratingAvg)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? id,  String userId,  DriverStatus status,  bool verified,  String? licenseUrl,  String? truckPhotoUrl,  Truck? truck,  double ratingAvg)  $default,) {final _that = this;
 switch (_that) {
 case _DriverProfile():
-return $default(_that.userId,_that.status,_that.verified,_that.licenseUrl,_that.truckPlate,_that.truckType,_that.capacity,_that.ratingAvg);case _:
+return $default(_that.id,_that.userId,_that.status,_that.verified,_that.licenseUrl,_that.truckPhotoUrl,_that.truck,_that.ratingAvg);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +213,10 @@ return $default(_that.userId,_that.status,_that.verified,_that.licenseUrl,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String userId,  DriverStatus status,  bool verified,  String? licenseUrl,  String? truckPlate,  TruckType? truckType,  TruckCapacity? capacity,  double ratingAvg)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? id,  String userId,  DriverStatus status,  bool verified,  String? licenseUrl,  String? truckPhotoUrl,  Truck? truck,  double ratingAvg)?  $default,) {final _that = this;
 switch (_that) {
 case _DriverProfile() when $default != null:
-return $default(_that.userId,_that.status,_that.verified,_that.licenseUrl,_that.truckPlate,_that.truckType,_that.capacity,_that.ratingAvg);case _:
+return $default(_that.id,_that.userId,_that.status,_that.verified,_that.licenseUrl,_that.truckPhotoUrl,_that.truck,_that.ratingAvg);case _:
   return null;
 
 }
@@ -216,16 +228,16 @@ return $default(_that.userId,_that.status,_that.verified,_that.licenseUrl,_that.
 @JsonSerializable()
 
 class _DriverProfile implements DriverProfile {
-  const _DriverProfile({required this.userId, required this.status, required this.verified, this.licenseUrl, this.truckPlate, this.truckType, this.capacity, this.ratingAvg = 0});
+  const _DriverProfile({this.id, required this.userId, required this.status, required this.verified, this.licenseUrl, this.truckPhotoUrl, this.truck, this.ratingAvg = 0});
   factory _DriverProfile.fromJson(Map<String, dynamic> json) => _$DriverProfileFromJson(json);
 
+@override final  String? id;
 @override final  String userId;
 @override final  DriverStatus status;
 @override final  bool verified;
 @override final  String? licenseUrl;
-@override final  String? truckPlate;
-@override final  TruckType? truckType;
-@override final  TruckCapacity? capacity;
+@override final  String? truckPhotoUrl;
+@override final  Truck? truck;
 @override@JsonKey() final  double ratingAvg;
 
 /// Create a copy of DriverProfile
@@ -241,16 +253,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DriverProfile&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.status, status) || other.status == status)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.licenseUrl, licenseUrl) || other.licenseUrl == licenseUrl)&&(identical(other.truckPlate, truckPlate) || other.truckPlate == truckPlate)&&(identical(other.truckType, truckType) || other.truckType == truckType)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DriverProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.status, status) || other.status == status)&&(identical(other.verified, verified) || other.verified == verified)&&(identical(other.licenseUrl, licenseUrl) || other.licenseUrl == licenseUrl)&&(identical(other.truckPhotoUrl, truckPhotoUrl) || other.truckPhotoUrl == truckPhotoUrl)&&(identical(other.truck, truck) || other.truck == truck)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,userId,status,verified,licenseUrl,truckPlate,truckType,capacity,ratingAvg);
+int get hashCode => Object.hash(runtimeType,id,userId,status,verified,licenseUrl,truckPhotoUrl,truck,ratingAvg);
 
 @override
 String toString() {
-  return 'DriverProfile(userId: $userId, status: $status, verified: $verified, licenseUrl: $licenseUrl, truckPlate: $truckPlate, truckType: $truckType, capacity: $capacity, ratingAvg: $ratingAvg)';
+  return 'DriverProfile(id: $id, userId: $userId, status: $status, verified: $verified, licenseUrl: $licenseUrl, truckPhotoUrl: $truckPhotoUrl, truck: $truck, ratingAvg: $ratingAvg)';
 }
 
 
@@ -261,11 +273,11 @@ abstract mixin class _$DriverProfileCopyWith<$Res> implements $DriverProfileCopy
   factory _$DriverProfileCopyWith(_DriverProfile value, $Res Function(_DriverProfile) _then) = __$DriverProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String userId, DriverStatus status, bool verified, String? licenseUrl, String? truckPlate, TruckType? truckType, TruckCapacity? capacity, double ratingAvg
+ String? id, String userId, DriverStatus status, bool verified, String? licenseUrl, String? truckPhotoUrl, Truck? truck, double ratingAvg
 });
 
 
-
+@override $TruckCopyWith<$Res>? get truck;
 
 }
 /// @nodoc
@@ -278,21 +290,33 @@ class __$DriverProfileCopyWithImpl<$Res>
 
 /// Create a copy of DriverProfile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? status = null,Object? verified = null,Object? licenseUrl = freezed,Object? truckPlate = freezed,Object? truckType = freezed,Object? capacity = freezed,Object? ratingAvg = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? userId = null,Object? status = null,Object? verified = null,Object? licenseUrl = freezed,Object? truckPhotoUrl = freezed,Object? truck = freezed,Object? ratingAvg = null,}) {
   return _then(_DriverProfile(
-userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as DriverStatus,verified: null == verified ? _self.verified : verified // ignore: cast_nullable_to_non_nullable
 as bool,licenseUrl: freezed == licenseUrl ? _self.licenseUrl : licenseUrl // ignore: cast_nullable_to_non_nullable
-as String?,truckPlate: freezed == truckPlate ? _self.truckPlate : truckPlate // ignore: cast_nullable_to_non_nullable
-as String?,truckType: freezed == truckType ? _self.truckType : truckType // ignore: cast_nullable_to_non_nullable
-as TruckType?,capacity: freezed == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
-as TruckCapacity?,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
+as String?,truckPhotoUrl: freezed == truckPhotoUrl ? _self.truckPhotoUrl : truckPhotoUrl // ignore: cast_nullable_to_non_nullable
+as String?,truck: freezed == truck ? _self.truck : truck // ignore: cast_nullable_to_non_nullable
+as Truck?,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
 
+/// Create a copy of DriverProfile
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TruckCopyWith<$Res>? get truck {
+    if (_self.truck == null) {
+    return null;
+  }
 
+  return $TruckCopyWith<$Res>(_self.truck!, (value) {
+    return _then(_self.copyWith(truck: value));
+  });
+}
 }
 
 // dart format on

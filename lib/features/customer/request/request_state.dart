@@ -21,6 +21,8 @@ abstract class RequestState with _$RequestState {
     @Default(false) bool isCreatingJob,
     @Default(false) bool createJobFailed,
     Job? activeJob,
+    @Default(false) bool isConfirmingDelivery,
+    @Default(false) bool confirmDeliveryFailed,
   }) = _RequestState;
 
   /// Both endpoints entered — a quote can be requested.

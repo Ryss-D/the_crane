@@ -8,25 +8,27 @@ part of 'driver_profile.dart';
 
 _DriverProfile _$DriverProfileFromJson(Map<String, dynamic> json) =>
     _DriverProfile(
+      id: json['id'] as String?,
       userId: json['user_id'] as String,
       status: $enumDecode(_$DriverStatusEnumMap, json['status']),
       verified: json['verified'] as bool,
       licenseUrl: json['license_url'] as String?,
-      truckPlate: json['truck_plate'] as String?,
-      truckType: $enumDecodeNullable(_$TruckTypeEnumMap, json['truck_type']),
-      capacity: $enumDecodeNullable(_$TruckCapacityEnumMap, json['capacity']),
+      truckPhotoUrl: json['truck_photo_url'] as String?,
+      truck: json['truck'] == null
+          ? null
+          : Truck.fromJson(json['truck'] as Map<String, dynamic>),
       ratingAvg: (json['rating_avg'] as num?)?.toDouble() ?? 0,
     );
 
 Map<String, dynamic> _$DriverProfileToJson(_DriverProfile instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'user_id': instance.userId,
       'status': _$DriverStatusEnumMap[instance.status]!,
       'verified': instance.verified,
       'license_url': instance.licenseUrl,
-      'truck_plate': instance.truckPlate,
-      'truck_type': _$TruckTypeEnumMap[instance.truckType],
-      'capacity': _$TruckCapacityEnumMap[instance.capacity],
+      'truck_photo_url': instance.truckPhotoUrl,
+      'truck': instance.truck?.toJson(),
       'rating_avg': instance.ratingAvg,
     };
 
@@ -34,16 +36,4 @@ const _$DriverStatusEnumMap = {
   DriverStatus.offline: 'offline',
   DriverStatus.available: 'available',
   DriverStatus.onJob: 'on_job',
-};
-
-const _$TruckTypeEnumMap = {
-  TruckType.motoOnly: 'moto_only',
-  TruckType.car: 'car',
-  TruckType.flatbed: 'flatbed',
-};
-
-const _$TruckCapacityEnumMap = {
-  TruckCapacity.moto: 'moto',
-  TruckCapacity.car: 'car',
-  TruckCapacity.both: 'both',
 };

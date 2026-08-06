@@ -217,5 +217,45 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
       expect(authRepository.lastFcmToken, 'rotated-token');
     });
+
+    test(
+      'AUTH-5: refreshUser re-syncs the profile so a role flip is picked up',
+      () async {
+        final authRepository = FakeAuthRepository(delay: Duration.zero);
+        final cubit = AuthCubit(
+          gateway: FakePhoneAuthGateway(sendDelay: Duration.zero),
+          authRepository: authRepository,
+          pushTokenGateway: FakePushTokenGateway(),
+        );
+
+        await cubit.sendCode('+573000000000');
+        await Future<void>.delayed(Duration.zero);
+        await cubit.confirmCode('123456');
+        await cubit.completeProfile('Sofía Test');
+        expect(cubit.state.user?.role, UserRole.customer);
+
+        // Simulates DriversRepository.registerDriver's role flip, which
+        // happens out of band from AuthCubit (see
+        // FakeDriversRepository.registerDriver /
+        // FakeAuthRepository.debugPromoteToDriver).
+        authRepository.debugPromoteToDriver();
+        await cubit.refreshUser();
+
+        expect(cubit.state.phase, AuthPhase.authenticated);
+        expect(cubit.state.user?.role, UserRole.driver);
+      },
+    );
+
+    test('refreshUser is a no-op when not authenticated', () async {
+      final authRepository = FakeAuthRepository(delay: Duration.zero);
+      final cubit = AuthCubit(
+        gateway: FakePhoneAuthGateway(sendDelay: Duration.zero),
+        authRepository: authRepository,
+        pushTokenGateway: FakePushTokenGateway(),
+      );
+
+      await cubit.refreshUser();
+      expect(cubit.state, const AuthState());
+    });
   });
 }
