@@ -16,11 +16,23 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   Fleet owner shell in the Flutter app: per-truck status at a glance (available / on job / unassigned / offline), tap-through to truck detail.
   Design: «Mi flota» (`docs/design/screen-references.md`)
   *AC: statuses reflect live dispatch state for a seeded fleet.*
+  Backend built (not in the original backlog line item, added ahead of the Flutter
+  screen so it has real data to bind to): `TruckRead` gains `driver_status`/
+  `driver_name` (both `null` by default; only `GET /v1/fleets/me` populates them,
+  via one batched query each across the fleet -- neither lives on `Truck` itself).
+  Tested (`test_fleet_trucks_show_live_driver_status_and_name`), full suite green
+  (217 passed).
 
 - [ ] **FLT-4 — Assign driver to truck** *(deps: FLT-3)*
   Link a verified driver to an unassigned truck, or invite a new driver (phone invite → signup lands pre-linked); unassign flow.
   Design: «Asignar conductor a una grúa» (`docs/design/screen-references.md`)
   *AC: assigned driver's offers/dispatch use the truck's capacity; a truck has at most one active driver.*
+  Backend note: only the "link to an already-unassigned truck" half is buildable
+  today, via FLT-1's `POST/DELETE /v1/fleets/me/trucks/{truck_id}` (per FLT-1's own
+  judgment-call note: any unclaimed truck can be attached, no consent flow yet).
+  The "invite a new driver via phone, signup lands pre-linked" half needs a new
+  backend invite/token mechanism that doesn't exist -- out of scope until someone
+  builds it.
 
 - [ ] **FLT-5 — Fleet earnings screen** *(deps: FLT-2)*
   Commission accrued per truck, consolidated balance owed, settlement action (cash instructions; Wompi via PAY-3 pattern later).
