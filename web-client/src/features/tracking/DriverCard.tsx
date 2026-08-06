@@ -15,11 +15,12 @@ export function DriverCard({ driver }: { driver: Driver }) {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
           {strings.tracking.driverTitle}
         </h2>
-        <p className="truncate font-bold text-slate-100">{driver.name}</p>
-        <p className="truncate text-sm text-slate-400">{driver.truck_description}</p>
+        <p className="truncate font-bold text-slate-100">{driver.name ?? '—'}</p>
+        <p className="truncate text-sm text-slate-400">{strings.truckTypes[driver.truck_type]}</p>
         <p className="text-sm text-slate-400">
-          {strings.tracking.plateLabel}: <span className="font-mono">{driver.plate}</span> · ★{' '}
-          {driver.rating.toLocaleString('es-CO')}
+          {strings.tracking.plateLabel}:{' '}
+          <span className="font-mono">{driver.truck_plate}</span>
+          {driver.rating_avg != null && <> · ★ {driver.rating_avg.toLocaleString('es-CO')}</>}
         </p>
       </div>
     </Card>

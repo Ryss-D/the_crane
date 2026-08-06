@@ -1,4 +1,4 @@
-import type { JobStatus, VehicleType } from '../api/types';
+import type { JobStatus, TruckType, VehicleType } from '../api/types';
 
 /**
  * es-CO strings, centralized so a real i18n layer (or at least en fallback)
@@ -75,6 +75,12 @@ export const strings = {
     car: 'Carro',
     suv: 'Camioneta',
   } satisfies Record<VehicleType, string>,
+
+  truckTypes: {
+    moto_only: 'Grúa para motos',
+    car: 'Grúa para carro',
+    flatbed: 'Grúa plataforma',
+  } satisfies Record<TruckType, string>,
 
   statuses: {
     requested: 'Solicitud recibida',

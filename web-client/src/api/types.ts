@@ -33,6 +33,9 @@ export const TERMINAL_STATUSES: readonly JobStatus[] = ['completed', 'cancelled'
 export const VEHICLE_TYPES = ['moto', 'car', 'suv'] as const;
 export type VehicleType = (typeof VEHICLE_TYPES)[number];
 
+export const TRUCK_TYPES = ['moto_only', 'car', 'flatbed'] as const;
+export type TruckType = (typeof TRUCK_TYPES)[number];
+
 export interface LatLng {
   lat: number;
   lng: number;
@@ -68,12 +71,16 @@ export interface CreateJobRequest {
   customer_vehicle_id?: string;
 }
 
+/** Matches the backend's `JobDriverInfo` (app/schemas/job.py) exactly —
+ * also the same shape the Flutter app's `JobDriverSummary` uses. */
 export interface Driver {
   id: string;
-  name: string;
-  rating: number;
-  plate: string;
-  truck_description: string;
+  name: string | null;
+  phone: string | null;
+  truck_plate: string;
+  truck_type: TruckType;
+  rating_avg: number | null;
+  photo_url: string | null;
 }
 
 export interface Job {

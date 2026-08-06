@@ -31,9 +31,11 @@ const PER_KM: Record<VehicleType, number> = { moto: 2500, car: 4000, suv: 5000 }
 const MOCK_DRIVER: Driver = {
   id: 'drv_1',
   name: 'Carlos Restrepo',
-  rating: 4.8,
-  plate: 'TKX-482',
-  truck_description: 'Grúa plataforma — Chevrolet NPR blanca',
+  phone: '+573001112233',
+  truck_plate: 'TKX-482',
+  truck_type: 'flatbed',
+  rating_avg: 4.8,
+  photo_url: null,
 };
 
 interface MockJobRecord {
@@ -164,7 +166,10 @@ export class MockApi implements CraneApi {
       pickup: { lat: 6.2108, lng: -75.5658 },
       dropoff: { lat: 6.2308, lng: -75.5906 },
       driver: job.driver
-        ? { first_name: job.driver.name.split(' ')[0] ?? null, truck_plate: job.driver.plate }
+        ? {
+            first_name: job.driver.name?.split(' ')[0] ?? null,
+            truck_plate: job.driver.truck_plate,
+          }
         : null,
       driver_location: job.driver ? { lat: 6.2088, lng: -75.5736 } : null,
     };
