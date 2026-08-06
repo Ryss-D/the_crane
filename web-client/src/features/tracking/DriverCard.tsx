@@ -23,6 +23,21 @@ export function DriverCard({ driver }: { driver: Driver }) {
           {driver.rating_avg != null && <> · ★ {driver.rating_avg.toLocaleString('es-CO')}</>}
         </p>
       </div>
+      {/* Parity with the Flutter app's CUS-4 call-driver button
+          (lib/features/customer/request/matching_screen.dart) — a plain
+          `tel:` link needs no new dependency (that app uses url_launcher,
+          this is the same scheme via native HTML). Hidden entirely when the
+          backend hasn't given us a number (e.g. driver hasn't shared one). */}
+      {driver.phone && (
+        <a
+          href={`tel:${driver.phone}`}
+          aria-label={strings.tracking.callDriver}
+          title={strings.tracking.callDriver}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 text-lg text-slate-950 transition-colors hover:bg-amber-400 active:bg-amber-600"
+        >
+          <span aria-hidden>📞</span>
+        </a>
+      )}
     </Card>
   );
 }

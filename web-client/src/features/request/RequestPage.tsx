@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../../api';
 import { fakeGeocode } from '../../api/geocode';
-import type { Quote, VehicleType } from '../../api/types';
+import type { LatLng, Quote, VehicleType } from '../../api/types';
 import { useAuth } from '../../auth';
 import { strings } from '../../i18n/strings';
 import { useActiveJobStore } from '../../store/activeJob';
@@ -20,14 +20,50 @@ export function RequestPage() {
 
   const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
+  // WEB-2: a real GPS fix from navigator.geolocation, when the customer used
+  // "usar mi ubicación actual". Kept separate from the `pickup` text field so
+  // a real coordinate (more accurate than a hash-derived fake point) can be
+  // sent to quote()/createJob() while the field still shows something
+  // readable — there's no reverse-geocoding available without a Maps key
+  // (FND-6), so the field shows the raw coordinates, not a street address.
+  // Cleared whenever the user edits the text by hand, since at that point
+  // the coordinates no longer describe what's typed.
+  const [pickupCoords, setPickupCoords] = useState<LatLng | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState(false);
   const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
+
+  function useCurrentLocation() {
+    if (!('geolocation' in navigator)) {
+      setLocationError(true);
+      return;
+    }
+    setLocating(true);
+    setLocationError(false);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords: LatLng = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setPickupCoords(coords);
+        setPickup(strings.request.locationText(coords.lat, coords.lng));
+        setQuote(null);
+        setLocating(false);
+      },
+      () => {
+        // Permission denied, timeout, or position unavailable — don't crash,
+        // don't fill anything, just surface a brief message.
+        setLocating(false);
+        setLocationError(true);
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }
 
   const quoteMutation = useMutation({
     mutationFn: () =>
       api.quote({
         vehicle_type: vehicleType as VehicleType,
-        pickup: fakeGeocode(pickup),
+        pickup: pickupCoords ?? fakeGeocode(pickup),
         dropoff: fakeGeocode(dropoff),
       }),
     onSuccess: setQuote,
@@ -38,7 +74,7 @@ export function RequestPage() {
       api.createJob({
         quote_id: (quote as Quote).quote_id,
         vehicle_type: vehicleType as VehicleType,
-        pickup: { ...fakeGeocode(pickup), address: pickup.trim() },
+        pickup: { ...(pickupCoords ?? fakeGeocode(pickup)), address: pickup.trim() },
         dropoff: { ...fakeGeocode(dropoff), address: dropoff.trim() },
       }),
     onSuccess: (job) => {
@@ -78,16 +114,34 @@ export function RequestPage() {
         <h1 className="text-lg font-bold text-slate-100">{strings.request.title}</h1>
         <label className="flex flex-col gap-1 text-sm text-slate-300">
           {strings.request.pickupLabel}
-          <input
-            value={pickup}
-            onChange={(e) => {
-              setPickup(e.target.value);
-              setQuote(null);
-            }}
-            placeholder={strings.request.pickupPlaceholder}
-            className={inputClass}
-          />
+          <div className="flex gap-2">
+            <input
+              value={pickup}
+              onChange={(e) => {
+                setPickup(e.target.value);
+                setPickupCoords(null);
+                setQuote(null);
+              }}
+              placeholder={strings.request.pickupPlaceholder}
+              className={`${inputClass} flex-1`}
+            />
+            <button
+              type="button"
+              onClick={useCurrentLocation}
+              disabled={locating}
+              aria-label={strings.request.useCurrentLocation}
+              title={strings.request.useCurrentLocation}
+              className="flex shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-3 text-lg text-amber-400 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span aria-hidden>{locating ? '…' : '📍'}</span>
+            </button>
+          </div>
         </label>
+        {locationError && (
+          <p role="alert" className="text-sm text-rose-400">
+            {strings.request.locationUnavailable}
+          </p>
+        )}
         <label className="flex flex-col gap-1 text-sm text-slate-300">
           {strings.request.dropoffLabel}
           <input

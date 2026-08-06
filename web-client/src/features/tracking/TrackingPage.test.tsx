@@ -38,7 +38,13 @@ describe('tracking page (WEB-3 skeleton)', () => {
     expect(current).toHaveTextContent(strings.statuses.en_route_pickup);
 
     // Driver is assigned → driver card shows.
-    expect(await screen.findByTestId('driver-card')).toHaveTextContent('Carlos Restrepo');
+    const driverCard = await screen.findByTestId('driver-card');
+    expect(driverCard).toHaveTextContent('Carlos Restrepo');
+
+    // Call-driver button (parity with the Flutter app's CUS-4): a plain
+    // tel: link, shown because the seeded demo driver has a phone.
+    const callLink = screen.getByRole('link', { name: strings.tracking.callDriver });
+    expect(callLink).toHaveAttribute('href', 'tel:+573001112233');
   });
 
   it('WEB-3/CUS-5: delivered shows the fare and a cash-confirm button that completes the job', async () => {
