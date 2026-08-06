@@ -116,23 +116,95 @@ abstract class AppLocalizations {
   /// **'Pide una grúa para tu moto o carro en Medellín.'**
   String get signInSubtitle;
 
-  /// Primary sign-in button (phone OTP, not wired yet)
+  /// Phone entry field label on the sign-in screen
   ///
   /// In es, this message translates to:
-  /// **'Continuar con teléfono'**
+  /// **'Número de celular'**
+  String get signInPhoneLabel;
+
+  /// Phone entry field placeholder (local format, +57 is added automatically)
+  ///
+  /// In es, this message translates to:
+  /// **'300 123 4567'**
+  String get signInPhoneHint;
+
+  /// Primary sign-in button — sends the OTP
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar código'**
   String get signInPhoneButton;
 
-  /// Dev role-switch button to the customer shell
+  /// Shown when sending the OTP fails
   ///
   /// In es, this message translates to:
-  /// **'Entrar como cliente'**
-  String get continueAsCustomer;
+  /// **'No pudimos enviar el código. Verifica el número e intenta de nuevo.'**
+  String get signInSendCodeError;
 
-  /// Dev role-switch button to the driver shell
+  /// Headline on the OTP entry screen
   ///
   /// In es, this message translates to:
-  /// **'Entrar como conductor'**
-  String get continueAsDriver;
+  /// **'Ingresa el código'**
+  String get otpTitle;
+
+  /// Tells the user where the code was sent
+  ///
+  /// In es, this message translates to:
+  /// **'Enviamos un código a {phone}'**
+  String otpSentTo(String phone);
+
+  /// OTP code entry field label
+  ///
+  /// In es, this message translates to:
+  /// **'Código de verificación'**
+  String get otpLabel;
+
+  /// OTP code entry field placeholder
+  ///
+  /// In es, this message translates to:
+  /// **'123456'**
+  String get otpHint;
+
+  /// Confirms the entered OTP code
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar'**
+  String get otpConfirmButton;
+
+  /// Goes back to the phone entry screen
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar número'**
+  String get otpChangeNumber;
+
+  /// Shown when the entered OTP code is wrong
+  ///
+  /// In es, this message translates to:
+  /// **'Código incorrecto. Intenta de nuevo.'**
+  String get otpConfirmError;
+
+  /// Headline on the profile-completion screen
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo te llamas?'**
+  String get completeProfileTitle;
+
+  /// Supporting copy on the profile-completion screen
+  ///
+  /// In es, this message translates to:
+  /// **'Lo usamos para que tu conductor o cliente sepa quién eres.'**
+  String get completeProfileSubtitle;
+
+  /// Name entry field label
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre completo'**
+  String get completeProfileNameLabel;
+
+  /// Saves the name and continues into the app
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get completeProfileSaveButton;
 
   /// Customer request screen app bar title
   ///

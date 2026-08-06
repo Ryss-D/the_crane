@@ -12,17 +12,70 @@
   "@signInSubtitle": {
     "description": "Supporting copy on the sign-in screen"
   },
-  "signInPhoneButton": "Continuar con teléfono",
+  "signInPhoneLabel": "Número de celular",
+  "@signInPhoneLabel": {
+    "description": "Phone entry field label on the sign-in screen"
+  },
+  "signInPhoneHint": "300 123 4567",
+  "@signInPhoneHint": {
+    "description": "Phone entry field placeholder (local format, +57 is added automatically)"
+  },
+  "signInPhoneButton": "Enviar código",
   "@signInPhoneButton": {
-    "description": "Primary sign-in button (phone OTP, not wired yet)"
+    "description": "Primary sign-in button — sends the OTP"
   },
-  "continueAsCustomer": "Entrar como cliente",
-  "@continueAsCustomer": {
-    "description": "Dev role-switch button to the customer shell"
+  "signInSendCodeError": "No pudimos enviar el código. Verifica el número e intenta de nuevo.",
+  "@signInSendCodeError": {
+    "description": "Shown when sending the OTP fails"
   },
-  "continueAsDriver": "Entrar como conductor",
-  "@continueAsDriver": {
-    "description": "Dev role-switch button to the driver shell"
+  "otpTitle": "Ingresa el código",
+  "@otpTitle": {
+    "description": "Headline on the OTP entry screen"
+  },
+  "otpSentTo": "Enviamos un código a {phone}",
+  "@otpSentTo": {
+    "description": "Tells the user where the code was sent",
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "otpLabel": "Código de verificación",
+  "@otpLabel": {
+    "description": "OTP code entry field label"
+  },
+  "otpHint": "123456",
+  "@otpHint": {
+    "description": "OTP code entry field placeholder"
+  },
+  "otpConfirmButton": "Confirmar",
+  "@otpConfirmButton": {
+    "description": "Confirms the entered OTP code"
+  },
+  "otpChangeNumber": "Cambiar número",
+  "@otpChangeNumber": {
+    "description": "Goes back to the phone entry screen"
+  },
+  "otpConfirmError": "Código incorrecto. Intenta de nuevo.",
+  "@otpConfirmError": {
+    "description": "Shown when the entered OTP code is wrong"
+  },
+  "completeProfileTitle": "¿Cómo te llamas?",
+  "@completeProfileTitle": {
+    "description": "Headline on the profile-completion screen"
+  },
+  "completeProfileSubtitle": "Lo usamos para que tu conductor o cliente sepa quién eres.",
+  "@completeProfileSubtitle": {
+    "description": "Supporting copy on the profile-completion screen"
+  },
+  "completeProfileNameLabel": "Nombre completo",
+  "@completeProfileNameLabel": {
+    "description": "Name entry field label"
+  },
+  "completeProfileSaveButton": "Continuar",
+  "@completeProfileSaveButton": {
+    "description": "Saves the name and continues into the app"
   },
   "customerHomeTitle": "Pedir grúa",
   "@customerHomeTitle": {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/core/models/app_user.dart';
 import 'package:the_crane/features/driver/home/driver_home_screen.dart';
 import 'package:the_crane/features/driver/job/active_job_screen.dart';
 import 'package:the_crane/main.dart';
@@ -8,10 +9,11 @@ import '../../support/test_dependencies.dart';
 
 void main() {
   Future<void> pumpToDriverHome(WidgetTester tester) async {
-    await tester.pumpWidget(TheCraneApp(dependencies: testDependencies()));
+    await tester.pumpWidget(
+      TheCraneApp(dependencies: testDependencies(authRole: UserRole.driver)),
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Entrar como conductor'));
-    await tester.pumpAndSettle();
+    await signIn(tester);
     expect(find.byType(DriverHomeScreen), findsOneWidget);
   }
 

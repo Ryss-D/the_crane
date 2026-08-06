@@ -19,13 +19,53 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pide una grúa para tu moto o carro en Medellín.';
 
   @override
-  String get signInPhoneButton => 'Continuar con teléfono';
+  String get signInPhoneLabel => 'Número de celular';
 
   @override
-  String get continueAsCustomer => 'Entrar como cliente';
+  String get signInPhoneHint => '300 123 4567';
 
   @override
-  String get continueAsDriver => 'Entrar como conductor';
+  String get signInPhoneButton => 'Enviar código';
+
+  @override
+  String get signInSendCodeError =>
+      'No pudimos enviar el código. Verifica el número e intenta de nuevo.';
+
+  @override
+  String get otpTitle => 'Ingresa el código';
+
+  @override
+  String otpSentTo(String phone) {
+    return 'Enviamos un código a $phone';
+  }
+
+  @override
+  String get otpLabel => 'Código de verificación';
+
+  @override
+  String get otpHint => '123456';
+
+  @override
+  String get otpConfirmButton => 'Confirmar';
+
+  @override
+  String get otpChangeNumber => 'Cambiar número';
+
+  @override
+  String get otpConfirmError => 'Código incorrecto. Intenta de nuevo.';
+
+  @override
+  String get completeProfileTitle => '¿Cómo te llamas?';
+
+  @override
+  String get completeProfileSubtitle =>
+      'Lo usamos para que tu conductor o cliente sepa quién eres.';
+
+  @override
+  String get completeProfileNameLabel => 'Nombre completo';
+
+  @override
+  String get completeProfileSaveButton => 'Continuar';
 
   @override
   String get customerHomeTitle => 'Pedir grúa';

@@ -19,13 +19,53 @@ class AppLocalizationsEn extends AppLocalizations {
       'Request a tow truck for your motorcycle or car in Medellín.';
 
   @override
-  String get signInPhoneButton => 'Continue with phone';
+  String get signInPhoneLabel => 'Phone number';
 
   @override
-  String get continueAsCustomer => 'Enter as customer';
+  String get signInPhoneHint => '300 123 4567';
 
   @override
-  String get continueAsDriver => 'Enter as driver';
+  String get signInPhoneButton => 'Send code';
+
+  @override
+  String get signInSendCodeError =>
+      'We couldn\'t send the code. Check the number and try again.';
+
+  @override
+  String get otpTitle => 'Enter the code';
+
+  @override
+  String otpSentTo(String phone) {
+    return 'We sent a code to $phone';
+  }
+
+  @override
+  String get otpLabel => 'Verification code';
+
+  @override
+  String get otpHint => '123456';
+
+  @override
+  String get otpConfirmButton => 'Confirm';
+
+  @override
+  String get otpChangeNumber => 'Change number';
+
+  @override
+  String get otpConfirmError => 'Wrong code. Try again.';
+
+  @override
+  String get completeProfileTitle => 'What\'s your name?';
+
+  @override
+  String get completeProfileSubtitle =>
+      'We use it so your driver or customer knows who you are.';
+
+  @override
+  String get completeProfileNameLabel => 'Full name';
+
+  @override
+  String get completeProfileSaveButton => 'Continue';
 
   @override
   String get customerHomeTitle => 'Request a tow';

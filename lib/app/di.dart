@@ -2,13 +2,18 @@ import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../core/api/api_client.dart';
+import '../core/api/auth_repository.dart';
 import '../core/api/drivers_repository.dart';
+import '../core/api/fake_auth_repository.dart';
 import '../core/api/fake_drivers_repository.dart';
 import '../core/api/fake_jobs_repository.dart';
 import '../core/api/jobs_repository.dart';
+import '../core/auth/fake_phone_auth_gateway.dart';
+import '../core/auth/phone_auth_gateway.dart';
 import '../core/config/env.dart';
 import '../core/location/location_source.dart';
 import '../core/ws/crane_socket.dart';
+import '../features/auth/auth_cubit.dart';
 
 // TODO(FND-1): AUTH-6 — construct firebase_messaging here once push
 // notifications are wired; register/refresh the FCM token on login.
@@ -27,6 +32,7 @@ class AppDependencies {
     required this.dio,
     required this.jobsRepository,
     required this.driversRepository,
+    required this.authCubit,
     this.socket,
     this.locationSource,
   });
@@ -44,6 +50,11 @@ class AppDependencies {
   /// [AppDependencies.socket] so `ActiveJobCubit` can send driver location
   /// fixes over the same connection. [locationSource] (TRK-5) is the real
   /// GPS feed for those fixes — null under fakes, where nothing needs one.
+  ///
+  /// [authCubit] (AUTH-3/4) picks [FakePhoneAuthGateway]/[FakeAuthRepository]
+  /// under fakes (any phone + any code, always a fresh customer) or the real
+  /// Firebase phone-auth gateway + `/auth/sync` otherwise — same flag as
+  /// everything else, so dev iteration never needs real SMS.
   factory AppDependencies.fromEnv() {
     final dio = createDio(baseUrl: Env.apiBaseUrl);
     if (Env.useFakeBackend) {
@@ -52,6 +63,10 @@ class AppDependencies {
         dio: dio,
         jobsRepository: jobs,
         driversRepository: FakeDriversRepository(jobs: jobs),
+        authCubit: AuthCubit(
+          gateway: FakePhoneAuthGateway(),
+          authRepository: FakeAuthRepository(),
+        ),
       );
     }
     final socket = CraneSocket(tokenProvider: _firebaseIdToken)..connect();
@@ -61,12 +76,17 @@ class AppDependencies {
       driversRepository: ApiDriversRepository(dio, socket),
       socket: socket,
       locationSource: GeolocatorLocationSource(),
+      authCubit: AuthCubit(
+        gateway: FirebasePhoneAuthGateway(),
+        authRepository: ApiAuthRepository(dio),
+      ),
     );
   }
 
   final Dio dio;
   final JobsRepository jobsRepository;
   final DriversRepository driversRepository;
+  final AuthCubit authCubit;
 
   /// Null when [Env.useFakeBackend] is true — the fakes don't use a socket.
   final CraneSocket? socket;

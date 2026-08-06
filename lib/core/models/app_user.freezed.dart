@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AppUser {
 
- String get id; String get firebaseUid; UserRole get role; String get name; String get phone; String? get email; String? get fcmToken;
+ String get id; String get firebaseUid; UserRole get role; String? get name; String? get phone; String? get email; String? get fcmToken;
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $AppUserCopyWith<$Res>  {
   factory $AppUserCopyWith(AppUser value, $Res Function(AppUser) _then) = _$AppUserCopyWithImpl;
 @useResult
 $Res call({
- String id, String firebaseUid, UserRole role, String name, String phone, String? email, String? fcmToken
+ String id, String firebaseUid, UserRole role, String? name, String? phone, String? email, String? fcmToken
 });
 
 
@@ -65,14 +65,14 @@ class _$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? firebaseUid = null,Object? role = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? fcmToken = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? firebaseUid = null,Object? role = null,Object? name = freezed,Object? phone = freezed,Object? email = freezed,Object? fcmToken = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,firebaseUid: null == firebaseUid ? _self.firebaseUid : firebaseUid // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
-as UserRole,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as UserRole,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,fcmToken: freezed == fcmToken ? _self.fcmToken : fcmToken // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -159,7 +159,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String firebaseUid,  UserRole role,  String name,  String phone,  String? email,  String? fcmToken)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String firebaseUid,  UserRole role,  String? name,  String? phone,  String? email,  String? fcmToken)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
 return $default(_that.id,_that.firebaseUid,_that.role,_that.name,_that.phone,_that.email,_that.fcmToken);case _:
@@ -180,7 +180,7 @@ return $default(_that.id,_that.firebaseUid,_that.role,_that.name,_that.phone,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String firebaseUid,  UserRole role,  String name,  String phone,  String? email,  String? fcmToken)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String firebaseUid,  UserRole role,  String? name,  String? phone,  String? email,  String? fcmToken)  $default,) {final _that = this;
 switch (_that) {
 case _AppUser():
 return $default(_that.id,_that.firebaseUid,_that.role,_that.name,_that.phone,_that.email,_that.fcmToken);case _:
@@ -200,7 +200,7 @@ return $default(_that.id,_that.firebaseUid,_that.role,_that.name,_that.phone,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String firebaseUid,  UserRole role,  String name,  String phone,  String? email,  String? fcmToken)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String firebaseUid,  UserRole role,  String? name,  String? phone,  String? email,  String? fcmToken)?  $default,) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
 return $default(_that.id,_that.firebaseUid,_that.role,_that.name,_that.phone,_that.email,_that.fcmToken);case _:
@@ -215,14 +215,14 @@ return $default(_that.id,_that.firebaseUid,_that.role,_that.name,_that.phone,_th
 @JsonSerializable()
 
 class _AppUser implements AppUser {
-  const _AppUser({required this.id, required this.firebaseUid, required this.role, required this.name, required this.phone, this.email, this.fcmToken});
+  const _AppUser({required this.id, required this.firebaseUid, required this.role, this.name, this.phone, this.email, this.fcmToken});
   factory _AppUser.fromJson(Map<String, dynamic> json) => _$AppUserFromJson(json);
 
 @override final  String id;
 @override final  String firebaseUid;
 @override final  UserRole role;
-@override final  String name;
-@override final  String phone;
+@override final  String? name;
+@override final  String? phone;
 @override final  String? email;
 @override final  String? fcmToken;
 
@@ -259,7 +259,7 @@ abstract mixin class _$AppUserCopyWith<$Res> implements $AppUserCopyWith<$Res> {
   factory _$AppUserCopyWith(_AppUser value, $Res Function(_AppUser) _then) = __$AppUserCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String firebaseUid, UserRole role, String name, String phone, String? email, String? fcmToken
+ String id, String firebaseUid, UserRole role, String? name, String? phone, String? email, String? fcmToken
 });
 
 
@@ -276,14 +276,14 @@ class __$AppUserCopyWithImpl<$Res>
 
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? firebaseUid = null,Object? role = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? fcmToken = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? firebaseUid = null,Object? role = null,Object? name = freezed,Object? phone = freezed,Object? email = freezed,Object? fcmToken = freezed,}) {
   return _then(_AppUser(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,firebaseUid: null == firebaseUid ? _self.firebaseUid : firebaseUid // ignore: cast_nullable_to_non_nullable
 as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
-as UserRole,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as UserRole,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,fcmToken: freezed == fcmToken ? _self.fcmToken : fcmToken // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

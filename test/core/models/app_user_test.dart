@@ -37,5 +37,19 @@ void main() {
       expect(parsed.role, UserRole.driver);
       expect(parsed.fcmToken, 'token-1');
     });
+
+    test('parses a fresh phone-only signup with no name yet', () {
+      final parsed = AppUser.fromJson(const {
+        'id': 'u2',
+        'firebase_uid': 'fb2',
+        'role': 'customer',
+        'name': null,
+        'phone': '+573000000000',
+        'email': null,
+        'fcm_token': null,
+      });
+      expect(parsed.name, isNull);
+      expect(parsed.role, UserRole.customer);
+    });
   });
 }

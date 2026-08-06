@@ -10,6 +10,7 @@ import 'core/api/drivers_repository.dart';
 import 'core/api/jobs_repository.dart';
 import 'core/location/location_source.dart';
 import 'core/ws/crane_socket.dart';
+import 'features/auth/auth_cubit.dart';
 import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
@@ -19,7 +20,12 @@ Future<void> main() async {
   // (Only web/desktop targets need an explicit FirebaseOptions object; this
   // app doesn't ship on those.)
   await Firebase.initializeApp();
-  runApp(TheCraneApp(dependencies: AppDependencies.fromEnv()));
+  final dependencies = AppDependencies.fromEnv();
+  // Settle auth state (already-signed-in check + profile sync) before the
+  // first frame, so the router's very first redirect doesn't flash the
+  // sign-in screen for a returning user.
+  await dependencies.authCubit.bootstrap();
+  runApp(TheCraneApp(dependencies: dependencies));
 }
 
 class TheCraneApp extends StatefulWidget {
@@ -33,7 +39,7 @@ class TheCraneApp extends StatefulWidget {
 }
 
 class _TheCraneAppState extends State<TheCraneApp> {
-  late final GoRouter _router = createRouter();
+  late final GoRouter _router = createRouter(widget.dependencies.authCubit);
 
   @override
   Widget build(BuildContext context) {
@@ -56,14 +62,17 @@ class _TheCraneAppState extends State<TheCraneApp> {
           value: widget.dependencies.locationSource,
         ),
       ],
-      child: MaterialApp.router(
-        onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('es'),
-        routerConfig: _router,
+      child: BlocProvider<AuthCubit>.value(
+        value: widget.dependencies.authCubit,
+        child: MaterialApp.router(
+          onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('es'),
+          routerConfig: _router,
+        ),
       ),
     );
   }

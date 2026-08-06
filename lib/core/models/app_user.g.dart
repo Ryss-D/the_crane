@@ -10,8 +10,8 @@ _AppUser _$AppUserFromJson(Map<String, dynamic> json) => _AppUser(
   id: json['id'] as String,
   firebaseUid: json['firebase_uid'] as String,
   role: $enumDecode(_$UserRoleEnumMap, json['role']),
-  name: json['name'] as String,
-  phone: json['phone'] as String,
+  name: json['name'] as String?,
+  phone: json['phone'] as String?,
   email: json['email'] as String?,
   fcmToken: json['fcm_token'] as String?,
 );

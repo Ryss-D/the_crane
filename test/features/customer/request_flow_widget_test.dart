@@ -15,8 +15,7 @@ void main() {
     await tester
         .pumpWidget(TheCraneApp(dependencies: testDependencies(jobs: jobs)));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Entrar como cliente'));
-    await tester.pumpAndSettle();
+    await signIn(tester);
     expect(find.byType(RequestScreen), findsOneWidget);
   }
 
