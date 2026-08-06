@@ -80,22 +80,25 @@ Flutter driver shell: go available, receive offers, execute the job.
   still computes) and a flat-mode `config_snapshot` (exact flat amount). Full suite
   green (234 passed, up from 230). No live device/backend pass -- same caveat as
   everything else this session.
-  Built (Flutter, still pending the fields above): `OfferCubit`/`OfferSheet` show
+  Built (Flutter): `OfferCubit`/`OfferSheet` show
   the countdown, auto-dismiss on timeout (counted as no-response), and accept
   navigates to `ActiveJobScreen` — covered by widget tests. No FCM tap-through when
-  backgrounded yet (WS-only), and pickup distance/commission preview are still
-  approximations (flat 15%, `0` distance) in
-  `ApiDriversRepository._toJobOffer` — that call site needs to switch to reading
-  `JobOfferEvent.pickup_distance_km`/`commission_amount` directly now that the
-  backend sends real values.
+  backgrounded yet (WS-only) — see below.
 
-  Follow-up: checked `backend/app/schemas/job.py`'s `JobOfferEvent` for the
-  real distance/commission fields a parallel backend agent was enriching it
-  with this same session — still only `vehicle_type`/`pickup`/`dropoff`/
-  `quoted_price`/`expires_in_seconds` as of this check, so that half is
-  still blocked; `ApiDriversRepository._toJobOffer`'s hardcoded
-  approximation is untouched. Picking this up needs a fresh check of that
-  schema.
+  Distance/commission wiring, completed: the Flutter agent that built the item
+  above ran in a worktree created before the backend's enrichment landed, so it
+  correctly found the schema still bare and left the hardcoded approximation in
+  place rather than guessing at field names. Wired directly afterward:
+  `ServerMessageJobOffer` (`lib/core/ws/server_message.dart`) gained
+  `pickupDistanceKm`/`commissionAmount`, parsed by `ServerMessage.fromWire` from
+  the now-real `pickup_distance_km`/`commission_amount` wire fields (null-safe —
+  both are optional on the wire), and `ApiDriversRepository._toJobOffer` reads
+  them, falling back to the flat-15%-of-quoted-price/zero-distance approximation
+  only when the backend's own best-effort computation came back null (no live
+  geo entry, or no quoted price). Tested (`test/core/ws/server_message_test.dart`):
+  both fields parse correctly when present, and both parse as null when absent so
+  the fallback path stays exercised too. Full suite green (148 passed, up from
+  146).
 
   Built instead: FCM foreground/resumed handling, previously entirely
   missing (`firebase_messaging` was only ever used for `AUTH-6`'s token
