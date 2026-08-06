@@ -2,6 +2,8 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/models/job.dart';
+import 'package:the_crane/core/models/lat_lng.dart';
+import 'package:the_crane/core/models/quote.dart';
 import 'package:the_crane/features/customer/request/request_bloc.dart';
 import 'package:the_crane/features/customer/request/request_state.dart';
 
@@ -16,6 +18,40 @@ FakeJobsRepository instantFakeJobs({
     matchingDelay: matchingDelay,
     matchingOutcome: outcome,
   );
+}
+
+/// CUS-2 test double: overrides the seeded 10-minute `expiresAt` with a
+/// short, injectable [ttl] so a stale-quote re-fetch test doesn't need to
+/// wait out the real default. Also counts [requestQuote] calls so a test
+/// can assert a re-fetch did (or didn't) happen without depending on
+/// `quoteId` string shape.
+class ShortTtlQuoteJobsRepository extends FakeJobsRepository {
+  ShortTtlQuoteJobsRepository({
+    required this.ttl,
+    super.matchingDelay = const Duration(milliseconds: 30),
+  }) : super(
+          quoteDelay: Duration.zero,
+          createDelay: Duration.zero,
+          actionDelay: Duration.zero,
+        );
+
+  final Duration ttl;
+  int quoteCalls = 0;
+
+  @override
+  Future<Quote> requestQuote({
+    required LatLng pickup,
+    required LatLng dropoff,
+    required VehicleType vehicleType,
+  }) async {
+    quoteCalls++;
+    final quote = await super.requestQuote(
+      pickup: pickup,
+      dropoff: dropoff,
+      vehicleType: vehicleType,
+    );
+    return quote.copyWith(expiresAt: DateTime.now().add(ttl));
+  }
 }
 
 Future<void> tick([int ms = 10]) =>
@@ -130,6 +166,50 @@ void main() {
       bloc.add(const RequestMatchingAbandoned());
       await tick();
       expect(bloc.state.activeJob, isNull);
+
+      await bloc.close();
+    });
+  });
+
+  group('RequestBloc CUS-2 stale-quote re-fetch', () {
+    test('auto re-fetches once the quote passes its expiresAt', () async {
+      final repo = ShortTtlQuoteJobsRepository(ttl: const Duration(milliseconds: 30));
+      final bloc = RequestBloc(jobsRepository: repo);
+      bloc
+        ..add(const RequestPickupChanged('Calle 10 #43E-31'))
+        ..add(const RequestDropoffChanged('Cra. 48, Envigado'));
+      await tick(20);
+      final firstQuoteId = bloc.state.quote!.quoteId;
+
+      // Past the short TTL, with no other action from the customer.
+      await tick(60);
+
+      expect(bloc.state.quote, isNotNull);
+      expect(bloc.state.quote!.quoteId, isNot(firstQuoteId));
+      expect(bloc.state.quoteFailed, isFalse);
+
+      await bloc.close();
+    });
+
+    test('does not re-fetch once the customer has already confirmed',
+        () async {
+      final repo = ShortTtlQuoteJobsRepository(
+        ttl: const Duration(milliseconds: 30),
+        matchingDelay: const Duration(seconds: 5),
+      );
+      final bloc = RequestBloc(jobsRepository: repo);
+      bloc
+        ..add(const RequestPickupChanged('Calle 10 #43E-31'))
+        ..add(const RequestDropoffChanged('Cra. 48, Envigado'));
+      await tick(20);
+      bloc.add(const RequestConfirmed());
+      await tick(20);
+      final quoteCallsAfterConfirm = repo.quoteCalls;
+      expect(bloc.state.activeJob, isNotNull);
+
+      // Past the TTL, but the bloc has moved on to matching -- no re-fetch.
+      await tick(60);
+      expect(repo.quoteCalls, quoteCallsAfterConfirm);
 
       await bloc.close();
     });

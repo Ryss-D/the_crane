@@ -144,7 +144,23 @@ class ApiJobsRepository implements JobsRepository {
         'vehicle_type': vehicleType.wire,
       },
     );
-    return Quote.fromJson(res.data!);
+    final data = res.data!;
+    final quote = Quote.fromJson(data);
+    // CUS-2: the real backend (`QuoteResponse` in
+    // `backend/app/schemas/job.py`) returns a relative `expires_in_seconds`
+    // (default 600 -- `QUOTE_TTL_SECONDS`), never an absolute `expires_at`,
+    // so `Quote.fromJson` alone leaves `expiresAt` null against the real
+    // API (only `FakeJobsRepository`'s seed sets it directly). Convert the
+    // relative TTL into an absolute timestamp here, at the moment the quote
+    // is received, so `RequestBloc`'s stale-quote re-fetch has a real
+    // deadline to schedule against either way.
+    if (quote.expiresAt == null && data['expires_in_seconds'] is num) {
+      final ttlSeconds = (data['expires_in_seconds'] as num).toInt();
+      return quote.copyWith(
+        expiresAt: DateTime.now().add(Duration(seconds: ttlSeconds)),
+      );
+    }
+    return quote;
   }
 
   @override
