@@ -12,5 +12,20 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // src/firebase.ts calls initializeApp/getAuth at module-eval time (via
+    // src/auth/firebaseAuth.ts, imported unconditionally by singleton.ts
+    // alongside FakeAuth) regardless of VITE_USE_MOCKS, so it needs a
+    // non-empty apiKey to not throw even though tests always exercise the
+    // FakeAuth path. Real dev/prod still comes from `.env.local` (untracked,
+    // see `.env.example`) — these are just placeholders so CI and fresh
+    // checkouts without that file don't crash before a single test runs.
+    env: {
+      VITE_FIREBASE_API_KEY: 'test-placeholder-api-key',
+      VITE_FIREBASE_AUTH_DOMAIN: 'test.firebaseapp.com',
+      VITE_FIREBASE_PROJECT_ID: 'test-project',
+      VITE_FIREBASE_STORAGE_BUCKET: 'test.firebasestorage.app',
+      VITE_FIREBASE_MESSAGING_SENDER_ID: '000000000000',
+      VITE_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000000000',
+    },
   },
 });
