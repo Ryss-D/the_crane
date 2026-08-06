@@ -16,10 +16,21 @@ Flutter driver shell: go available, receive offers, execute the job.
   calling `setStatus` when going available (skips it if permission was
   denied, matching the AC's toggle-drives-the-Redis-geo-presence intent).
   Verified against the fake (a dedicated test asserts the fix is actually
-  sent). Still not built: the blocked banner doesn't yet distinguish
-  unverified from balance-cap-blocked (a `TODO(LED-1)` in the code —
-  LED-1/LED-2 are done now, so this is unblocked but not yet wired) — that
-  half of the AC is what's keeping this unchecked.
+  sent).
+
+  Also fixed a real crash risk found along the way: Flutter's `DriverStatus`
+  enum was missing `blocked` (ADM-2's admin hold) entirely — any driver
+  profile response with that status would have thrown on enum decode, since
+  nothing in dev/fake mode ever produces it. Added it, fixed the two
+  resulting non-exhaustive-switch compile errors, and gave the blocked
+  banner a `DriverBlockReason` (`unverified`/`adminBlocked`) so it shows the
+  right message for each — partial progress on the AC's "blocked states
+  surfaced ... with explanation." Still open: the settlement balance-cap
+  rejection is a third, distinct reason (a 403 on `PATCH
+  /v1/drivers/me/status`, not a stored `DriverStatus` value) —
+  `toggleAvailability` currently discards that error entirely, so capturing
+  it into state is a separate follow-up. That's what's keeping this
+  unchecked.
 
 - [ ] **DRV-2 — Incoming offer sheet** *(deps: DSP-2, TRK-4)*
   Bottom sheet on offer (WS or FCM tap-through): pickup distance, route summary, vehicle type, fare, commission preview, countdown timer from config TTL; accept / reject.
