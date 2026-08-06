@@ -1,4 +1,4 @@
-package com.example.the_crane
+package com.thecrane.app
 
 import io.flutter.embedding.android.FlutterActivity
 
