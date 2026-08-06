@@ -57,6 +57,20 @@ describe('tracking page (WEB-3 skeleton)', () => {
     expect(screen.getByText('Carlos')).toBeInTheDocument();
     expect(screen.getByText('TKX-482')).toBeInTheDocument();
   });
+
+  it('shows a not-found message for an unknown or expired share token (WEB-4)', async () => {
+    renderAt('/t/this-token-does-not-exist');
+
+    // react-query's default retry:1 means one retry with a ~1s backoff delay
+    // before the query settles into an error state — give it more than the
+    // default 1000ms findBy timeout.
+    expect(await screen.findByRole('alert', {}, { timeout: 3000 })).toHaveTextContent(
+      strings.tracking.notFound,
+    );
+    expect(
+      screen.queryByRole('heading', { name: strings.tracking.publicTitle }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe('StatusTimeline', () => {
