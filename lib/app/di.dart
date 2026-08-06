@@ -69,13 +69,20 @@ class AppDependencies {
       // this same fake user's role to driver, mirroring the real backend's
       // single-request role flip (see `FakeAuthRepository.debugPromoteToDriver`).
       final authRepository = FakeAuthRepository();
+      // FLT-4: shared with the drivers fake too, so redeeming an invite
+      // token in `registerDriver` links onto the exact truck this fake
+      // fleet repo pre-provisioned in `createInvite`.
+      final fleetRepository = FakeFleetRepository(auth: authRepository);
       return AppDependencies(
         dio: dio,
         jobsRepository: jobs,
-        driversRepository:
-            FakeDriversRepository(jobs: jobs, auth: authRepository),
+        driversRepository: FakeDriversRepository(
+          jobs: jobs,
+          auth: authRepository,
+          fleet: fleetRepository,
+        ),
         vehiclesRepository: FakeVehiclesRepository(),
-        fleetRepository: FakeFleetRepository(auth: authRepository),
+        fleetRepository: fleetRepository,
         authCubit: AuthCubit(
           gateway: FakePhoneAuthGateway(),
           authRepository: authRepository,

@@ -38,6 +38,7 @@ import '../features/fleet/balance/fleet_balance_cubit.dart';
 import '../features/fleet/balance/fleet_balance_screen.dart';
 import '../features/fleet/home/fleet_cubit.dart';
 import '../features/fleet/home/fleet_home_screen.dart';
+import '../features/fleet/invite_driver/invite_driver_screen.dart';
 import '../features/fleet/truck_detail/fleet_truck_detail_screen.dart';
 import '../features/shared/history/history_cubit.dart';
 import '../features/shared/history/history_screen.dart';
@@ -62,6 +63,7 @@ abstract final class AppRoute {
   static const driverServicesPeriod = '/driver/earnings/services';
   static const fleetHome = '/fleet';
   static const fleetAddTruck = '/fleet/add-truck';
+  static const fleetInviteDriver = '/fleet/invite-driver';
   static const fleetBalance = '/fleet/balance';
 
   /// FLT-3: truck detail is a path-parameterized route (`trucks/:truckId`)
@@ -295,6 +297,10 @@ GoRouter createRouter(AuthCubit authCubit) {
               GoRoute(
                 path: 'add-truck',
                 builder: (context, state) => const AddTruckScreen(),
+              ),
+              GoRoute(
+                path: 'invite-driver',
+                builder: (context, state) => const InviteDriverScreen(),
               ),
               GoRoute(
                 path: 'balance',

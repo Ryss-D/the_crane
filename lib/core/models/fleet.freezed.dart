@@ -836,4 +836,273 @@ as List<FleetMemberBalance>,
 
 }
 
+
+/// @nodoc
+mixin _$DriverInvite {
+
+ String get inviteToken; String get truckId; String get phone;
+/// Create a copy of DriverInvite
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DriverInviteCopyWith<DriverInvite> get copyWith => _$DriverInviteCopyWithImpl<DriverInvite>(this as DriverInvite, _$identity);
+
+  /// Serializes this DriverInvite to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DriverInvite&&(identical(other.inviteToken, inviteToken) || other.inviteToken == inviteToken)&&(identical(other.truckId, truckId) || other.truckId == truckId)&&(identical(other.phone, phone) || other.phone == phone));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,inviteToken,truckId,phone);
+
+@override
+String toString() {
+  return 'DriverInvite(inviteToken: $inviteToken, truckId: $truckId, phone: $phone)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DriverInviteCopyWith<$Res>  {
+  factory $DriverInviteCopyWith(DriverInvite value, $Res Function(DriverInvite) _then) = _$DriverInviteCopyWithImpl;
+@useResult
+$Res call({
+ String inviteToken, String truckId, String phone
+});
+
+
+
+
+}
+/// @nodoc
+class _$DriverInviteCopyWithImpl<$Res>
+    implements $DriverInviteCopyWith<$Res> {
+  _$DriverInviteCopyWithImpl(this._self, this._then);
+
+  final DriverInvite _self;
+  final $Res Function(DriverInvite) _then;
+
+/// Create a copy of DriverInvite
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? inviteToken = null,Object? truckId = null,Object? phone = null,}) {
+  return _then(_self.copyWith(
+inviteToken: null == inviteToken ? _self.inviteToken : inviteToken // ignore: cast_nullable_to_non_nullable
+as String,truckId: null == truckId ? _self.truckId : truckId // ignore: cast_nullable_to_non_nullable
+as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [DriverInvite].
+extension DriverInvitePatterns on DriverInvite {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DriverInvite value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DriverInvite() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DriverInvite value)  $default,){
+final _that = this;
+switch (_that) {
+case _DriverInvite():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DriverInvite value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DriverInvite() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String inviteToken,  String truckId,  String phone)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DriverInvite() when $default != null:
+return $default(_that.inviteToken,_that.truckId,_that.phone);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String inviteToken,  String truckId,  String phone)  $default,) {final _that = this;
+switch (_that) {
+case _DriverInvite():
+return $default(_that.inviteToken,_that.truckId,_that.phone);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String inviteToken,  String truckId,  String phone)?  $default,) {final _that = this;
+switch (_that) {
+case _DriverInvite() when $default != null:
+return $default(_that.inviteToken,_that.truckId,_that.phone);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DriverInvite implements DriverInvite {
+  const _DriverInvite({required this.inviteToken, required this.truckId, required this.phone});
+  factory _DriverInvite.fromJson(Map<String, dynamic> json) => _$DriverInviteFromJson(json);
+
+@override final  String inviteToken;
+@override final  String truckId;
+@override final  String phone;
+
+/// Create a copy of DriverInvite
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DriverInviteCopyWith<_DriverInvite> get copyWith => __$DriverInviteCopyWithImpl<_DriverInvite>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DriverInviteToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DriverInvite&&(identical(other.inviteToken, inviteToken) || other.inviteToken == inviteToken)&&(identical(other.truckId, truckId) || other.truckId == truckId)&&(identical(other.phone, phone) || other.phone == phone));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,inviteToken,truckId,phone);
+
+@override
+String toString() {
+  return 'DriverInvite(inviteToken: $inviteToken, truckId: $truckId, phone: $phone)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DriverInviteCopyWith<$Res> implements $DriverInviteCopyWith<$Res> {
+  factory _$DriverInviteCopyWith(_DriverInvite value, $Res Function(_DriverInvite) _then) = __$DriverInviteCopyWithImpl;
+@override @useResult
+$Res call({
+ String inviteToken, String truckId, String phone
+});
+
+
+
+
+}
+/// @nodoc
+class __$DriverInviteCopyWithImpl<$Res>
+    implements _$DriverInviteCopyWith<$Res> {
+  __$DriverInviteCopyWithImpl(this._self, this._then);
+
+  final _DriverInvite _self;
+  final $Res Function(_DriverInvite) _then;
+
+/// Create a copy of DriverInvite
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? inviteToken = null,Object? truckId = null,Object? phone = null,}) {
+  return _then(_DriverInvite(
+inviteToken: null == inviteToken ? _self.inviteToken : inviteToken // ignore: cast_nullable_to_non_nullable
+as String,truckId: null == truckId ? _self.truckId : truckId // ignore: cast_nullable_to_non_nullable
+as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
 // dart format on

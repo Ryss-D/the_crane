@@ -19,10 +19,18 @@ abstract interface class DriversRepository {
   /// flips the caller's role to `driver` (unverified, offline until an
   /// admin verifies it). Document upload is out of scope — `licenseUrl`/
   /// `truckPhotoUrl` are plain strings, same as the backend schema.
+  ///
+  /// Two mutually exclusive shapes (FLT-4): bring your own truck
+  /// ([plate]/[truckType]/[capacity], all three required), or redeem a
+  /// fleet owner's invite ([inviteToken] from
+  /// `FleetRepository.createInvite`), which already pre-provisioned the
+  /// truck — [plate]/[truckType]/[capacity] must be left null in that case.
+  /// The backend 422s if both shapes are mixed.
   Future<DriverProfile> registerDriver({
-    required String plate,
-    required TruckType truckType,
-    required TruckCapacity capacity,
+    String? plate,
+    TruckType? truckType,
+    TruckCapacity? capacity,
+    String? inviteToken,
     String? licenseUrl,
     String? truckPhotoUrl,
   });
@@ -56,18 +64,24 @@ class ApiDriversRepository implements DriversRepository {
 
   @override
   Future<DriverProfile> registerDriver({
-    required String plate,
-    required TruckType truckType,
-    required TruckCapacity capacity,
+    String? plate,
+    TruckType? truckType,
+    TruckCapacity? capacity,
+    String? inviteToken,
     String? licenseUrl,
     String? truckPhotoUrl,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/v1/drivers/me/register',
       data: {
-        'plate': plate,
-        'truck_type': truckType.wire,
-        'capacity': capacity.wire,
+        // ignore: use_null_aware_elements
+        if (plate != null) 'plate': plate,
+        // ignore: use_null_aware_elements
+        if (truckType != null) 'truck_type': truckType.wire,
+        // ignore: use_null_aware_elements
+        if (capacity != null) 'capacity': capacity.wire,
+        // ignore: use_null_aware_elements
+        if (inviteToken != null) 'invite_token': inviteToken,
         // ignore: use_null_aware_elements
         if (licenseUrl != null) 'license_url': licenseUrl,
         // ignore: use_null_aware_elements

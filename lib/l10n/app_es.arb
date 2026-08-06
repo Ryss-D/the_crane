@@ -450,6 +450,26 @@
   "@becomeDriverIntro": {
     "description": "Become-a-driver screen intro copy"
   },
+  "becomeDriverModeOwnTruck": "Tengo mi camión",
+  "@becomeDriverModeOwnTruck": {
+    "description": "FLT-4: registration-mode selector option -- bring your own truck"
+  },
+  "becomeDriverModeInvite": "Tengo una invitación",
+  "@becomeDriverModeInvite": {
+    "description": "FLT-4: registration-mode selector option -- redeem a fleet owner's invite"
+  },
+  "becomeDriverInviteIntro": "Ingresa el código que te compartió el dueño de la flota.",
+  "@becomeDriverInviteIntro": {
+    "description": "FLT-4: intro copy shown above the invite-token field"
+  },
+  "inviteTokenFieldLabel": "Código de invitación",
+  "@inviteTokenFieldLabel": {
+    "description": "FLT-4: invite-token field label on the become-a-driver screen"
+  },
+  "inviteTokenFieldHint": "00000000-0000-0000-0000-000000000000",
+  "@inviteTokenFieldHint": {
+    "description": "FLT-4: invite-token field placeholder on the become-a-driver screen"
+  },
   "plateFieldLabel": "Placa",
   "@plateFieldLabel": {
     "description": "Truck plate field label"
@@ -597,6 +617,38 @@
   "detachTruckError": "No pudimos quitar la grúa. Intenta de nuevo.",
   "@detachTruckError": {
     "description": "FLT-4: shown when detaching the truck fails"
+  },
+  "inviteDriverTitle": "Invitar conductor",
+  "@inviteDriverTitle": {
+    "description": "FLT-4: invite-driver screen app bar title, and the nav button tooltip"
+  },
+  "inviteDriverIntro": "Invita a un conductor por celular; su camión queda listo para que lo reclame al registrarse.",
+  "@inviteDriverIntro": {
+    "description": "FLT-4: invite-driver screen intro copy"
+  },
+  "invitePhoneFieldLabel": "Celular del conductor",
+  "@invitePhoneFieldLabel": {
+    "description": "FLT-4: phone field label on the invite-driver screen"
+  },
+  "inviteSendButton": "Enviar invitación",
+  "@inviteSendButton": {
+    "description": "FLT-4: submits the invite-driver form"
+  },
+  "inviteSendError": "No pudimos enviar la invitación. Verifica los datos e intenta de nuevo.",
+  "@inviteSendError": {
+    "description": "FLT-4: shown when creating an invite fails (e.g. duplicate phone or plate)"
+  },
+  "pendingInvitesTitle": "Invitaciones pendientes",
+  "@pendingInvitesTitle": {
+    "description": "FLT-4: heading above the fleet's outstanding invites list"
+  },
+  "pendingInvitesEmptyBody": "No tienes invitaciones pendientes.",
+  "@pendingInvitesEmptyBody": {
+    "description": "FLT-4: shown when there are no pending invites"
+  },
+  "pendingInvitesLoadError": "No pudimos cargar las invitaciones. Intenta de nuevo.",
+  "@pendingInvitesLoadError": {
+    "description": "FLT-4: shown when loading pending invites fails"
   },
   "fleetBalanceTitle": "Ganancias de la flota",
   "@fleetBalanceTitle": {

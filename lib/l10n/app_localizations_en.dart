@@ -346,6 +346,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Register your tow truck to start receiving jobs.';
 
   @override
+  String get becomeDriverModeOwnTruck => 'I have my truck';
+
+  @override
+  String get becomeDriverModeInvite => 'I have an invite';
+
+  @override
+  String get becomeDriverInviteIntro =>
+      'Enter the code the fleet owner shared with you.';
+
+  @override
+  String get inviteTokenFieldLabel => 'Invite code';
+
+  @override
+  String get inviteTokenFieldHint => '00000000-0000-0000-0000-000000000000';
+
+  @override
   String get plateFieldLabel => 'Plate';
 
   @override
@@ -467,6 +483,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get detachTruckError =>
       'We could not remove the truck. Please try again.';
+
+  @override
+  String get inviteDriverTitle => 'Invite driver';
+
+  @override
+  String get inviteDriverIntro =>
+      'Invite a driver by phone number; their truck is ready for them to claim when they register.';
+
+  @override
+  String get invitePhoneFieldLabel => 'Driver\'s phone number';
+
+  @override
+  String get inviteSendButton => 'Send invite';
+
+  @override
+  String get inviteSendError =>
+      'We could not send the invite. Check the details and try again.';
+
+  @override
+  String get pendingInvitesTitle => 'Pending invites';
+
+  @override
+  String get pendingInvitesEmptyBody => 'You have no pending invites.';
+
+  @override
+  String get pendingInvitesLoadError =>
+      'We could not load the invites. Please try again.';
 
   @override
   String get fleetBalanceTitle => 'Fleet earnings';

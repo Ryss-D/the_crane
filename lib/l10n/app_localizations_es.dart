@@ -346,6 +346,22 @@ class AppLocalizationsEs extends AppLocalizations {
       'Registra tu grúa para empezar a recibir servicios.';
 
   @override
+  String get becomeDriverModeOwnTruck => 'Tengo mi camión';
+
+  @override
+  String get becomeDriverModeInvite => 'Tengo una invitación';
+
+  @override
+  String get becomeDriverInviteIntro =>
+      'Ingresa el código que te compartió el dueño de la flota.';
+
+  @override
+  String get inviteTokenFieldLabel => 'Código de invitación';
+
+  @override
+  String get inviteTokenFieldHint => '00000000-0000-0000-0000-000000000000';
+
+  @override
   String get plateFieldLabel => 'Placa';
 
   @override
@@ -465,6 +481,33 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get detachTruckError => 'No pudimos quitar la grúa. Intenta de nuevo.';
+
+  @override
+  String get inviteDriverTitle => 'Invitar conductor';
+
+  @override
+  String get inviteDriverIntro =>
+      'Invita a un conductor por celular; su camión queda listo para que lo reclame al registrarse.';
+
+  @override
+  String get invitePhoneFieldLabel => 'Celular del conductor';
+
+  @override
+  String get inviteSendButton => 'Enviar invitación';
+
+  @override
+  String get inviteSendError =>
+      'No pudimos enviar la invitación. Verifica los datos e intenta de nuevo.';
+
+  @override
+  String get pendingInvitesTitle => 'Invitaciones pendientes';
+
+  @override
+  String get pendingInvitesEmptyBody => 'No tienes invitaciones pendientes.';
+
+  @override
+  String get pendingInvitesLoadError =>
+      'No pudimos cargar las invitaciones. Intenta de nuevo.';
 
   @override
   String get fleetBalanceTitle => 'Ganancias de la flota';

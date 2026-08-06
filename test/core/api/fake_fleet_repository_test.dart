@@ -3,6 +3,7 @@ import 'package:the_crane/core/api/fake_auth_repository.dart';
 import 'package:the_crane/core/api/fake_fleet_repository.dart';
 import 'package:the_crane/core/api/fleet_repository.dart';
 import 'package:the_crane/core/models/app_user.dart';
+import 'package:the_crane/core/models/truck.dart';
 
 void main() {
   group('FakeFleetRepository.createFleet (FLT-1)', () {
@@ -111,6 +112,118 @@ void main() {
       await fleets.createFleet(name: 'Grúas del Valle');
 
       expect(() => fleets.detachTruck('unknown-id'), throwsStateError);
+    });
+  });
+
+  group('FakeFleetRepository.createInvite/listInvites (FLT-4)', () {
+    test('creates a pending invite and pre-provisions a truck', () async {
+      final fleets = FakeFleetRepository(actionDelay: Duration.zero);
+      await fleets.createFleet(name: 'Grúas del Valle');
+
+      final invite = await fleets.createInvite(
+        phone: '+573001112233',
+        plate: 'INV001',
+        truckType: TruckType.car,
+        capacity: TruckCapacity.car,
+      );
+
+      expect(invite.phone, '+573001112233');
+      final invites = await fleets.listInvites();
+      expect(invites, hasLength(1));
+      expect(invites.single.inviteToken, invite.inviteToken);
+    });
+
+    test('throws on a second pending invite for the same phone', () async {
+      final fleets = FakeFleetRepository(actionDelay: Duration.zero);
+      await fleets.createFleet(name: 'Grúas del Valle');
+      await fleets.createInvite(
+        phone: '+573001112233',
+        plate: 'INV001',
+        truckType: TruckType.car,
+        capacity: TruckCapacity.car,
+      );
+
+      expect(
+        () => fleets.createInvite(
+          phone: '+573001112233',
+          plate: 'INV002',
+          truckType: TruckType.car,
+          capacity: TruckCapacity.car,
+        ),
+        throwsStateError,
+      );
+    });
+
+    test('throws when the plate is already taken', () async {
+      final fleets = FakeFleetRepository(actionDelay: Duration.zero);
+      await fleets.createFleet(name: 'Grúas del Valle');
+
+      expect(
+        () => fleets.createInvite(
+          phone: '+573001112233',
+          plate: 'FLT001',
+          truckType: TruckType.car,
+          capacity: TruckCapacity.car,
+        ),
+        throwsStateError,
+      );
+    });
+  });
+
+  group('FakeFleetRepository.redeemInvite (FLT-4)', () {
+    test('links the invited truck onto the redeeming driver', () async {
+      final fleets = FakeFleetRepository(actionDelay: Duration.zero);
+      await fleets.createFleet(name: 'Grúas del Valle');
+      final invite = await fleets.createInvite(
+        phone: '+573001112233',
+        plate: 'INV001',
+        truckType: TruckType.car,
+        capacity: TruckCapacity.car,
+      );
+
+      final truck = fleets.redeemInvite(
+        inviteToken: invite.inviteToken,
+        phone: '+573001112233',
+        driverId: 'drv-new-1',
+      );
+
+      expect(truck.driverId, 'drv-new-1');
+      expect(truck.plate, 'INV001');
+      expect(await fleets.listInvites(), isEmpty);
+    });
+
+    test('throws when the phone does not match the invite', () async {
+      final fleets = FakeFleetRepository(actionDelay: Duration.zero);
+      await fleets.createFleet(name: 'Grúas del Valle');
+      final invite = await fleets.createInvite(
+        phone: '+573001112233',
+        plate: 'INV001',
+        truckType: TruckType.car,
+        capacity: TruckCapacity.car,
+      );
+
+      expect(
+        () => fleets.redeemInvite(
+          inviteToken: invite.inviteToken,
+          phone: '+573009998877',
+          driverId: 'drv-new-1',
+        ),
+        throwsStateError,
+      );
+    });
+
+    test('throws for an unknown invite token', () async {
+      final fleets = FakeFleetRepository(actionDelay: Duration.zero);
+      await fleets.createFleet(name: 'Grúas del Valle');
+
+      expect(
+        () => fleets.redeemInvite(
+          inviteToken: 'nope',
+          phone: '+573001112233',
+          driverId: 'drv-new-1',
+        ),
+        throwsStateError,
+      );
     });
   });
 

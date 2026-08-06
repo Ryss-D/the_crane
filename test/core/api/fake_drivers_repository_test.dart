@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_crane/core/api/fake_auth_repository.dart';
 import 'package:the_crane/core/api/fake_drivers_repository.dart';
+import 'package:the_crane/core/api/fake_fleet_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/models/app_user.dart';
 import 'package:the_crane/core/models/driver_profile.dart';
@@ -52,6 +53,60 @@ void main() {
 
       final user = await auth.sync();
       expect(user.role, UserRole.driver);
+    });
+
+    test('redeems a fleet invite instead of creating a new truck (FLT-4)',
+        () async {
+      final auth = FakeAuthRepository(delay: Duration.zero);
+      await auth.sync(name: 'Sofía Test');
+      final fleet = FakeFleetRepository(auth: auth, actionDelay: Duration.zero);
+      await fleet.createFleet(name: 'Grúas del Valle');
+      final invite = await fleet.createInvite(
+        // Matches FakeAuthRepository's fixed seed phone.
+        phone: '+573000000000',
+        plate: 'INV001',
+        truckType: TruckType.car,
+        capacity: TruckCapacity.car,
+      );
+
+      final drivers = FakeDriversRepository(
+        jobs: FakeJobsRepository(),
+        auth: auth,
+        fleet: fleet,
+        actionDelay: Duration.zero,
+      );
+      final profile = await drivers.registerDriver(inviteToken: invite.inviteToken);
+
+      expect(profile.truck!.plate, 'INV001');
+      expect(await fleet.listInvites(), isEmpty);
+      final user = await auth.sync();
+      expect(user.role, UserRole.driver);
+    });
+
+    test('throws when the invite phone does not match the caller',
+        () async {
+      final auth = FakeAuthRepository(delay: Duration.zero);
+      await auth.sync(name: 'Sofía Test');
+      final fleet = FakeFleetRepository(auth: auth, actionDelay: Duration.zero);
+      await fleet.createFleet(name: 'Grúas del Valle');
+      final invite = await fleet.createInvite(
+        phone: '+573009998877',
+        plate: 'INV001',
+        truckType: TruckType.car,
+        capacity: TruckCapacity.car,
+      );
+
+      final drivers = FakeDriversRepository(
+        jobs: FakeJobsRepository(),
+        auth: auth,
+        fleet: fleet,
+        actionDelay: Duration.zero,
+      );
+
+      expect(
+        () => drivers.registerDriver(inviteToken: invite.inviteToken),
+        throwsStateError,
+      );
     });
   });
 

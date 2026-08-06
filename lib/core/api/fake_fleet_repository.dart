@@ -51,6 +51,12 @@ class FakeFleetRepository implements FleetRepository {
   String _fleetName = '';
   DateTime? _createdAt;
   int _seq = 0;
+  int _inviteSeq = 0;
+
+  /// FLT-4: outstanding invites for the caller's fleet, redeemed by
+  /// [redeemInvite] (shared with `FakeDriversRepository`, same "cross-fake
+  /// mutation" pattern [_auth] uses).
+  final List<DriverInvite> _invites = [];
 
   final List<Truck> _trucks = [
     const Truck(
@@ -173,5 +179,78 @@ class FakeFleetRepository implements FleetRepository {
           members.fold<int>(0, (sum, member) => sum + member.owedBalance),
       members: members,
     );
+  }
+
+  @override
+  Future<DriverInvite> createInvite({
+    required String phone,
+    required String plate,
+    required TruckType truckType,
+    required TruckCapacity capacity,
+  }) async {
+    await Future<void>.delayed(actionDelay);
+    if (_fleetId == null) throw StateError('Fleet not found');
+    if (_invites.any((i) => i.phone == phone)) {
+      throw StateError('Phone already has a pending invite');
+    }
+    if (_trucks.any((t) => t.plate == plate)) {
+      throw StateError('Plate already registered');
+    }
+    final truckId = 'trk-invite-${++_inviteSeq}';
+    _trucks.add(
+      Truck(
+        id: truckId,
+        plate: plate,
+        type: truckType,
+        capacity: capacity,
+        fleetId: _fleetId,
+      ),
+    );
+    final invite = DriverInvite(
+      inviteToken: 'inv-$_inviteSeq',
+      truckId: truckId,
+      phone: phone,
+    );
+    _invites.add(invite);
+    return invite;
+  }
+
+  @override
+  Future<List<DriverInvite>> listInvites() async {
+    await Future<void>.delayed(actionDelay);
+    if (_fleetId == null) throw StateError('Fleet not found');
+    return List.unmodifiable(_invites);
+  }
+
+  /// FLT-4 test/dev hook: redeems [inviteToken] onto [driverId]'s account —
+  /// mirrors the real backend's invite-redeem branch in
+  /// `POST /v1/drivers/me/register` (phone match, truck link, invite
+  /// consumed). Called by `FakeDriversRepository.registerDriver` so the
+  /// "I have an invite" path exercises this fake's own `_trucks` list
+  /// instead of creating an unlinked one.
+  ///
+  /// Throws a [StateError] with the same message shapes the real 404/403/409
+  /// would map from, for a caller that wants to distinguish them.
+  Truck redeemInvite({
+    required String inviteToken,
+    required String phone,
+    required String driverId,
+  }) {
+    final index = _invites.indexWhere((i) => i.inviteToken == inviteToken);
+    if (index == -1) throw StateError('Invite not found');
+    final invite = _invites[index];
+    if (invite.phone != phone) {
+      throw StateError(
+        "Invite phone does not match the caller's verified phone number",
+      );
+    }
+    final truckIndex = _indexById(invite.truckId);
+    if (truckIndex == -1 || _trucks[truckIndex].driverId != null) {
+      throw StateError('Invited truck is no longer available');
+    }
+    final truck = _trucks[truckIndex].copyWith(driverId: driverId);
+    _trucks[truckIndex] = truck;
+    _invites.removeAt(index);
+    return truck;
   }
 }

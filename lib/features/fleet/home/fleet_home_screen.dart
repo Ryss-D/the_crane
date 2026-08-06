@@ -22,6 +22,12 @@ class FleetHomeScreen extends StatelessWidget {
         title: Text(l10n.fleetHomeTitle),
         actions: [
           IconButton(
+            key: const Key('inviteDriverNavButton'),
+            icon: const Icon(Icons.person_add_alt_outlined),
+            tooltip: l10n.inviteDriverTitle,
+            onPressed: () => context.push(AppRoute.fleetInviteDriver),
+          ),
+          IconButton(
             key: const Key('fleetBalanceNavButton'),
             icon: const Icon(Icons.account_balance_wallet_outlined),
             tooltip: l10n.fleetBalanceTitle,

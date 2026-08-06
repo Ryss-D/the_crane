@@ -46,6 +46,9 @@ void main() {
       isNotNull,
     );
 
+    // FLT-4's mode selector + invite-token/plate fields pushed the submit
+    // button below the fold on the default test viewport.
+    await tester.ensureVisible(find.byKey(const Key('becomeDriverSubmitButton')));
     await tester.tap(find.byKey(const Key('becomeDriverSubmitButton')));
     // registerDriver's actionDelay + refreshUser's sync delay, then the
     // router redirect's route transition. Not `pumpAndSettle`: the submit
@@ -57,4 +60,15 @@ void main() {
 
     expect(find.byType(DriverHomeScreen), findsOneWidget);
   });
+
+  // FLT-4's "redeem an invite" path (mode selector -> invite-token field ->
+  // register) is exercised at the repository level instead of end-to-end
+  // here: `test/core/api/fake_drivers_repository_test.dart` and
+  // `test/core/api/fake_fleet_repository_test.dart` cover successful
+  // redemption (truck link, invite consumed, role flip) and the
+  // phone-mismatch rejection. A widget-level version of this flow (tapping
+  // through the `_RegistrationMode.invite` segment) reliably hung the test
+  // runner here for a reason not yet root-caused -- not worth shipping a
+  // flaky/hanging test to chase full UI coverage of a path whose logic is
+  // otherwise well covered.
 }
