@@ -26,6 +26,7 @@ from app.models.job import (
 from app.models.user import User, UserRole
 from app.schemas.job import (
     JobCreate,
+    JobDriverInfo,
     JobListResponse,
     JobRead,
     JobStatusUpdate,
@@ -83,6 +84,42 @@ async def _get_job_or_404(session: AsyncSession, job_id: uuid.UUID) -> Job:
     return job
 
 
+async def _job_read(session: AsyncSession, job: Job) -> JobRead:
+    """Every job-returning endpoint goes through this instead of `return job`
+    directly, so the assigned driver's summary (name/phone/truck/rating) is
+    actually populated -- `Job` has no ORM relationship for it, so this is
+    the one extra query (skipped once there's no driver yet) that fills in
+    `JobRead.driver`, the same fields `track_job` below already fetches for
+    the public tracking view."""
+    read = JobRead.model_validate(job)
+    if job.driver_id is None:
+        return read
+    driver_user = await session.get(User, job.driver_id)
+    profile = await session.scalar(
+        select(DriverProfile).where(DriverProfile.user_id == job.driver_id)
+    )
+    truck = await session.scalar(select(Truck).where(Truck.driver_id == job.driver_id))
+    if truck is None:
+        # Shouldn't happen (a job only ever gets driver_id from an accepted
+        # offer, which requires a registered truck) -- fall back to no
+        # driver summary rather than a bogus one if it somehow did.
+        return read
+    return read.model_copy(
+        update={
+            "driver": JobDriverInfo(
+                id=job.driver_id,
+                name=driver_user.name if driver_user else None,
+                phone=driver_user.phone if driver_user else None,
+                truck_plate=truck.plate,
+                truck_type=truck.type,
+                rating_avg=float(profile.rating_avg)
+                if profile and profile.rating_avg is not None
+                else None,
+            )
+        }
+    )
+
+
 def _require_view_access(job: Job, user: User) -> None:
     """Customer sees own jobs, driver the ones assigned to them, admin any."""
     if user.role is UserRole.admin or user.id in (job.customer_id, job.driver_id):
@@ -119,7 +156,7 @@ async def create_job(
     redis: RedisDep,
     event_hook: EventHookDep,
     offer_notifier: OfferNotifierDep,
-) -> Job:
+) -> JobRead:
     """JOB-5: create a job from a quote; snapshots config and moves to `matching`."""
     quote = await pricing.pop_quote(redis, body.quote_id)
     if quote is None:
@@ -176,7 +213,7 @@ async def create_job(
     # asyncio.create_task would outlive this request-scoped `session`. Deterministic
     # and simple wins for an MVP-scale matcher; a queue/worker can take over later.
     await dispatch.start_dispatch(session, redis, job, event_hook, offer_notifier)
-    return job
+    return await _job_read(session, job)
 
 
 @router.get("", response_model=JobListResponse)
@@ -201,15 +238,20 @@ async def list_jobs(
             .offset(offset)
         )
     ).all()
-    return {"items": jobs, "total": total or 0, "limit": limit, "offset": offset}
+    return {
+        "items": [await _job_read(session, job) for job in jobs],
+        "total": total or 0,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.get("/{job_id}", response_model=JobRead)
-async def get_job(job_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> Job:
+async def get_job(job_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> JobRead:
     """JOB-5: customer sees own, driver sees assigned, admin any."""
     job = await _get_job_or_404(session, job_id)
     _require_view_access(job, user)
-    return job
+    return await _job_read(session, job)
 
 
 @router.post("/{job_id}/cancel", response_model=JobRead)
@@ -220,7 +262,7 @@ async def cancel_job_endpoint(
     redis: RedisDep,
     event_hook: EventHookDep,
     offer_notifier: OfferNotifierDep,
-) -> Job:
+) -> JobRead:
     """JOB-5: cancel per JOB-3 rules (customer -> cancelled, driver -> back to matching)."""
     job = await _get_job_or_404(session, job_id)
     try:
@@ -234,7 +276,7 @@ async def cancel_job_endpoint(
         # the offer loop. The ex-driver's own (accepted) job_offers row already
         # excludes them from start_dispatch's candidate search, no special-casing.
         await dispatch.start_dispatch(session, redis, job, event_hook, offer_notifier)
-    return job
+    return await _job_read(session, job)
 
 
 async def _get_pending_offer_or_403(
@@ -261,7 +303,7 @@ async def accept_job(
     session: SessionDep,
     redis: RedisDep,
     event_hook: EventHookDep,
-) -> Job:
+) -> JobRead:
     """DSP-3: the offered driver accepts — first accept wins, job -> assigned.
 
     Race safety: on Postgres this re-reads the job with SELECT ... FOR UPDATE,
@@ -309,7 +351,8 @@ async def accept_job(
     if truck is not None:
         await dispatch.remove_driver_from_geo(redis, user.id, truck.capacity)
 
-    return await transition(session, job, JobStatus.assigned, actor=user, event_hook=event_hook)
+    job = await transition(session, job, JobStatus.assigned, actor=user, event_hook=event_hook)
+    return await _job_read(session, job)
 
 
 @router.post("/{job_id}/reject", response_model=JobRead)
@@ -320,7 +363,7 @@ async def reject_job(
     redis: RedisDep,
     event_hook: EventHookDep,
     offer_notifier: OfferNotifierDep,
-) -> Job:
+) -> JobRead:
     """DSP-3: the offered driver declines — DSP-2 advances to the next candidate."""
     job = await _get_job_or_404(session, job_id)
     await _get_pending_offer_or_403(session, job.id, user.id)
@@ -334,7 +377,7 @@ async def reject_job(
         offer_notifier=offer_notifier,
     )
     await session.refresh(job)
-    return job
+    return await _job_read(session, job)
 
 
 @router.post("/{job_id}/retry", response_model=JobRead)
@@ -345,7 +388,7 @@ async def retry_job(
     redis: RedisDep,
     event_hook: EventHookDep,
     offer_notifier: OfferNotifierDep,
-) -> Job:
+) -> JobRead:
     """DSP-5: the customer retries a `no_drivers` job — a fresh matching round."""
     job = await _get_job_or_404(session, job_id)
     if job.customer_id != user.id:
@@ -359,7 +402,7 @@ async def retry_job(
         )
     await dispatch.retry_dispatch(session, redis, job, event_hook, offer_notifier)
     await session.refresh(job)
-    return job
+    return await _job_read(session, job)
 
 
 @router.post("/{job_id}/status", response_model=JobRead)
@@ -369,7 +412,7 @@ async def update_job_status(
     user: CurrentUser,
     session: SessionDep,
     event_hook: EventHookDep,
-) -> Job:
+) -> JobRead:
     """JOB-6: the assigned driver advances the machine (optionally with a location fix)."""
     job = await _get_job_or_404(session, job_id)
     if job.driver_id != user.id:
@@ -388,7 +431,7 @@ async def update_job_status(
             detail=f"Drivers cannot set status {body.status.value}",
         )
     try:
-        return await transition(
+        job = await transition(
             session,
             job,
             body.status,
@@ -399,6 +442,7 @@ async def update_job_status(
         )
     except JobTransitionError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return await _job_read(session, job)
 
 
 @router.post("/{job_id}/confirm-delivery", response_model=JobRead)
@@ -407,15 +451,16 @@ async def confirm_delivery_endpoint(
     user: CurrentUser,
     session: SessionDep,
     event_hook: EventHookDep,
-) -> Job:
+) -> JobRead:
     """CUS-5/LED-1: customer confirms delivery + cash payment -> completed + accrual."""
     job = await _get_job_or_404(session, job_id)
     try:
-        return await confirm_delivery(session, job, actor=user, event_hook=event_hook)
+        job = await confirm_delivery(session, job, actor=user, event_hook=event_hook)
     except JobAccessError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except JobTransitionError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return await _job_read(session, job)
 
 
 @track_router.get("/{share_token}", response_model=TrackResponse)

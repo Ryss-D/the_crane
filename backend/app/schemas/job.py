@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from app.models.driver import TruckType
 from app.models.job import JobStatus, PaymentMethod, VehicleType
 from app.services.pricing import QUOTE_TTL_SECONDS
 
@@ -46,12 +47,30 @@ class JobCreate(BaseModel):
     customer_vehicle_id: uuid.UUID | None = None
 
 
+class JobDriverInfo(BaseModel):
+    """Assigned-driver summary embedded in `JobRead` once a job has one —
+    matches the Flutter app's `JobDriverSummary` field-for-field
+    (`lib/core/models/job.dart`); the customer request/matching/active-job
+    screens have expected this shape all along, but nothing populated it
+    against the real backend until now (only the `FakeJobsRepository` seed
+    ever had one)."""
+
+    id: uuid.UUID
+    name: str | None
+    phone: str | None
+    truck_plate: str
+    truck_type: TruckType
+    rating_avg: float | None
+    photo_url: str | None = None
+
+
 class JobRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     customer_id: uuid.UUID
     driver_id: uuid.UUID | None
+    driver: JobDriverInfo | None = None
     vehicle_type: VehicleType
     status: JobStatus
     pickup_lat: float

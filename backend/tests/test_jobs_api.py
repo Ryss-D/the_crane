@@ -2,14 +2,16 @@
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.models.driver import Truck, TruckCapacity, TruckType
+from app.models.driver import DriverProfile, Truck, TruckCapacity, TruckType
 from app.models.job import DriverLocationSnapshot, JobStatus
 from app.models.user import User, UserRole
 from app.services.config import set_config
@@ -340,3 +342,47 @@ async def test_track_before_assignment_hides_driver(
 async def test_track_unknown_token_404(client: AsyncClient) -> None:
     assert (await client.get(f"/v1/track/{uuid.uuid4()}")).status_code == 404
     assert (await client.get("/v1/track/not-a-uuid")).status_code == 404
+
+
+async def test_assigned_job_embeds_driver_summary(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+    fake_redis: FakeRedis,
+) -> None:
+    """The customer/driver apps (CUS-3's driver card, WEB-3's driver card) have
+    always expected `driver` on an assigned job -- nothing populated it until now
+    (`JobRead.driver` + `_job_read` in app/api/jobs.py)."""
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="summary-driver", plate="ABC999"
+    )
+    async with session_maker() as session:
+        profile = await session.scalar(
+            select(DriverProfile).where(DriverProfile.user_id == driver.id)
+        )
+        assert profile is not None
+        profile.rating_avg = Decimal("4.90")
+        await session.commit()
+
+    job = await make_job(session_maker, customer_user, status=JobStatus.assigned, driver=driver)
+
+    response = await client.get(f"/v1/jobs/{job.id}", headers=AUTH_CUSTOMER)
+    assert response.status_code == 200
+    body = response.json()["driver"]
+    assert body["id"] == str(driver.id)
+    assert body["truck_plate"] == "ABC999"
+    assert body["truck_type"] == "standard"
+    assert body["rating_avg"] == 4.9
+
+
+async def test_unassigned_job_has_no_driver_summary(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+) -> None:
+    job = await make_job(session_maker, customer_user, status=JobStatus.matching)
+    response = await client.get(f"/v1/jobs/{job.id}", headers=AUTH_CUSTOMER)
+    assert response.status_code == 200
+    assert response.json()["driver"] is None
