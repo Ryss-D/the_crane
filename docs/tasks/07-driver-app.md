@@ -7,14 +7,19 @@ Flutter driver shell: go available, receive offers, execute the job.
   Design: «Inicio y disponibilidad» (`docs/design/screen-references.md`)
   *AC: toggle drives the Redis geo presence end to end.*
   Built: `DriverHomeScreen`/`DriverHomeCubit` toggle available/offline and
-  show a blocked banner when `!profile.verified`. Two real gaps found while
-  auditing this against what backend now expects: (1) `DriversRepository.setStatus`
-  never sends `lat`/`lng` — the backend's `DriverStatusUpdate` requires both
-  when going `available` (422 otherwise), so this would fail against the
-  real API every time, only ever exercised against the fake; (2) the
-  blocked banner doesn't yet distinguish unverified from balance-cap-blocked
-  (a `TODO(LED-1)` in the code — LED-1/LED-2 are done now, so this is
-  unblocked but not yet wired). Neither is fixed yet.
+  show a blocked banner when `!profile.verified`. Fixed a real gap found
+  while auditing this against what backend now expects:
+  `DriversRepository.setStatus` never sent `lat`/`lng`, but the backend's
+  `DriverStatusUpdate` requires both when going `available` (422
+  otherwise) — this only ever worked against the fake. `LocationSource`
+  gained a one-shot `getCurrentPosition()`; the cubit grabs a fix before
+  calling `setStatus` when going available (skips it if permission was
+  denied, matching the AC's toggle-drives-the-Redis-geo-presence intent).
+  Verified against the fake (a dedicated test asserts the fix is actually
+  sent). Still not built: the blocked banner doesn't yet distinguish
+  unverified from balance-cap-blocked (a `TODO(LED-1)` in the code —
+  LED-1/LED-2 are done now, so this is unblocked but not yet wired) — that
+  half of the AC is what's keeping this unchecked.
 
 - [ ] **DRV-2 — Incoming offer sheet** *(deps: DSP-2, TRK-4)*
   Bottom sheet on offer (WS or FCM tap-through): pickup distance, route summary, vehicle type, fare, commission preview, countdown timer from config TTL; accept / reject.

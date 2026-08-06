@@ -21,16 +21,17 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   the >10-minute staleness re-fetch — `Quote.expiresAt` exists on the model
   but nothing currently reads it to trigger an automatic re-quote.
 
-- [ ] **CUS-3 — Matching & assignment states** *(deps: CUS-2, DSP-2)*
+- [x] **CUS-3 — Matching & assignment states** *(deps: CUS-2, DSP-2)*
   "Buscando tu grúa" progress state → assigned: driver card (name, plate, truck type, rating, photo) → no-drivers state with retry.
   *AC: all three outcomes rendered from WS events; cancel available per JOB-3 rules.*
   Built: `MatchingScreen` renders all three states (searching / assigned
   driver card / no-drivers with retry), driven live by `JobsRepository.watchJob`
-  (TRK-4 WS when connected, polling fallback otherwise). Real gap: leaving
-  the matching screen (`RequestMatchingAbandoned`) only clears local state —
-  it does not call the real `POST /v1/jobs/{id}/cancel` (JOB-5, already
-  live on the backend), so an abandoned job is never actually cancelled
-  server-side. That's the one thing standing between this and a checked box.
+  (TRK-4 WS when connected, polling fallback otherwise). `RequestMatchingAbandoned`
+  now calls `JobsRepository.cancelJob` (`POST /v1/jobs/{id}/cancel`, JOB-5)
+  before clearing local state — best-effort, since the backend 409s past
+  its grace period and the customer leaves regardless. Verified against
+  the fake (which mirrors `CUSTOMER_CANCELLABLE`). Not yet verified live
+  against a real backend.
 
 - [ ] **CUS-4 — Live tracking screen** *(deps: TRK-4)*
   Driver marker moving live, route polyline, status timeline (assigned → en route → arrived → loading → in transit → delivered), call-driver button, share-trip button (TRK-6 link).
