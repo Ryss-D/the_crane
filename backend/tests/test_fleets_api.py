@@ -25,7 +25,7 @@ async def _register_driver_truck(
         session.add(driver)
         await session.flush()
         truck = Truck(
-            plate=plate, type=TruckType.standard, capacity=TruckCapacity.car, driver_id=driver.id
+            plate=plate, type=TruckType.car, capacity=TruckCapacity.car, driver_id=driver.id
         )
         session.add(truck)
         await session.commit()

@@ -294,7 +294,7 @@ async def test_track_public_no_auth_and_pii_limits(
         session.add(
             Truck(
                 plate="ABC123",
-                type=TruckType.standard,
+                type=TruckType.car,
                 capacity=TruckCapacity.car,
                 driver_id=driver_user.id,
             )
@@ -372,7 +372,7 @@ async def test_assigned_job_embeds_driver_summary(
     body = response.json()["driver"]
     assert body["id"] == str(driver.id)
     assert body["truck_plate"] == "ABC999"
-    assert body["truck_type"] == "standard"
+    assert body["truck_type"] == "car"
     assert body["rating_avg"] == 4.9
 
 

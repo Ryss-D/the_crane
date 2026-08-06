@@ -18,7 +18,7 @@ AUTH_CUSTOMER = {"Authorization": "Bearer customer-token"}
 def _register_body(**overrides: Any) -> dict[str, Any]:
     body: dict[str, Any] = {
         "plate": "XYZ123",
-        "truck_type": "standard",
+        "truck_type": "car",
         "capacity": "car",
         "license_url": "https://example.com/license.jpg",
         "truck_photo_url": "https://example.com/truck.jpg",
@@ -85,7 +85,7 @@ async def test_register_driver_creates_profile_and_truck_and_flips_role(
         assert profile.status is DriverStatus.offline
         truck = await session.scalar(select(Truck).where(Truck.driver_id == customer_user.id))
         assert truck is not None
-        assert truck.type is TruckType.standard
+        assert truck.type is TruckType.car
 
 
 async def test_register_driver_twice_is_409(

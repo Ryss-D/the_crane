@@ -87,7 +87,7 @@ async def test_fleet_roundtrip_and_truck_fk(
         session.add(
             Truck(
                 plate="FLT001",
-                type=TruckType.standard,
+                type=TruckType.car,
                 capacity=TruckCapacity.car,
                 driver_id=driver.id,
                 fleet_id=fleet.id,

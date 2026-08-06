@@ -85,7 +85,7 @@ export interface ConfigResponse {
 export const DRIVER_STATUSES = ['offline', 'available', 'on_job', 'blocked'] as const;
 export type DriverStatus = (typeof DRIVER_STATUSES)[number];
 
-export const TRUCK_TYPES = ['moto_only', 'flatbed', 'standard'] as const;
+export const TRUCK_TYPES = ['moto_only', 'flatbed', 'car'] as const;
 export type TruckType = (typeof TRUCK_TYPES)[number];
 
 export const TRUCK_CAPACITIES = ['moto', 'car', 'both'] as const;

@@ -345,7 +345,7 @@ async def make_available_driver(
         session.add(
             Truck(
                 plate=plate or firebase_uid[:16],
-                type=TruckType.standard,
+                type=TruckType.car,
                 capacity=capacity,
                 driver_id=user.id,
             )

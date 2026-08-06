@@ -24,7 +24,7 @@ class DriverStatus(enum.StrEnum):
 class TruckType(enum.StrEnum):
     moto_only = "moto_only"
     flatbed = "flatbed"
-    standard = "standard"
+    car = "car"
 
 
 class TruckCapacity(enum.StrEnum):
