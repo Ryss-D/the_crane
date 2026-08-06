@@ -13,6 +13,14 @@ abstract final class Env {
     defaultValue: 'http://localhost:8000',
   );
 
+  /// Base URL of `web-client` (no trailing slash) — used to build the
+  /// `/t/{token}` share-trip link (CUS-4/TRK-6). Defaults to its local dev
+  /// server; update per flavor once WEB-5 picks a real deploy target.
+  static const String webBaseUrl = String.fromEnvironment(
+    'WEB_BASE_URL',
+    defaultValue: 'http://localhost:5173',
+  );
+
   /// Flavor name: `dev` or `prod`.
   static const String name = String.fromEnvironment('ENV', defaultValue: 'dev');
 

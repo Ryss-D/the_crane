@@ -115,6 +115,10 @@ abstract class Job with _$Job {
     DateTime? completedAt,
     DateTime? cancelledAt,
     String? cancelReason,
+    // CUS-4: backs the "share trip" button (TRK-6's GET /v1/track/{token}).
+    // Optional because the fake job history's older seed data predates this
+    // field — real jobs always have one (the backend defaults it at creation).
+    String? shareToken,
   }) = _Job;
 
   factory Job.fromJson(Map<String, dynamic> json) => _$JobFromJson(json);

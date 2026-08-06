@@ -112,6 +112,7 @@ class FakeJobsRepository implements JobsRepository {
       distanceKm: cached.quote.distanceKm,
       quotedPrice: cached.quote.price,
       requestedAt: DateTime.now(),
+      shareToken: 'tok-${++_seq}',
     );
     _put(job);
     Timer(matchingDelay, () => _resolveMatching(job.id));
