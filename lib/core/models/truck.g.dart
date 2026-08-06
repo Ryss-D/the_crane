@@ -51,4 +51,5 @@ const _$DriverStatusEnumMap = {
   DriverStatus.offline: 'offline',
   DriverStatus.available: 'available',
   DriverStatus.onJob: 'on_job',
+  DriverStatus.blocked: 'blocked',
 };
