@@ -30,8 +30,16 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   now calls `JobsRepository.cancelJob` (`POST /v1/jobs/{id}/cancel`, JOB-5)
   before clearing local state — best-effort, since the backend 409s past
   its grace period and the customer leaves regardless. Verified against
-  the fake (which mirrors `CUSTOMER_CANCELLABLE`). Not yet verified live
-  against a real backend.
+  the fake (which mirrors `CUSTOMER_CANCELLABLE`).
+
+  Correction: the driver-card half of this AC (name, plate, truck type,
+  rating, photo) was actually broken against the real backend the whole
+  time -- `JobRead` never populated a `driver` object at all (fixed in
+  JOB-5, see `_job_read` in `backend/app/api/jobs.py`), and separately the
+  backend's `TruckType` enum used `standard` where the Flutter app has
+  always used `car`, so even a populated one would have failed to decode.
+  Both fixed now. Still not yet verified live against a real backend end
+  to end.
 
 - [ ] **CUS-4 — Live tracking screen** *(deps: TRK-4)*
   Driver marker moving live, route polyline, status timeline (assigned → en route → arrived → loading → in transit → delivered), call-driver button, share-trip button (TRK-6 link).
