@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.security import CurrentUser
-from app.models.driver import Truck
+from app.models.driver import DriverProfile, Truck
 from app.models.fleet import Fleet
 from app.models.user import User, UserRole
 from app.schemas.driver import TruckRead
@@ -43,13 +43,47 @@ async def _get_fleet_or_404(session: AsyncSession, owner_user_id: uuid.UUID) -> 
 
 
 async def _serialize_fleet(session: AsyncSession, fleet: Fleet) -> FleetRead:
+    """FLT-3 needs live per-truck status at a glance -- neither it (on
+    driver_profiles) nor the driver's name (on users) lives on Truck itself,
+    so this batches one query for each across every truck in the fleet
+    rather than N+1-ing per truck."""
     trucks = (await session.scalars(select(Truck).where(Truck.fleet_id == fleet.id))).all()
+    driver_ids = [t.driver_id for t in trucks if t.driver_id is not None]
+    statuses = (
+        {
+            p.user_id: p.status
+            for p in (
+                await session.scalars(
+                    select(DriverProfile).where(DriverProfile.user_id.in_(driver_ids))
+                )
+            )
+        }
+        if driver_ids
+        else {}
+    )
+    names = (
+        {u.id: u.name for u in (await session.scalars(select(User).where(User.id.in_(driver_ids))))}
+        if driver_ids
+        else {}
+    )
     return FleetRead(
         id=fleet.id,
         owner_user_id=fleet.owner_user_id,
         name=fleet.name,
         created_at=fleet.created_at,
-        trucks=[TruckRead.model_validate(t) for t in trucks],
+        trucks=[
+            TruckRead(
+                id=t.id,
+                plate=t.plate,
+                type=t.type,
+                capacity=t.capacity,
+                driver_id=t.driver_id,
+                fleet_id=t.fleet_id,
+                driver_status=statuses.get(t.driver_id) if t.driver_id else None,
+                driver_name=names.get(t.driver_id) if t.driver_id else None,
+            )
+            for t in trucks
+        ],
     )
 
 

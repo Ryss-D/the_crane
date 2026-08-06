@@ -33,6 +33,14 @@ class TruckRead(BaseModel):
     capacity: TruckCapacity
     driver_id: uuid.UUID | None
     fleet_id: uuid.UUID | None
+    # FLT-3: "Mi flota" needs live per-truck status at a glance, and neither
+    # attribute is on Truck itself (status lives on driver_profiles, name on
+    # users) -- both are None by default (e.g. from drivers.py's own
+    # DriverProfileRead.truck, where they'd be redundant) and only populated
+    # by fleets.py's _serialize_fleet, the one place a caller actually needs
+    # to see someone else's truck+driver together.
+    driver_status: DriverStatus | None = None
+    driver_name: str | None = None
 
 
 class DriverProfileRead(BaseModel):
