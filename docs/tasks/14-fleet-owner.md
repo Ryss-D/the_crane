@@ -68,6 +68,54 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   extent of what's buildable today. 4 new widget tests (attach, already
   -claimed, not-found, detach), full suite green (112 passed).
 
+  Backend built (the other half, migration 0009 + `driver_invites` table): the
+  invite/token mechanism above now exists.
+
+  - `POST /v1/fleets/me/invites` (fleet owner, `/me`-scoped like every other
+    fleet endpoint) -- body `{"phone": str, "plate": str, "truck_type":
+    TruckType, "capacity": TruckCapacity}` (same types as
+    `DriverRegisterRequest`, reused not redefined). Pre-provisions a `Truck` row
+    up front (unclaimed -- `driver_id` null, `fleet_id` = the caller's fleet)
+    and returns `{"invite_token": uuid, "truck_id": uuid, "phone": str}`, 201.
+    409 if `phone` already has a pending invite, or if `plate` is already taken
+    (mirrors AUTH-5's plate-uniqueness IntegrityError handling). 404 if the
+    caller has no fleet yet.
+  - `GET /v1/fleets/me/invites` (nice-to-have, built anyway since it was cheap)
+    -- lists the caller's still-pending invites, same `InviteRead` shape as a
+    list.
+  - `POST /v1/drivers/me/register` (AUTH-5's existing endpoint) gains an
+    optional `invite_token: uuid | None` field on `DriverRegisterRequest`.
+    Sending it switches the request into "redeem an invite" mode: `plate`/
+    `truck_type`/`capacity` must be left null (422 if any is sent alongside
+    `invite_token` -- the two shapes are mutually exclusive, not merged), the
+    invite's `phone` is checked against the caller's verified Firebase phone
+    claim (`claims.get("phone_number")`, same fallback `AuthSyncRequest`
+    already uses) rather than trusting a request-supplied value, and the
+    caller is linked onto the invite's pre-provisioned truck instead of a new
+    one being created. The invite flips from `pending` to `consumed`
+    (`consumed_at` set) so it can't be redeemed twice. 404 unknown token, 409
+    already-consumed token (redeeming twice), 403 phone mismatch, 409 already
+    registered as a driver (existing AUTH-5 behavior, unchanged). Sending
+    neither `invite_token` nor a complete `plate`/`truck_type`/`capacity` triple
+    is 422 (the original bring-your-own-truck path is untouched when
+    `invite_token` is omitted).
+
+  Scoped down from the original AC: nothing was cut from the phone-invite
+  mechanism itself -- create, redeem, double-redeem, and phone-mismatch are all
+  built and tested. What's still not built is the *Flutter* side (a fleet-owner
+  screen to actually send an invite by phone number, and a driver-signup screen
+  that accepts an `invite_token`, e.g. from a deep link) -- that's a separate
+  follow-up now that the backend contract above exists to build against. Not
+  checking this off yet for that reason; once the Flutter half lands this
+  should be fully checkable.
+
+  10 new backend tests (`tests/test_fleets_api.py`: create invite + pre
+  -provisioned truck, duplicate-pending-phone 409, duplicate-plate 409, no
+  -fleet 404, list-pending-invites; `tests/test_drivers_api.py`: redeem links
+  truck + consumes invite, invite_token+plate 422, phone-mismatch 403, double
+  -redeem 409, unknown-token 404, neither-shape 422), full backend suite green
+  (230 passed, up from 220).
+
 - [x] **FLT-5 — Fleet earnings screen** *(deps: FLT-2)*
   Commission accrued per truck, consolidated balance owed, settlement action (cash instructions; Wompi via PAY-3 pattern later).
   Design: «Ganancias de la flota» (`docs/design/screen-references.md`)

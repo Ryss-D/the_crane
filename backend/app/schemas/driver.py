@@ -10,16 +10,23 @@ from app.models.driver import DriverStatus, TruckCapacity, TruckType
 
 
 class DriverRegisterRequest(BaseModel):
-    """POST /v1/drivers/me/register body (AUTH-5).
+    """POST /v1/drivers/me/register body (AUTH-5, `invite_token` added by FLT-4).
 
     Document upload to object storage is out of scope for this task — license/truck
     photo URLs are accepted as plain strings for now; a later task wires real upload
     and replaces these with signed URLs from that flow.
+
+    Two mutually exclusive shapes: bring your own truck (`plate`/`truck_type`/
+    `capacity`, the original AUTH-5 flow -- all three required), or redeem a fleet
+    owner's invite (`invite_token` from POST /v1/fleets/me/invites), which already
+    pre-provisioned the truck -- `plate`/`truck_type`/`capacity` are ignored (and
+    must be left null) in that case. The endpoint 422s if both shapes are mixed.
     """
 
-    plate: str
-    truck_type: TruckType
-    capacity: TruckCapacity
+    plate: str | None = None
+    truck_type: TruckType | None = None
+    capacity: TruckCapacity | None = None
+    invite_token: uuid.UUID | None = None
     license_url: str | None = None
     truck_photo_url: str | None = None
 
