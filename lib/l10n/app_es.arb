@@ -586,6 +586,26 @@
   "@detachTruckError": {
     "description": "FLT-4: shown when detaching the truck fails"
   },
+  "fleetBalanceTitle": "Ganancias de la flota",
+  "@fleetBalanceTitle": {
+    "description": "FLT-5: fleet earnings screen app bar title, and the nav button tooltip"
+  },
+  "fleetBalanceOwedLabel": "Saldo pendiente consolidado",
+  "@fleetBalanceOwedLabel": {
+    "description": "FLT-5: label above the fleet's consolidated owed balance"
+  },
+  "fleetBalanceMembersTitle": "Desglose por conductor",
+  "@fleetBalanceMembersTitle": {
+    "description": "FLT-5: heading above the per-driver balance breakdown list"
+  },
+  "fleetBalanceNoMembersBody": "Tu flota aún no tiene conductores con saldo.",
+  "@fleetBalanceNoMembersBody": {
+    "description": "FLT-5: shown when the fleet has no members with a balance yet"
+  },
+  "fleetBalanceLoadError": "No pudimos cargar las ganancias de la flota. Intenta de nuevo.",
+  "@fleetBalanceLoadError": {
+    "description": "FLT-5: shown when loading the fleet balance fails"
+  },
   "cashPaymentPendingBody": "Confirma que recibiste el pago en efectivo para finalizar el servicio.",
   "@cashPaymentPendingBody": {
     "description": "CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation"

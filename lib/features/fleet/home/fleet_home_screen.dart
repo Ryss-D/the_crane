@@ -18,7 +18,17 @@ class FleetHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.fleetHomeTitle)),
+      appBar: AppBar(
+        title: Text(l10n.fleetHomeTitle),
+        actions: [
+          IconButton(
+            key: const Key('fleetBalanceNavButton'),
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            tooltip: l10n.fleetBalanceTitle,
+            onPressed: () => context.push(AppRoute.fleetBalance),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: BlocBuilder<FleetCubit, FleetState>(
           builder: (context, state) {

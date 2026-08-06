@@ -34,6 +34,8 @@ import '../features/driver/home/offer_cubit.dart';
 import '../features/driver/job/active_job_cubit.dart';
 import '../features/driver/job/active_job_screen.dart';
 import '../features/fleet/add_truck/add_truck_screen.dart';
+import '../features/fleet/balance/fleet_balance_cubit.dart';
+import '../features/fleet/balance/fleet_balance_screen.dart';
 import '../features/fleet/home/fleet_cubit.dart';
 import '../features/fleet/home/fleet_home_screen.dart';
 import '../features/fleet/truck_detail/fleet_truck_detail_screen.dart';
@@ -293,6 +295,15 @@ GoRouter createRouter(AuthCubit authCubit) {
               GoRoute(
                 path: 'add-truck',
                 builder: (context, state) => const AddTruckScreen(),
+              ),
+              GoRoute(
+                path: 'balance',
+                builder: (context, state) => BlocProvider(
+                  create: (context) => FleetBalanceCubit(
+                    fleetRepository: context.read<FleetRepository>(),
+                  )..load(),
+                  child: const FleetBalanceScreen(),
+                ),
               ),
             ],
           ),

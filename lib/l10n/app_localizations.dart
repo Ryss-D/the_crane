@@ -932,6 +932,36 @@ abstract class AppLocalizations {
   /// **'No pudimos quitar la grúa. Intenta de nuevo.'**
   String get detachTruckError;
 
+  /// FLT-5: fleet earnings screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Ganancias de la flota'**
+  String get fleetBalanceTitle;
+
+  /// FLT-5: label above the fleet's consolidated owed balance
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo pendiente consolidado'**
+  String get fleetBalanceOwedLabel;
+
+  /// FLT-5: heading above the per-driver balance breakdown list
+  ///
+  /// In es, this message translates to:
+  /// **'Desglose por conductor'**
+  String get fleetBalanceMembersTitle;
+
+  /// FLT-5: shown when the fleet has no members with a balance yet
+  ///
+  /// In es, this message translates to:
+  /// **'Tu flota aún no tiene conductores con saldo.'**
+  String get fleetBalanceNoMembersBody;
+
+  /// FLT-5: shown when loading the fleet balance fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar las ganancias de la flota. Intenta de nuevo.'**
+  String get fleetBalanceLoadError;
+
   /// CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation
   ///
   /// In es, this message translates to:

@@ -458,6 +458,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'We could not remove the truck. Please try again.';
 
   @override
+  String get fleetBalanceTitle => 'Fleet earnings';
+
+  @override
+  String get fleetBalanceOwedLabel => 'Consolidated owed balance';
+
+  @override
+  String get fleetBalanceMembersTitle => 'Breakdown by driver';
+
+  @override
+  String get fleetBalanceNoMembersBody =>
+      'Your fleet has no drivers with a balance yet.';
+
+  @override
+  String get fleetBalanceLoadError =>
+      'We could not load the fleet\'s earnings. Please try again.';
+
+  @override
   String get cashPaymentPendingBody =>
       'Confirm you received the cash payment to finish the job.';
 

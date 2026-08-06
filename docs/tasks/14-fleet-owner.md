@@ -68,7 +68,22 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   extent of what's buildable today. 4 new widget tests (attach, already
   -claimed, not-found, detach), full suite green (112 passed).
 
-- [ ] **FLT-5 — Fleet earnings screen** *(deps: FLT-2)*
+- [x] **FLT-5 — Fleet earnings screen** *(deps: FLT-2)*
   Commission accrued per truck, consolidated balance owed, settlement action (cash instructions; Wompi via PAY-3 pattern later).
   Design: «Ganancias de la flota» (`docs/design/screen-references.md`)
   *AC: per-truck numbers reconcile with the ledger; consolidated total matches FLT-2.*
+  Built: `FleetBalanceCubit` + `FleetBalanceScreen`, reachable from "Mi flota"'s
+  app bar wallet icon (same pattern as DRV-5's `EarningsScreen` off the driver
+  home screen). Shows the consolidated owed balance
+  (`FleetRepository.getBalance`, FLT-2's rollup) plus the per-driver breakdown
+  list it's built from. Consolidated total matching the per-driver sum is
+  exactly what FLT-2's backend already guarantees (`owed_balance` is
+  `sum(balances.values())` server-side) -- covered client-side by a cubit test
+  asserting the total equals the sum of the seeded members. Settlement action
+  (cash instructions / Wompi) is not built -- FLT-2's `POST
+  /v1/admin/fleets/{fleet_id}/settle` is an ADM-2-style admin action, not
+  something this fleet-owner-facing screen calls; leaving that as a
+  deliberately separate, not-yet-scoped piece rather than inventing a
+  fleet-owner-initiated settlement flow the backend doesn't expose. 3 new
+  tests (cubit load/failure, end-to-end widget flow), full suite green
+  (115 passed).

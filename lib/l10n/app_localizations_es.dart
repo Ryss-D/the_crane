@@ -456,6 +456,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detachTruckError => 'No pudimos quitar la grúa. Intenta de nuevo.';
 
   @override
+  String get fleetBalanceTitle => 'Ganancias de la flota';
+
+  @override
+  String get fleetBalanceOwedLabel => 'Saldo pendiente consolidado';
+
+  @override
+  String get fleetBalanceMembersTitle => 'Desglose por conductor';
+
+  @override
+  String get fleetBalanceNoMembersBody =>
+      'Tu flota aún no tiene conductores con saldo.';
+
+  @override
+  String get fleetBalanceLoadError =>
+      'No pudimos cargar las ganancias de la flota. Intenta de nuevo.';
+
+  @override
   String get cashPaymentPendingBody =>
       'Confirma que recibiste el pago en efectivo para finalizar el servicio.';
 
