@@ -7,11 +7,15 @@ import 'package:the_crane/core/models/driver_profile.dart';
 import 'package:the_crane/core/models/lat_lng.dart';
 import 'package:the_crane/features/driver/home/driver_home_cubit.dart';
 
-FakeDriversRepository instantFakeDrivers({bool verified = true}) {
+FakeDriversRepository instantFakeDrivers({
+  bool verified = true,
+  DriverStatus status = DriverStatus.offline,
+}) {
   return FakeDriversRepository(
     jobs: FakeJobsRepository(),
     actionDelay: Duration.zero,
     verified: verified,
+    status: status,
   );
 }
 
@@ -70,7 +74,23 @@ void main() {
         driversRepository: instantFakeDrivers(verified: false),
       ),
       act: (cubit) => cubit.toggleAvailability(),
-      verify: (cubit) => expect(cubit.state.isBlocked, isTrue),
+      verify: (cubit) {
+        expect(cubit.state.isBlocked, isTrue);
+        expect(cubit.state.blockReason, DriverBlockReason.unverified);
+      },
+    );
+
+    blocTest<DriverHomeCubit, DriverHomeState>(
+      'an admin-blocked profile surfaces its own distinct reason '
+      '(not the unverified one)',
+      build: () => DriverHomeCubit(
+        driversRepository: instantFakeDrivers(status: DriverStatus.blocked),
+      ),
+      act: (cubit) => cubit.toggleAvailability(),
+      verify: (cubit) {
+        expect(cubit.state.isBlocked, isTrue);
+        expect(cubit.state.blockReason, DriverBlockReason.adminBlocked);
+      },
     );
 
     test(

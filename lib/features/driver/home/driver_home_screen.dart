@@ -118,10 +118,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  // TODO(LED-1): distinguish unverified vs
-                                  // balance-cap blocked once the ledger
-                                  // exists.
-                                  l10n.blockedBannerUnverified,
+                                  state.blockReason ==
+                                          DriverBlockReason.adminBlocked
+                                      ? l10n.blockedBannerAdmin
+                                      : l10n.blockedBannerUnverified,
                                   style: TextStyle(
                                     color: theme.colorScheme.onErrorContainer,
                                   ),

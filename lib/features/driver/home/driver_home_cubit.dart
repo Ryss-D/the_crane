@@ -18,12 +18,29 @@ abstract class DriverHomeState with _$DriverHomeState {
     DriverProfile? profile,
   }) = _DriverHomeState;
 
-  /// Blocked from receiving offers (DRV-1 banner).
+  /// Blocked from receiving offers (DRV-1 banner) — either not yet verified
+  /// (AUTH-5) or on an admin hold (ADM-2's `DriverStatus.blocked`).
   ///
-  /// TODO(LED-1): also block on the commission balance cap once the driver
-  /// ledger exists.
-  bool get isBlocked => profile != null && !profile!.verified;
+  /// TODO(LED-2): the settlement balance-cap rejection is a distinct third
+  /// reason (`PATCH /v1/drivers/me/status` 403 "Balance owed to the platform
+  /// exceeds the allowed cap"), but `toggleAvailability` currently discards
+  /// that error entirely rather than capturing it into state — needs that
+  /// plumbing before this banner can distinguish it from the two below.
+  bool get isBlocked =>
+      profile != null &&
+      (!profile!.verified || profile!.status == DriverStatus.blocked);
+
+  /// Which blocked-banner message to show — only meaningful when [isBlocked].
+  DriverBlockReason get blockReason {
+    final p = profile;
+    if (p == null) return DriverBlockReason.none;
+    if (!p.verified) return DriverBlockReason.unverified;
+    if (p.status == DriverStatus.blocked) return DriverBlockReason.adminBlocked;
+    return DriverBlockReason.none;
+  }
 }
+
+enum DriverBlockReason { none, unverified, adminBlocked }
 
 /// Drives the DRV-1 availability toggle through [DriversRepository].
 class DriverHomeCubit extends Cubit<DriverHomeState> {

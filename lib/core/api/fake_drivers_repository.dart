@@ -20,12 +20,13 @@ class FakeDriversRepository implements DriversRepository {
     this.actionDelay = const Duration(milliseconds: 300),
     this.offerTtlSeconds = 30,
     bool verified = true,
+    DriverStatus status = DriverStatus.offline,
   })  : _jobs = jobs,
         _auth = auth,
         _profile = DriverProfile(
           id: 'drv-profile-001',
           userId: 'drv-001',
-          status: DriverStatus.offline,
+          status: status,
           verified: verified,
           truck: const Truck(
             id: 'trk-001',
@@ -87,7 +88,14 @@ class FakeDriversRepository implements DriversRepository {
     await Future<void>.delayed(actionDelay);
     lastLat = lat;
     lastLng = lng;
-    _profile = _profile.copyWith(status: status);
+    // Mirrors the real backend refusing to change status while blocked
+    // (403) — but, like the unverified case below, this fake stays
+    // permissive rather than throwing, so a widget/cubit test can still
+    // observe the resulting DriverHomeState (verified/blocked flow through
+    // to state.profile either way; only offline<->available actually toggle).
+    if (_profile.status != DriverStatus.blocked) {
+      _profile = _profile.copyWith(status: status);
+    }
     return _profile;
   }
 
