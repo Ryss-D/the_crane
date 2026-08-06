@@ -40,8 +40,32 @@ class TheCraneApp extends StatefulWidget {
   State<TheCraneApp> createState() => _TheCraneAppState();
 }
 
-class _TheCraneAppState extends State<TheCraneApp> {
+class _TheCraneAppState extends State<TheCraneApp> with WidgetsBindingObserver {
   late final GoRouter _router = createRouter(widget.dependencies.authCubit);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// DRV-2: coming back from the background is the case that most likely
+  /// left the socket's own reconnect backoff stale (mobile OSes tend to
+  /// suspend networking while backgrounded) — nudge it to check right away
+  /// rather than waiting out whatever backoff it's mid-wait on. A no-op
+  /// under `Env.useFakeBackend` (`socket` is null there).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.dependencies.socket?.reconnectNow();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

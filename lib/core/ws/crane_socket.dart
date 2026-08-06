@@ -123,6 +123,23 @@ class CraneSocket {
     }
   }
 
+  /// DRV-2: forces an immediate reconnect attempt, bypassing whatever
+  /// backoff delay is currently pending. A no-op while already connected
+  /// or before [connect] has ever been called.
+  ///
+  /// Meant for a caller with an outside reason to believe the connection
+  /// may be stale right now (e.g. an FCM foreground push hinting at a
+  /// fresh offer while the socket's own backoff hasn't caught up yet) —
+  /// everything else about reconnecting (backoff, re-subscribing) already
+  /// happens automatically; this just skips the wait once.
+  void reconnectNow() {
+    if (_disposed || !_started || _status == CraneSocketStatus.connected) {
+      return;
+    }
+    _reconnectTimer?.cancel();
+    unawaited(_open());
+  }
+
   Uri _wsUri(String? token) {
     final httpUri = Uri.parse(_baseUrl);
     final scheme = httpUri.scheme == 'https' ? 'wss' : 'ws';
