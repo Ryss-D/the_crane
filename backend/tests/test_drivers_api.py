@@ -240,3 +240,77 @@ async def test_status_blocked_over_balance_cap(
         json={"status": "available", "lat": 6.2442, "lng": -75.5812},
     )
     assert response.status_code == 403
+
+
+# ---- GET /v1/drivers/me/balance (DRV-5) ----------------------------------------
+
+
+async def test_get_balance_reports_owed_and_recent_settlements(
+    client: AsyncClient,
+    verified_tokens: dict[str, dict[str, Any]],
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    user, headers = await _register_and_verify(
+        client, verified_tokens, session_maker, firebase_uid="balance-driver", plate="BAL0001"
+    )
+    async with session_maker() as session:
+        await set_config(
+            session, fake_redis, "settlement", {"balance_cap": 50000, "period": "weekly"}
+        )
+        session.add(
+            DriverLedgerEntry(
+                driver_id=user.id,
+                job_id=None,
+                gross=100000,
+                commission=15000,
+                net=85000,
+                entry_type=LedgerEntryType.earning,
+            )
+        )
+        session.add(
+            DriverLedgerEntry(
+                driver_id=user.id,
+                job_id=None,
+                gross=5000,
+                commission=0,
+                net=5000,
+                entry_type=LedgerEntryType.payout,
+                note="partial settlement",
+            )
+        )
+        await session.commit()
+
+    response = await client.get("/v1/drivers/me/balance", headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["owed_cents"] == 10000
+    assert body["balance_cap_cents"] == 50000
+    assert len(body["recent_settlements"]) == 1
+    settlement = body["recent_settlements"][0]
+    assert settlement["amount_cents"] == 5000
+    assert settlement["note"] == "partial settlement"
+
+
+async def test_get_balance_no_cap_and_no_settlements(
+    client: AsyncClient,
+    verified_tokens: dict[str, dict[str, Any]],
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
+    _user, headers = await _register_and_verify(
+        client, verified_tokens, session_maker, firebase_uid="fresh-driver", plate="FRESH01"
+    )
+    response = await client.get("/v1/drivers/me/balance", headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["owed_cents"] == 0
+    assert body["balance_cap_cents"] is None
+    assert body["recent_settlements"] == []
+
+
+async def test_get_balance_404_without_driver_profile(
+    client: AsyncClient, verified_tokens: dict[str, dict[str, Any]], customer_user: User
+) -> None:
+    verified_tokens["customer-token"] = {"uid": customer_user.firebase_uid}
+    response = await client.get("/v1/drivers/me/balance", headers=AUTH_CUSTOMER)
+    assert response.status_code == 404

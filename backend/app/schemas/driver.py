@@ -1,6 +1,8 @@
-"""Request/response schemas for the drivers API (AUTH-5 registration, DSP-1 status)."""
+"""Request/response schemas for the drivers API (AUTH-5 registration, DSP-1 status,
+driver-facing earnings/balance)."""
 
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
@@ -57,3 +59,23 @@ class DriverStatusUpdate(BaseModel):
     status: DriverStatus
     lat: float | None = None
     lng: float | None = None
+
+
+class DriverSettlementRead(BaseModel):
+    """One entry in GET /v1/drivers/me/balance's recent-settlements list — built
+    from a `payout` driver_ledger row (see app/services/ledger.py's docstring on
+    the earning/payout/adjustment convention)."""
+
+    id: str
+    amount_cents: int
+    settled_at: datetime
+    note: str | None
+
+
+class DriverBalanceRead(BaseModel):
+    """GET /v1/drivers/me/balance (DRV-5): current owed balance, the settlement
+    cap it's gated against (null if disabled), and recent settlement history."""
+
+    owed_cents: int
+    balance_cap_cents: int | None
+    recent_settlements: list[DriverSettlementRead]

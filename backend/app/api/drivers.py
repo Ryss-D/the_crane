@@ -17,10 +17,13 @@ from app.core.database import get_session
 from app.core.redis import get_redis
 from app.core.security import CurrentUser
 from app.models.driver import DriverProfile, DriverStatus, Truck
+from app.models.ledger import DriverLedgerEntry, LedgerEntryType
 from app.models.user import UserRole
 from app.schemas.driver import (
+    DriverBalanceRead,
     DriverProfileRead,
     DriverRegisterRequest,
+    DriverSettlementRead,
     DriverStatusUpdate,
     TruckRead,
 )
@@ -32,6 +35,8 @@ router = APIRouter(prefix="/drivers", tags=["drivers"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 RedisDep = Annotated[RedisLike, Depends(get_redis)]
+
+RECENT_SETTLEMENTS_LIMIT = 20
 
 
 async def _get_profile_or_404(session: AsyncSession, user_id) -> DriverProfile:
@@ -177,3 +182,43 @@ async def update_driver_status(
     await session.commit()
     await session.refresh(profile)
     return await _serialize_profile(session, profile)
+
+
+@router.get("/me/balance", response_model=DriverBalanceRead)
+async def get_my_balance(
+    user: CurrentUser,
+    session: SessionDep,
+    redis: RedisDep,
+) -> DriverBalanceRead:
+    """DRV-5: the calling driver's current owed balance plus recent settlement
+    history (backs the Flutter earnings & balance screen).
+
+    "Recent settlements" is every `payout` driver_ledger row for this driver, newest
+    first, capped at 20 — the same row shape both LED-4's per-driver settle and
+    FLT-2's fleet settle write, so a fleet settlement shows up here too.
+    """
+    await _get_profile_or_404(session, user.id)
+    owed = await driver_owed_balance(session, user.id)
+    settlement_config = await get_config(session, redis, "settlement") or {}
+    balance_cap = settlement_config.get("balance_cap")
+    entries = (
+        await session.scalars(
+            select(DriverLedgerEntry)
+            .where(
+                DriverLedgerEntry.driver_id == user.id,
+                DriverLedgerEntry.entry_type == LedgerEntryType.payout,
+            )
+            .order_by(DriverLedgerEntry.created_at.desc())
+            .limit(RECENT_SETTLEMENTS_LIMIT)
+        )
+    ).all()
+    return DriverBalanceRead(
+        owed_cents=owed,
+        balance_cap_cents=balance_cap,
+        recent_settlements=[
+            DriverSettlementRead(
+                id=str(e.id), amount_cents=e.net, settled_at=e.created_at, note=e.note
+            )
+            for e in entries
+        ],
+    )
