@@ -171,6 +171,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get availabilityOnJob => 'En servicio';
 
   @override
+  String get availabilityBlocked => 'Bloqueado';
+
+  @override
   String get goAvailableButton => 'Conectarme';
 
   @override
@@ -185,6 +188,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get blockedBannerUnverified =>
       'Tu cuenta está pendiente de verificación. No recibirás ofertas todavía.';
+
+  @override
+  String get blockedBannerAdmin =>
+      'Tu cuenta está bloqueada. Contacta a soporte para más información.';
 
   @override
   String get devTriggerOfferButton => 'Simular oferta (dev)';

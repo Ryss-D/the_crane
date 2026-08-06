@@ -86,6 +86,7 @@ class _TruckRow extends StatelessWidget {
     return switch (truck.driverStatus) {
       DriverStatus.available => Colors.green,
       DriverStatus.onJob => Colors.orange,
+      DriverStatus.blocked => scheme.error,
       DriverStatus.offline || null => scheme.outline,
     };
   }

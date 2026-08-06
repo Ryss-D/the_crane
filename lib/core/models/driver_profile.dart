@@ -10,7 +10,11 @@ part 'driver_profile.g.dart';
 enum DriverStatus {
   offline('offline'),
   available('available'),
-  onJob('on_job');
+  onJob('on_job'),
+  // ADM-2: admin-set hold (verified stays true, but PATCH /v1/drivers/me/status
+  // 403s until an admin unblocks). Missing this crashed enum decoding for any
+  // blocked driver's profile -- found while auditing DRV-1's blocked-banner gap.
+  blocked('blocked');
 
   const DriverStatus(this.wire);
 

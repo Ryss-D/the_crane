@@ -398,6 +398,12 @@ abstract class AppLocalizations {
   /// **'En servicio'**
   String get availabilityOnJob;
 
+  /// Driver status: admin-blocked hold
+  ///
+  /// In es, this message translates to:
+  /// **'Bloqueado'**
+  String get availabilityBlocked;
+
   /// Button to go available
   ///
   /// In es, this message translates to:
@@ -427,6 +433,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tu cuenta está pendiente de verificación. No recibirás ofertas todavía.'**
   String get blockedBannerUnverified;
+
+  /// Banner when an admin has put the driver on hold
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta está bloqueada. Contacta a soporte para más información.'**
+  String get blockedBannerAdmin;
 
   /// Dev-only button that simulates an incoming offer
   ///

@@ -69,6 +69,7 @@ extension DriverStatusLabel on DriverStatus {
         DriverStatus.offline => l10n.availabilityOffline,
         DriverStatus.available => l10n.availabilityAvailable,
         DriverStatus.onJob => l10n.availabilityOnJob,
+        DriverStatus.blocked => l10n.availabilityBlocked,
       };
 }
 

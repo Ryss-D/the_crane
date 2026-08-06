@@ -171,6 +171,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get availabilityOnJob => 'On a job';
 
   @override
+  String get availabilityBlocked => 'Blocked';
+
+  @override
   String get goAvailableButton => 'Go online';
 
   @override
@@ -185,6 +188,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get blockedBannerUnverified =>
       'Your account is pending verification. You will not receive offers yet.';
+
+  @override
+  String get blockedBannerAdmin =>
+      'Your account is blocked. Contact support for details.';
 
   @override
   String get devTriggerOfferButton => 'Simulate offer (dev)';

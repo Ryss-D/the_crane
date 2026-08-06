@@ -220,6 +220,10 @@
   "@availabilityOnJob": {
     "description": "Driver status: on an active job"
   },
+  "availabilityBlocked": "Bloqueado",
+  "@availabilityBlocked": {
+    "description": "Driver status: admin-blocked hold"
+  },
   "goAvailableButton": "Conectarme",
   "@goAvailableButton": {
     "description": "Button to go available"
@@ -239,6 +243,10 @@
   "blockedBannerUnverified": "Tu cuenta está pendiente de verificación. No recibirás ofertas todavía.",
   "@blockedBannerUnverified": {
     "description": "Banner when the driver is not yet verified by an admin"
+  },
+  "blockedBannerAdmin": "Tu cuenta está bloqueada. Contacta a soporte para más información.",
+  "@blockedBannerAdmin": {
+    "description": "Banner when an admin has put the driver on hold"
   },
   "devTriggerOfferButton": "Simular oferta (dev)",
   "@devTriggerOfferButton": {
