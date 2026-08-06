@@ -6,16 +6,36 @@ Flutter driver shell: go available, receive offers, execute the job.
   Map + big available/offline toggle; going available starts the location stream (TRK-5); blocked states surfaced (unverified, balance cap) with explanation.
   Design: «Inicio y disponibilidad» (`docs/design/screen-references.md`)
   *AC: toggle drives the Redis geo presence end to end.*
+  Built: `DriverHomeScreen`/`DriverHomeCubit` toggle available/offline and
+  show a blocked banner when `!profile.verified`. Two real gaps found while
+  auditing this against what backend now expects: (1) `DriversRepository.setStatus`
+  never sends `lat`/`lng` — the backend's `DriverStatusUpdate` requires both
+  when going `available` (422 otherwise), so this would fail against the
+  real API every time, only ever exercised against the fake; (2) the
+  blocked banner doesn't yet distinguish unverified from balance-cap-blocked
+  (a `TODO(LED-1)` in the code — LED-1/LED-2 are done now, so this is
+  unblocked but not yet wired). Neither is fixed yet.
 
 - [ ] **DRV-2 — Incoming offer sheet** *(deps: DSP-2, TRK-4)*
   Bottom sheet on offer (WS or FCM tap-through): pickup distance, route summary, vehicle type, fare, commission preview, countdown timer from config TTL; accept / reject.
   Design: «Oferta entrante» (`docs/design/screen-references.md`)
   *AC: timeout auto-dismisses and counts as no-response; accept navigates to the active job screen.*
+  Built: `OfferCubit`/`OfferSheet` show the countdown, auto-dismiss on
+  timeout (counted as no-response), and accept navigates to
+  `ActiveJobScreen` — covered by widget tests. No FCM tap-through when
+  backgrounded yet (WS-only), and pickup distance/commission preview are
+  still approximations (flat 15%, `0` distance) pending real dispatch data.
 
 - [ ] **DRV-3 — Active job screen** *(deps: JOB-6, TRK-4)*
   Status-advance button per phase (En camino → Llegué → Cargado → En ruta → Entregado), map with route, deep-link to Google Maps navigation, call-customer button, cancel (returns job to matching).
   Design: «Viaje activo» — shows vehicle/plate + pickup contact, not a rider (`docs/design/screen-references.md`)
   *AC: full happy path advances through every state; backend rejections surface clearly.*
+  Built: the full happy path (`assigned` → … → `delivered`) advances via
+  `ActiveJobCubit.advance()`, with `MapPlaceholder` standing in for FND-6.
+  Not built: backend rejections (409/403) are swallowed silently (a
+  `TODO(DRV-3)` marks the exact spot in `active_job_cubit.dart`), no map
+  route or Google Maps navigation deep-link, no call-customer button, no
+  driver-side cancel.
 
 - [ ] **DRV-4 — Cash collection + completion** *(deps: DRV-3, LED-1)*
   On delivered: fare + "collected in cash" confirmation; shows commission accrued for this job and new running balance.
