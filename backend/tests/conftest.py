@@ -146,6 +146,10 @@ class FakeRedis:
                 removed += 1
         return removed
 
+    async def geopos(self, name: str, *values: str) -> list:
+        bucket = self.geo.get(name, {})
+        return [bucket.get(member, None) for member in values]
+
     async def geosearch(
         self,
         name: str,

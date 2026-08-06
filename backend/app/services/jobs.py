@@ -297,7 +297,7 @@ async def _accrue_completion(session: AsyncSession, job: Job, gateway: PaymentGa
         return  # retry — payment + ledger already written
 
     amount = int(job.final_price)
-    commission = _commission_from_snapshot(job)
+    commission = commission_for_fare(job, amount)
     session.add(
         DriverLedgerEntry(
             driver_id=job.driver_id,
@@ -310,14 +310,16 @@ async def _accrue_completion(session: AsyncSession, job: Job, gateway: PaymentGa
     )
 
 
-def _commission_from_snapshot(job: Job) -> int:
-    """COP commission from the job's snapshot: percent -> rate x fare, flat -> amount."""
+def commission_for_fare(job: Job, fare: int) -> int:
+    """COP commission on `fare` per the job's snapshot: percent -> rate x fare, flat ->
+    amount. Shared by completion accrual (`fare` = final_price) and the DRV-2 offer
+    preview (`fare` = quoted_price, since final_price is null until completion)."""
     commission_config = (job.config_snapshot or {}).get("commission") or {}
     vehicle_type = job.vehicle_type.value
     mode = commission_config.get("mode")
     if mode == "percent":
         rate = float((commission_config.get("rate") or {}).get(vehicle_type, 0))
-        return round(int(job.final_price) * rate)
+        return round(fare * rate)
     if mode == "flat":
         return int((commission_config.get("amount") or {}).get(vehicle_type, 0))
     return 0  # defensive: JOB-5 jobs always carry a snapshot

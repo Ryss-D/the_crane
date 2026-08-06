@@ -190,3 +190,12 @@ class JobOfferEvent(BaseModel):
     dropoff: LatLng
     quoted_price: int | None
     expires_in_seconds: int
+    # DRV-2: None when the driver's live position isn't in the geo set at offer
+    # time (lapsed/never set) rather than erroring — this is an enrichment on top
+    # of dispatch, never something that should block an offer going out.
+    pickup_distance_km: float | None
+    # DRV-2: preview of the commission that would accrue if this offer is
+    # accepted and the job completes at the quoted price (config_snapshot's
+    # commission rule against quoted_price, not final_price — the fare isn't
+    # final yet). None when quoted_price itself is unset.
+    commission_amount: int | None

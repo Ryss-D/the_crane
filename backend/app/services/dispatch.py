@@ -65,12 +65,13 @@ def get_offer_notifier() -> OfferNotifier:
 class GeoRedisLike(RedisLike, Protocol):
     """The Redis geo commands dispatch needs, on top of RedisLike's get/set/delete.
 
-    Matches redis.asyncio.Redis's GEOADD/GEOSEARCH/ZREM signatures directly, so
+    Matches redis.asyncio.Redis's GEOADD/GEOSEARCH/GEOPOS/ZREM signatures directly, so
     production code is unchanged versus the FakeRedis emulation tests use.
     """
 
     async def geoadd(self, name: str, values: list) -> object: ...
     async def geosearch(self, name: str, **kwargs: object) -> list: ...
+    async def geopos(self, name: str, *values: str) -> list: ...
     async def zrem(self, name: str, *values: str) -> object: ...
 
 
@@ -116,6 +117,23 @@ async def remove_driver_from_geo(
     """DSP-1/DSP-3: drop the driver from every geo bucket (going offline or winning a job)."""
     for bucket in _buckets_for_capacity(capacity):
         await redis.zrem(_geo_key(bucket), str(driver_id))
+
+
+async def driver_geo_position(
+    redis: GeoRedisLike, vehicle_type: VehicleType, driver_id: uuid.UUID
+) -> tuple[float, float] | None:
+    """DRV-2: the driver's stored (lat, lng) in the geo bucket a job of this
+    vehicle_type searches (same bucket `_search_available_drivers` found them in).
+
+    None if the driver has no entry there — their geo record could have lapsed
+    between the search and the offer (went offline, lost their fix, ...); callers
+    should treat that as "position unknown", not an error.
+    """
+    positions = await redis.geopos(_geo_key(_capacity_bucket(vehicle_type)), str(driver_id))
+    if not positions or positions[0] is None:
+        return None
+    lng, lat = positions[0]
+    return float(lat), float(lng)
 
 
 async def _all_offered_driver_ids(session: AsyncSession, job_id: uuid.UUID) -> set[uuid.UUID]:

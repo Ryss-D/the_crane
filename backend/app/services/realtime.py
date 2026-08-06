@@ -32,7 +32,9 @@ from app.schemas.job import (
 )
 from app.services.config import RedisLike
 from app.services.connection_manager import ConnectionManager
-from app.services.dispatch import DEFAULT_OFFER_TTL_SECONDS
+from app.services.dispatch import DEFAULT_OFFER_TTL_SECONDS, GeoRedisLike, driver_geo_position
+from app.services.jobs import commission_for_fare
+from app.services.pricing import haversine_km
 
 __all__ = ["broadcast_job_event", "notify_driver_offer", "publish_driver_location"]
 
@@ -79,7 +81,7 @@ async def broadcast_job_event(
 
 
 async def notify_driver_offer(
-    redis: RedisLike,
+    redis: GeoRedisLike,
     manager: ConnectionManager,
     offer: JobOffer,
     job: Job,
@@ -92,7 +94,20 @@ async def notify_driver_offer(
     live config lookup (would need a session here just for that) — authoritative
     expiry enforcement stays server-side in POST /v1/jobs/{id}/accept, which checks
     the actual configured `dispatch.offer_ttl_seconds` against `offer.offered_at`.
+
+    DRV-2: pickup_distance_km/commission_amount are best-effort enrichments, not
+    load-bearing for dispatch — a missing geo entry (position) or quote
+    (commission) just leaves the field None rather than failing the offer.
     """
+    position = await driver_geo_position(redis, job.vehicle_type, offer.driver_id)
+    pickup_distance_km = (
+        round(haversine_km(position, (job.pickup_lat, job.pickup_lng)), 2)
+        if position is not None
+        else None
+    )
+    commission_amount = (
+        commission_for_fare(job, int(job.quoted_price)) if job.quoted_price is not None else None
+    )
     payload = JobOfferEvent(
         job_id=job.id,
         offer_id=offer.id,
@@ -101,6 +116,8 @@ async def notify_driver_offer(
         dropoff=LatLng(lat=job.dropoff_lat, lng=job.dropoff_lng),
         quoted_price=job.quoted_price,
         expires_in_seconds=DEFAULT_OFFER_TTL_SECONDS,
+        pickup_distance_km=pickup_distance_km,
+        commission_amount=commission_amount,
     )
     await manager.publish_to_user(redis, offer.driver_id, payload.model_dump(mode="json"))
     # TODO(FCM): also push via Firebase Cloud Messaging here once credentials exist —

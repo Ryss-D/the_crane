@@ -49,11 +49,45 @@ Flutter driver shell: go available, receive offers, execute the job.
   Bottom sheet on offer (WS or FCM tap-through): pickup distance, route summary, vehicle type, fare, commission preview, countdown timer from config TTL; accept / reject.
   Design: «Oferta entrante» (`docs/design/screen-references.md`)
   *AC: timeout auto-dismisses and counts as no-response; accept navigates to the active job screen.*
-  Built: `OfferCubit`/`OfferSheet` show the countdown, auto-dismiss on
-  timeout (counted as no-response), and accept navigates to
-  `ActiveJobScreen` — covered by widget tests. No FCM tap-through when
-  backgrounded yet (WS-only), and pickup distance/commission preview are
-  still approximations (flat 15%, `0` distance) pending real dispatch data.
+  Backend built (not in the original backlog line item, added so the offer sheet has
+  real numbers to bind to instead of client-side approximations): the WS `job_offer`
+  push (`JobOfferEvent`, `backend/app/schemas/job.py`) gained two fields --
+  `pickup_distance_km: float | None` and `commission_amount: int | None` (both new,
+  alongside the pre-existing `type`/`job_id`/`offer_id`/`vehicle_type`/`pickup`/
+  `dropoff`/`quoted_price`/`expires_in_seconds`).
+  `pickup_distance_km` is the real haversine distance (km, rounded to 2 decimals)
+  from the offered driver's live position -- looked up via a new
+  `dispatch.driver_geo_position(redis, vehicle_type, driver_id)` (GEOPOS against
+  whichever geo bucket DSP-1's `add_driver_to_geo` put them in) -- to
+  `job.pickup_lat`/`pickup_lng`. `None` if the driver has no entry in that geo set
+  at offer time (lapsed/never set) -- this is a best-effort enrichment, never
+  something that can fail an offer. `commission_amount` is the commission that
+  would accrue if this offer is accepted and the job completes at the quoted price:
+  `app/services/jobs.py`'s completion-accrual helper was generalized from a private
+  `_commission_from_snapshot(job)` (always read `job.final_price`) into a shared
+  `commission_for_fare(job, fare)`, called here with `int(job.quoted_price)` since
+  `final_price` is null until completion -- same percent-of-fare/flat logic per
+  `job.config_snapshot["commission"]` either way. `None` only if `quoted_price`
+  itself is unset. `GeoRedisLike`/`FakeRedis` both gained `geopos` to support the
+  lookup. Tested (`backend/tests/test_dispatch.py`,
+  `backend/tests/test_ws.py`): `driver_geo_position` returns real coordinates for a
+  seeded geo entry and `None` for an unseeded driver id;
+  `test_dispatch_offer_sends_job_offer_to_driver_ws` (full create-job -> dispatch ->
+  WS flow) now asserts a real non-zero `pickup_distance_km` matching an
+  independently computed haversine value plus the correct `commission_amount` for
+  the seeded 15%-of-fare config; two more tests call `notify_driver_offer` directly
+  to cover a driver with no geo entry (`pickup_distance_km` is `None`, commission
+  still computes) and a flat-mode `config_snapshot` (exact flat amount). Full suite
+  green (234 passed, up from 230). No live device/backend pass -- same caveat as
+  everything else this session.
+  Built (Flutter, still pending the fields above): `OfferCubit`/`OfferSheet` show
+  the countdown, auto-dismiss on timeout (counted as no-response), and accept
+  navigates to `ActiveJobScreen` — covered by widget tests. No FCM tap-through when
+  backgrounded yet (WS-only), and pickup distance/commission preview are still
+  approximations (flat 15%, `0` distance) in
+  `ApiDriversRepository._toJobOffer` — that call site needs to switch to reading
+  `JobOfferEvent.pickup_distance_km`/`commission_amount` directly now that the
+  backend sends real values.
 
 - [ ] **DRV-3 — Active job screen** *(deps: JOB-6, TRK-4)*
   Status-advance button per phase (En camino → Llegué → Cargado → En ruta → Entregado), map with route, deep-link to Google Maps navigation, call-customer button, cancel (returns job to matching).

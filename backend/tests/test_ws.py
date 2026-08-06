@@ -21,11 +21,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from app.models.job import Job, JobStatus
-from app.models.user import User
+from app.models.job import Job, JobOffer, JobStatus, OfferResponse
+from app.models.user import User, UserRole
 from app.services.connection_manager import ConnectionManager
-from app.services.pricing import get_directions_client
-from tests.conftest import FakeRedis, make_available_driver, make_job
+from app.services.pricing import get_directions_client, haversine_km
+from app.services.realtime import notify_driver_offer
+from tests.conftest import FakeRedis, _create_user, make_available_driver, make_job
 
 AUTH_CUSTOMER = {"Authorization": "Bearer customer-token"}
 
@@ -213,7 +214,11 @@ async def test_dispatch_offer_sends_job_offer_to_driver_ws(
     fake_redis: FakeRedis,
     seeded_config: Any,
 ) -> None:
-    driver = await make_available_driver(session_maker, fake_redis, firebase_uid="offer-driver")
+    # A few km from pickup (6.2442, -75.5812) — real, non-zero distance below,
+    # not just "same point happens to be 0.0".
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="offer-driver", lat=6.25, lng=-75.59
+    )
     tokens["offer-driver-token"] = {"uid": driver.firebase_uid}
 
     # Driver connects (and thus subscribes to its own user channel) BEFORE the job
@@ -229,6 +234,79 @@ async def test_dispatch_offer_sends_job_offer_to_driver_ws(
         assert offer["type"] == "job_offer"
         assert offer["job_id"] == create_resp.json()["id"]
         assert offer["vehicle_type"] == "car"
+
+        # DRV-2: real pickup distance (from the driver's live geo position, per
+        # DSP-1's add_driver_to_geo) and commission preview (config_snapshot's
+        # commission rule against the quoted price, seeded_config's 15% for car).
+        expected_distance = round(haversine_km((6.25, -75.59), (6.2442, -75.5812)), 2)
+        assert offer["pickup_distance_km"] == expected_distance
+        assert offer["pickup_distance_km"] > 0
+        assert offer["quoted_price"] == 110000  # base 60000 + per_km 5000 x 10km
+        assert offer["commission_amount"] == round(110000 * 0.15)  # 16500
+
+
+async def test_notify_driver_offer_pickup_distance_none_without_geo_entry(
+    app: FastAPI,
+    tokens: Any,
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+    fake_redis: FakeRedis,
+    connection_manager: ConnectionManager,
+) -> None:
+    """A driver with no live position in the geo set (lapsed/never set) gets a
+    None pickup_distance_km rather than notify_driver_offer erroring — dispatch
+    can only ever offer someone it actually found in the geo set, but the lookup
+    here is a separate, best-effort read that shouldn't assume that always holds."""
+    driver = await _create_user(session_maker, "no-geo-driver", UserRole.driver)
+    tokens["no-geo-driver-token"] = {"uid": driver.firebase_uid}
+    job = await make_job(
+        session_maker,
+        customer_user,
+        status=JobStatus.matching,
+        config_snapshot={"commission": {"mode": "percent", "rate": {"car": 0.15}}},
+        quoted_price=110000,
+    )
+    offer = JobOffer(
+        id=uuid.uuid4(), job_id=job.id, driver_id=driver.id, response=OfferResponse.pending
+    )
+
+    with TestClient(app).websocket_connect("/v1/ws?token=no-geo-driver-token") as driver_ws:
+        await notify_driver_offer(fake_redis, connection_manager, offer, job)
+
+        received = driver_ws.receive_json()
+        assert received["pickup_distance_km"] is None
+        # Independent of the geo lookup: commission still comes through.
+        assert received["commission_amount"] == round(110000 * 0.15)
+
+
+async def test_notify_driver_offer_commission_flat_mode(
+    app: FastAPI,
+    tokens: Any,
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+    driver_user: User,
+    fake_redis: FakeRedis,
+    connection_manager: ConnectionManager,
+) -> None:
+    """Flat-commission config_snapshot (the other _commission_from_snapshot mode)
+    previews correctly too, not just percent-of-fare."""
+    job = await make_job(
+        session_maker,
+        customer_user,
+        status=JobStatus.matching,
+        config_snapshot={"commission": {"mode": "flat", "amount": {"car": 12000}}},
+        quoted_price=110000,
+    )
+    offer = JobOffer(
+        id=uuid.uuid4(), job_id=job.id, driver_id=driver_user.id, response=OfferResponse.pending
+    )
+
+    with TestClient(app).websocket_connect("/v1/ws?token=driver-token") as driver_ws:
+        await notify_driver_offer(fake_redis, connection_manager, offer, job)
+
+        received = driver_ws.receive_json()
+        assert received["commission_amount"] == 12000
+        assert received["pickup_distance_km"] is None  # driver never added to any geo bucket
 
 
 # ---- driver location pipeline (TRK-2) ------------------------------------------------

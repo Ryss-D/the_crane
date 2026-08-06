@@ -110,6 +110,26 @@ async def test_start_dispatch_offers_nearest_first(
     assert offer.driver_id == near.id
 
 
+async def test_driver_geo_position_returns_stored_lat_lng(fake_redis: FakeRedis) -> None:
+    """DRV-2: GEOPOS lookup against the bucket the driver's capacity was added to."""
+    driver_id = uuid.uuid4()
+    await dispatch.add_driver_to_geo(fake_redis, driver_id, TruckCapacity.car, 6.25, -75.59)
+
+    position = await dispatch.driver_geo_position(fake_redis, VehicleType.car, driver_id)
+
+    assert position == (6.25, -75.59)
+
+
+async def test_driver_geo_position_is_none_when_driver_not_in_geo_set(
+    fake_redis: FakeRedis,
+) -> None:
+    """DRV-2: no GEOADD for this driver -> None, not an error (the enrichment must
+    never be able to break an offer going out)."""
+    position = await dispatch.driver_geo_position(fake_redis, VehicleType.car, uuid.uuid4())
+
+    assert position is None
+
+
 async def test_moto_job_never_offered_to_car_only_driver(
     session_maker: async_sessionmaker[AsyncSession],
     fake_redis: FakeRedis,
