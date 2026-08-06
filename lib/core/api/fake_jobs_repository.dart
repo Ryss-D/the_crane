@@ -65,6 +65,12 @@ class FakeJobsRepository implements JobsRepository {
     ratingAvg: 4.8,
   );
 
+  /// Test hook: overrides the driver assigned once matching resolves (or
+  /// once `acceptJob` runs) — e.g. CUS-4 tests exercising the
+  /// phone-conditional call button with a driver that has no phone.
+  /// Defaults to [_seedDriver].
+  JobDriverSummary driverOverride = _seedDriver;
+
   @override
   Future<Quote> requestQuote({
     required LatLng pickup,
@@ -126,8 +132,8 @@ class FakeJobsRepository implements JobsRepository {
       case FakeMatchingOutcome.assigned:
         _put(job.copyWith(
           status: JobStatus.assigned,
-          driverId: _seedDriver.id,
-          driver: _seedDriver,
+          driverId: driverOverride.id,
+          driver: driverOverride,
           assignedAt: DateTime.now(),
         ));
       case FakeMatchingOutcome.noDrivers:
@@ -157,8 +163,8 @@ class FakeJobsRepository implements JobsRepository {
     if (job == null) throw StateError('Unknown job: $id');
     final accepted = job.copyWith(
       status: JobStatus.assigned,
-      driverId: _seedDriver.id,
-      driver: _seedDriver,
+      driverId: driverOverride.id,
+      driver: driverOverride,
       assignedAt: DateTime.now(),
     );
     _put(accepted);
@@ -245,7 +251,7 @@ class FakeJobsRepository implements JobsRepository {
       // is recorded as the customer rating the driver — good enough to
       // exercise the submit/skip flow and the history detail screen.
       fromUserId: job.customerId,
-      toUserId: job.driverId ?? _seedDriver.id,
+      toUserId: job.driverId ?? driverOverride.id,
       stars: stars,
       comment: trimmed == null || trimmed.isEmpty ? null : trimmed,
       createdAt: DateTime.now(),
@@ -268,7 +274,7 @@ class FakeJobsRepository implements JobsRepository {
     await Future<void>.delayed(actionDelay);
     final all = _jobs.values.where((job) => switch (role) {
           JobHistoryRole.customer => job.customerId == _fakeCustomerId,
-          JobHistoryRole.driver => job.driverId == _seedDriver.id,
+          JobHistoryRole.driver => job.driverId == driverOverride.id,
         }).toList()
       ..sort((a, b) => b.requestedAt.compareTo(a.requestedAt));
     final page = all.skip(offset).take(limit).toList(growable: false);

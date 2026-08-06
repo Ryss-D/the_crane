@@ -177,5 +177,8 @@
   "servicesPeriodLoadError": "We could not load your services. Please try again.",
   "servicesCountLabel": "{count} services",
   "servicesEarningsLabel": "Cash collected",
-  "servicesCommissionLabel": "Commission"
+  "servicesCommissionLabel": "Commission",
+  "callDriverButton": "Call driver",
+  "shareTripButton": "Share trip",
+  "shareTripLinkCopied": "Link copied to clipboard"
 }

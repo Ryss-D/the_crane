@@ -584,4 +584,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get servicesCommissionLabel => 'Comisión';
+
+  @override
+  String get callDriverButton => 'Llamar al conductor';
+
+  @override
+  String get shareTripButton => 'Compartir viaje';
+
+  @override
+  String get shareTripLinkCopied => 'Enlace copiado al portapapeles';
 }

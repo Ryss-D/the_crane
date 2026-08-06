@@ -746,5 +746,17 @@
   "servicesCommissionLabel": "Comisión",
   "@servicesCommissionLabel": {
     "description": "DRV-6: total commission owed for a given day"
+  },
+  "callDriverButton": "Llamar al conductor",
+  "@callDriverButton": {
+    "description": "CUS-4: calls the assigned driver's phone number"
+  },
+  "shareTripButton": "Compartir viaje",
+  "@shareTripButton": {
+    "description": "CUS-4: copies the TRK-6 share-trip link to the clipboard"
+  },
+  "shareTripLinkCopied": "Enlace copiado al portapapeles",
+  "@shareTripLinkCopied": {
+    "description": "CUS-4: confirmation shown after copying the share-trip link"
   }
 }

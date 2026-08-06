@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/api/jobs_repository.dart';
+import 'package:the_crane/core/config/env.dart';
 import 'package:the_crane/core/models/job.dart';
+import 'package:the_crane/core/models/truck.dart';
 import 'package:the_crane/features/customer/request/matching_screen.dart';
 import 'package:the_crane/features/customer/request/request_screen.dart';
 import 'package:the_crane/main.dart';
@@ -10,6 +13,27 @@ import 'package:the_crane/main.dart';
 import '../../support/test_dependencies.dart';
 
 void main() {
+  // CUS-4: `Clipboard.setData`/`getData` go through `SystemChannels.platform`
+  // — with no real platform underneath a VM widget test, an unmocked call
+  // just never completes. Fake it in-memory so the share-trip test can
+  // actually round-trip through `Clipboard`.
+  String? clipboardText;
+  setUp(() {
+    clipboardText = null;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      switch (call.method) {
+        case 'Clipboard.setData':
+          clipboardText = (call.arguments as Map)['text'] as String?;
+          return null;
+        case 'Clipboard.getData':
+          return <String, dynamic>{'text': clipboardText};
+        default:
+          return null;
+      }
+    });
+  });
+
   Future<void> pumpToRequestScreen(
     WidgetTester tester,
     FakeJobsRepository jobs,
@@ -143,12 +167,147 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10)); // watch stream
 
     expect(find.byKey(const Key('confirmCashPaymentButton')), findsOneWidget);
-    expect(find.text('Entregada'), findsNothing); // no status chip here
+    // CUS-4: the status timeline (not a standalone chip) shows "Entregada"
+    // as the current step.
+    expect(
+      tester
+          .widget<Icon>(find.byKey(const Key('statusStepIcon_delivered')))
+          .icon,
+      Icons.radio_button_checked,
+    );
 
+    await tester.ensureVisible(find.byKey(const Key('confirmCashPaymentButton')));
     await tester.tap(find.byKey(const Key('confirmCashPaymentButton')));
     await tester.pump(const Duration(milliseconds: 10)); // confirmDelivery
 
     expect(find.byKey(const Key('confirmCashPaymentButton')), findsNothing);
     expect(find.byKey(const Key('rateTripButton')), findsOneWidget);
+  });
+
+  testWidgets(
+      'CUS-4: status timeline renders with the assigned step highlighted, '
+      'earlier steps unmarked', (tester) async {
+    await pumpToRequestScreen(tester, fastFakeJobs());
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+
+    expect(find.byKey(const Key('statusTimeline')), findsOneWidget);
+
+    // Freshly assigned: the "assigned" step is current, nothing is done yet.
+    final assignedIcon = tester.widget<Icon>(
+      find.byKey(const Key('statusStepIcon_assigned')),
+    );
+    expect(assignedIcon.icon, Icons.radio_button_checked);
+
+    final enRouteIcon = tester.widget<Icon>(
+      find.byKey(const Key('statusStepIcon_en_route_pickup')),
+    );
+    expect(enRouteIcon.icon, Icons.radio_button_unchecked);
+
+    final assignedLabel = tester.widget<Text>(
+      find.byKey(const Key('statusStepLabel_assigned')),
+    );
+    expect(assignedLabel.style?.fontWeight, FontWeight.bold);
+  });
+
+  testWidgets(
+      'CUS-4: advancing the job past assigned marks earlier steps done',
+      (tester) async {
+    final jobs = fastFakeJobs();
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+
+    // Drive the driver-owned side of the machine forward, same as the
+    // CUS-5 test above.
+    await tester.runAsync(() async {
+      final page = await jobs.listHistory(role: JobHistoryRole.customer);
+      final job = page.items.single;
+      await jobs.updateJobStatus(job.id, JobStatus.enRoutePickup);
+      await jobs.updateJobStatus(job.id, JobStatus.arrivedPickup);
+    });
+    await tester.pump(const Duration(milliseconds: 10)); // watch stream
+
+    final assignedIcon = tester.widget<Icon>(
+      find.byKey(const Key('statusStepIcon_assigned')),
+    );
+    expect(assignedIcon.icon, Icons.check_circle);
+
+    final enRouteIcon = tester.widget<Icon>(
+      find.byKey(const Key('statusStepIcon_en_route_pickup')),
+    );
+    expect(enRouteIcon.icon, Icons.check_circle);
+
+    final arrivedIcon = tester.widget<Icon>(
+      find.byKey(const Key('statusStepIcon_arrived_pickup')),
+    );
+    expect(arrivedIcon.icon, Icons.radio_button_checked);
+
+    final loadingIcon = tester.widget<Icon>(
+      find.byKey(const Key('statusStepIcon_loading')),
+    );
+    expect(loadingIcon.icon, Icons.radio_button_unchecked);
+  });
+
+  testWidgets('CUS-4: call button only shows once the driver has a phone',
+      (tester) async {
+    final jobs = fastFakeJobs()
+      ..driverOverride = const JobDriverSummary(
+        id: 'drv-002',
+        name: 'Sin Teléfono',
+        truckPlate: 'ABC 999',
+        truckType: TruckType.car,
+      );
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+
+    expect(find.text('Sin Teléfono'), findsOneWidget);
+    expect(find.byKey(const Key('callDriverButton')), findsNothing);
+    // The share button doesn't depend on the phone — still shows.
+    expect(find.byKey(const Key('shareTripButton')), findsOneWidget);
+  });
+
+  testWidgets('CUS-4: share button copies the track link to the clipboard',
+      (tester) async {
+    final jobs = fastFakeJobs();
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+
+    final job = await tester.runAsync(
+      () async => (await jobs.listHistory(role: JobHistoryRole.customer))
+          .items
+          .single,
+    );
+    expect(job!.shareToken, isNotNull);
+
+    await tester.ensureVisible(find.byKey(const Key('shareTripButton')));
+    await tester.tap(find.byKey(const Key('shareTripButton')));
+    await tester.pump();
+
+    final clipboard = await Clipboard.getData(Clipboard.kTextPlain);
+    expect(clipboard?.text, '${Env.webBaseUrl}/t/${job.shareToken}');
+    expect(find.text('Enlace copiado al portapapeles'), findsOneWidget);
   });
 }
