@@ -54,6 +54,7 @@ export const strings = {
     timelineTitle: 'Estado del servicio',
     driverTitle: 'Tu conductor',
     plateLabel: 'Placa',
+    callDriver: 'Llamar al conductor',
     shareLabel: 'Compartir seguimiento',
     shareCopied: 'Enlace copiado',
     loading: 'Cargando servicio…',
