@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { authClient } from '../auth/singleton';
 
 // Node >= 22 defines an experimental `localStorage` global that shadows
@@ -34,9 +34,26 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true,
 });
 
+// WEB-2: jsdom doesn't implement navigator.geolocation at all, so any test
+// that touches "usar mi ubicación actual" (RequestPage.tsx) needs a stand-in.
+// Exported so individual tests can drive success/failure via
+// mockGeolocation.getCurrentPosition.mockImplementation(...).
+export const mockGeolocation = {
+  getCurrentPosition: vi.fn(),
+  watchPosition: vi.fn(),
+  clearWatch: vi.fn(),
+};
+
+Object.defineProperty(globalThis.navigator, 'geolocation', {
+  value: mockGeolocation,
+  configurable: true,
+  writable: true,
+});
+
 afterEach(async () => {
   cleanup();
   window.localStorage.clear();
+  mockGeolocation.getCurrentPosition.mockReset();
   // The auth singleton keeps the fake session in memory — reset between tests.
   await authClient.signOut();
 });

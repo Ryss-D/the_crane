@@ -31,6 +31,12 @@ export const strings = {
     pickupPlaceholder: 'Ej: Cra. 43A #1-50, El Poblado',
     dropoffLabel: '¿A dónde lo llevamos?',
     dropoffPlaceholder: 'Ej: Taller — Cl. 10 #52-25, Guayabal',
+    useCurrentLocation: 'Usar mi ubicación actual',
+    locating: 'Localizando…',
+    locationText: (lat: number, lng: number) =>
+      `Mi ubicación actual (${lat.toFixed(5)}, ${lng.toFixed(5)})`,
+    locationUnavailable:
+      'No pudimos obtener tu ubicación. Escribe la dirección manualmente.',
     mapPlaceholder: 'Mapa próximamente',
     vehicleTypeLabel: 'Tipo de vehículo',
     getQuote: 'Cotizar',
