@@ -5,7 +5,7 @@ Runtime control of pricing, commission, settlement, and dispatch — plus driver
 - [x] **ADM-1 — Admin SPA scaffold** *(deps: WEB-1 pattern)*
   Vite + React + TS in `admin/`, same generated API client; Firebase login gated on `role=admin`; own subdomain, desktop-first.
   *AC: non-admin login is rejected client- and server-side.*
-  Note: built against mock API/auth (FakeAuth "anyone in dev"); real Firebase `role=admin` gating and the deploy subdomain land with FND-1/OPS-5.
+  Note: real Firebase email/password auth is wired (`src/auth/firebaseAuth.ts`) and selected automatically once `VITE_USE_MOCKS=false` — defaults to FakeAuth until then. Still needed: enable Email/Password sign-in in the console + create an admin user, and the deploy subdomain (OPS-5).
 
 - [x] **ADM-2 — Admin API router** *(deps: FND-5, JOB-2)*
   `/v1/admin/*` endpoints (config, drivers, jobs, ledger) behind an admin permission dependency; audit context (who) on every mutation.
