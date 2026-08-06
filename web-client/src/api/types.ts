@@ -118,3 +118,24 @@ export interface TrackInfo {
   driver: TrackDriverInfo | null;
   driver_location: LatLng | null;
 }
+
+export const USER_ROLES = ['customer', 'driver', 'admin', 'fleet_owner'] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+/**
+ * Matches the backend's `UserRead` (app/schemas/user.py) exactly — the shape
+ * returned by both `POST /v1/auth/sync` (AUTH-2) and `GET /v1/me`.
+ */
+export interface UserProfile {
+  id: string;
+  firebase_uid: string;
+  role: UserRole;
+  /** Firebase phone-OTP never provides a name — null until profile
+   * completion, which this web client doesn't build a gate for yet
+   * (see the WEB-1 note in docs/tasks/10-web-client.md). */
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  fcm_token: string | null;
+  created_at: string;
+}

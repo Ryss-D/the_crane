@@ -9,6 +9,7 @@ import type {
   Quote,
   QuoteRequest,
   TrackInfo,
+  UserProfile,
   VehicleType,
 } from './types';
 
@@ -57,6 +58,11 @@ export class MockApi implements CraneApi {
   private readonly jobs = new Map<string, MockJobRecord>();
   private readonly quotes = new Map<string, Quote>();
   private seq = 0;
+  /** Set on the first syncAuth() call, mirroring the backend's
+   * create-or-fetch: subsequent calls return the same row regardless of the
+   * body passed in (FakeAuth only ever has one signed-in identity at a
+   * time). */
+  private userProfile: UserProfile | null = null;
 
   constructor(private readonly latencyMs: number = 450) {
     this.seedDemoJob();
@@ -208,5 +214,25 @@ export class MockApi implements CraneApi {
         : null,
       driver_location: job.driver ? { lat: 6.2088, lng: -75.5736 } : null,
     };
+  }
+
+  async syncAuth(body?: { name?: string; phone?: string }): Promise<UserProfile> {
+    await this.delay();
+    if (!this.userProfile) {
+      // Mirrors the real backend: a fresh Firebase phone-OTP sign-up has no
+      // name until profile completion (AUTH-3) — FakeAuth never has one
+      // either, so `name` stays null here just like the real path.
+      this.userProfile = {
+        id: 'usr_fake',
+        firebase_uid: 'fake-uid',
+        role: 'customer',
+        name: body?.name ?? null,
+        phone: body?.phone ?? null,
+        email: null,
+        fcm_token: null,
+        created_at: new Date().toISOString(),
+      };
+    }
+    return this.userProfile;
   }
 }

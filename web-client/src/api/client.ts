@@ -1,4 +1,4 @@
-import type { CreateJobRequest, Job, Quote, QuoteRequest, TrackInfo } from './types';
+import type { CreateJobRequest, Job, Quote, QuoteRequest, TrackInfo, UserProfile } from './types';
 
 /**
  * The seam every UI component talks through. Two implementations:
@@ -17,6 +17,13 @@ export interface CraneApi {
   submitRating(jobId: string, stars: number, comment?: string): Promise<void>;
   /** Public share-track endpoint — no auth. */
   getTrack(token: string): Promise<TrackInfo>;
+  /** POST /v1/auth/sync (AUTH-2) — idempotent create-or-fetch of the backend
+   * `users` row for the signed-in Firebase account; `name`/`phone` fall back
+   * to token claims server-side when omitted. Called once per sign-in by
+   * AuthProvider (src/auth/AuthProvider.tsx) — without it, every other
+   * authenticated call 404s on a fresh account (get_current_user has no row
+   * to resolve until this has run at least once). */
+  syncAuth(body?: { name?: string; phone?: string }): Promise<UserProfile>;
 }
 
 export class ApiError extends Error {
@@ -83,5 +90,9 @@ export class HttpApi implements CraneApi {
 
   getTrack(token: string): Promise<TrackInfo> {
     return this.request('GET', `/v1/track/${encodeURIComponent(token)}`, { auth: false });
+  }
+
+  syncAuth(body?: { name?: string; phone?: string }): Promise<UserProfile> {
+    return this.request('POST', '/v1/auth/sync', { body });
   }
 }
