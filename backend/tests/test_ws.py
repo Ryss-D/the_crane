@@ -11,6 +11,7 @@ async client is visible to a WS connection opened via TestClient in the same tes
 
 import json
 import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -20,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from app.models.job import JobStatus
+from app.models.job import Job, JobStatus
 from app.models.user import User
 from app.services.connection_manager import ConnectionManager
 from app.services.pricing import get_directions_client
@@ -391,6 +392,28 @@ async def test_share_track_ws_malformed_token_closes_4004(app: FastAPI) -> None:
     with (
         pytest.raises(WebSocketDisconnect) as exc_info,
         TestClient(app).websocket_connect("/v1/ws/track/not-a-uuid") as ws,
+    ):
+        ws.receive_text()
+    assert exc_info.value.code == 4004
+
+
+async def test_share_track_ws_closes_4004_24h_after_completion(
+    app: FastAPI,
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+) -> None:
+    """Same 24h expiry as GET /v1/track/{token} -- a stale share link should
+    behave identically to an unknown one for this read-only viewer channel."""
+    job = await make_job(session_maker, customer_user, status=JobStatus.completed)
+    async with session_maker() as session:
+        db_job = await session.get(Job, job.id)
+        assert db_job is not None
+        db_job.completed_at = datetime.now(UTC) - timedelta(hours=25)
+        await session.commit()
+
+    with (
+        pytest.raises(WebSocketDisconnect) as exc_info,
+        TestClient(app).websocket_connect(f"/v1/ws/track/{job.share_token}") as ws,
     ):
         ws.receive_text()
     assert exc_info.value.code == 4004

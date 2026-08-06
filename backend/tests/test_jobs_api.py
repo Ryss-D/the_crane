@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models.driver import DriverProfile, Truck, TruckCapacity, TruckType
-from app.models.job import DriverLocationSnapshot, JobStatus
+from app.models.job import DriverLocationSnapshot, Job, JobStatus
 from app.models.user import User, UserRole
 from app.services.config import set_config
 from app.services.jobs import get_job_event_hook
@@ -342,6 +342,29 @@ async def test_track_before_assignment_hides_driver(
 async def test_track_unknown_token_404(client: AsyncClient) -> None:
     assert (await client.get(f"/v1/track/{uuid.uuid4()}")).status_code == 404
     assert (await client.get("/v1/track/not-a-uuid")).status_code == 404
+
+
+async def test_track_expires_24h_after_completion(
+    client: AsyncClient, session_maker: async_sessionmaker[AsyncSession], customer_user: User
+) -> None:
+    """TRK-6's AC: the share link works logged-out but expires 24h after the
+    job ends -- it's not a link a customer can hand out forever."""
+    job = await make_job(session_maker, customer_user, status=JobStatus.completed)
+    async with session_maker() as session:
+        db_job = await session.get(Job, job.id)
+        assert db_job is not None
+        db_job.completed_at = datetime.now(UTC) - timedelta(hours=23)
+        await session.commit()
+    fresh = await client.get(f"/v1/track/{job.share_token}")
+    assert fresh.status_code == 200
+
+    async with session_maker() as session:
+        db_job = await session.get(Job, job.id)
+        assert db_job is not None
+        db_job.completed_at = datetime.now(UTC) - timedelta(hours=25)
+        await session.commit()
+    stale = await client.get(f"/v1/track/{job.share_token}")
+    assert stale.status_code == 404
 
 
 async def test_assigned_job_embeds_driver_summary(

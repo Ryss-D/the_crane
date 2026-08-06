@@ -4,7 +4,7 @@ tracking endpoint (`track_router`, mounted at /v1/track in main.py).
 """
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -477,6 +477,9 @@ async def track_job(share_token: str, session: SessionDep) -> TrackResponse:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found") from exc
     job = await session.scalar(select(Job).where(Job.share_token == token))
     if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    ended_at = job.completed_at or job.cancelled_at
+    if ended_at is not None and datetime.now(UTC) - _as_aware(ended_at) > timedelta(hours=24):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
     driver: TrackDriver | None = None

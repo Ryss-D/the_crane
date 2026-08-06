@@ -49,6 +49,7 @@ import contextlib
 import json
 import time
 import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
@@ -117,6 +118,11 @@ async def verify_ws_token(
     if not (claims.get("uid") or claims.get("sub")):
         return None
     return await session.scalar(select(User).where(User.firebase_uid == claims_uid(claims)))
+
+
+def _as_aware(dt: datetime) -> datetime:
+    """SQLite returns naive datetimes; treat them as UTC (all stamps are UTC)."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
 
 
 def _parse_uuid(value: Any) -> uuid.UUID | None:
@@ -322,7 +328,9 @@ async def ws_track_endpoint(
         await websocket.close(code=4004)
         return
     job = await session.scalar(select(Job).where(Job.share_token == token_uuid))
-    if job is None:
+    ended_at = job.completed_at or job.cancelled_at if job is not None else None
+    expired = ended_at is not None and datetime.now(UTC) - _as_aware(ended_at) > timedelta(hours=24)
+    if job is None or expired:
         await websocket.accept()
         await websocket.close(code=4004)
         return
