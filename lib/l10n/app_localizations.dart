@@ -614,6 +614,30 @@ abstract class AppLocalizations {
   /// **'Servicio finalizado. ¡Buen trabajo!'**
   String get jobDoneBody;
 
+  /// DRV-3: opens Google Maps navigation to the job's current leg
+  ///
+  /// In es, this message translates to:
+  /// **'Navegar'**
+  String get navigateButton;
+
+  /// DRV-3: driver-side cancel button on the active job screen, and its confirm-dialog action
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar servicio'**
+  String get cancelJobButton;
+
+  /// DRV-3: driver cancel confirmation dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cancelar este servicio?'**
+  String get cancelJobConfirmTitle;
+
+  /// DRV-3: driver cancel confirmation dialog body
+  ///
+  /// In es, this message translates to:
+  /// **'El servicio volverá a la bolsa de despacho para que otro conductor lo atienda.'**
+  String get cancelJobConfirmBody;
+
   /// Opens the RAT-2 rating dialog after a job is completed
   ///
   /// In es, this message translates to:
@@ -727,6 +751,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Registra tu grúa para empezar a recibir servicios.'**
   String get becomeDriverIntro;
+
+  /// FLT-4: registration-mode selector option -- bring your own truck
+  ///
+  /// In es, this message translates to:
+  /// **'Tengo mi camión'**
+  String get becomeDriverModeOwnTruck;
+
+  /// FLT-4: registration-mode selector option -- redeem a fleet owner's invite
+  ///
+  /// In es, this message translates to:
+  /// **'Tengo una invitación'**
+  String get becomeDriverModeInvite;
+
+  /// FLT-4: intro copy shown above the invite-token field
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa el código que te compartió el dueño de la flota.'**
+  String get becomeDriverInviteIntro;
+
+  /// FLT-4: invite-token field label on the become-a-driver screen
+  ///
+  /// In es, this message translates to:
+  /// **'Código de invitación'**
+  String get inviteTokenFieldLabel;
+
+  /// FLT-4: invite-token field placeholder on the become-a-driver screen
+  ///
+  /// In es, this message translates to:
+  /// **'00000000-0000-0000-0000-000000000000'**
+  String get inviteTokenFieldHint;
 
   /// Truck plate field label
   ///
@@ -950,6 +1004,54 @@ abstract class AppLocalizations {
   /// **'No pudimos quitar la grúa. Intenta de nuevo.'**
   String get detachTruckError;
 
+  /// FLT-4: invite-driver screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Invitar conductor'**
+  String get inviteDriverTitle;
+
+  /// FLT-4: invite-driver screen intro copy
+  ///
+  /// In es, this message translates to:
+  /// **'Invita a un conductor por celular; su camión queda listo para que lo reclame al registrarse.'**
+  String get inviteDriverIntro;
+
+  /// FLT-4: phone field label on the invite-driver screen
+  ///
+  /// In es, this message translates to:
+  /// **'Celular del conductor'**
+  String get invitePhoneFieldLabel;
+
+  /// FLT-4: submits the invite-driver form
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar invitación'**
+  String get inviteSendButton;
+
+  /// FLT-4: shown when creating an invite fails (e.g. duplicate phone or plate)
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos enviar la invitación. Verifica los datos e intenta de nuevo.'**
+  String get inviteSendError;
+
+  /// FLT-4: heading above the fleet's outstanding invites list
+  ///
+  /// In es, this message translates to:
+  /// **'Invitaciones pendientes'**
+  String get pendingInvitesTitle;
+
+  /// FLT-4: shown when there are no pending invites
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes invitaciones pendientes.'**
+  String get pendingInvitesEmptyBody;
+
+  /// FLT-4: shown when loading pending invites fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar las invitaciones. Intenta de nuevo.'**
+  String get pendingInvitesLoadError;
+
   /// FLT-5: fleet earnings screen app bar title, and the nav button tooltip
   ///
   /// In es, this message translates to:
@@ -1153,6 +1255,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No pudimos cargar tus servicios. Intenta de nuevo.'**
   String get servicesPeriodLoadError;
+
+  /// DRV-6: period selector option -- today only
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy'**
+  String get servicesPeriodFilterToday;
+
+  /// DRV-6: period selector option -- rolling last 7 days
+  ///
+  /// In es, this message translates to:
+  /// **'Semana'**
+  String get servicesPeriodFilterWeek;
+
+  /// DRV-6: period selector option -- current calendar month
+  ///
+  /// In es, this message translates to:
+  /// **'Mes'**
+  String get servicesPeriodFilterMonth;
+
+  /// DRV-6: period selector option -- a custom date range
+  ///
+  /// In es, this message translates to:
+  /// **'Personalizado'**
+  String get servicesPeriodFilterCustom;
+
+  /// DRV-6: opens the date-range picker for the custom filter, shown before a range has been picked yet
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir rango de fechas'**
+  String get servicesPeriodPickRangeButton;
 
   /// DRV-6: count of completed jobs for a given day
   ///

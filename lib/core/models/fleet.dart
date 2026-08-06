@@ -64,3 +64,22 @@ abstract class FleetBalance with _$FleetBalance {
   factory FleetBalance.fromJson(Map<String, dynamic> json) =>
       _$FleetBalanceFromJson(json);
 }
+
+/// FLT-4: a pending invite for a driver who doesn't have a truck (or an
+/// account) yet, as returned by both `POST` and `GET /v1/fleets/me/invites`:
+/// `{"invite_token": uuid, "truck_id": uuid, "phone": str}`.
+///
+/// [inviteToken] is what the invited driver passes as `inviteToken` on
+/// `DriversRepository.registerDriver` to redeem it and land linked onto
+/// [truckId] instead of creating a new truck.
+@freezed
+abstract class DriverInvite with _$DriverInvite {
+  const factory DriverInvite({
+    required String inviteToken,
+    required String truckId,
+    required String phone,
+  }) = _DriverInvite;
+
+  factory DriverInvite.fromJson(Map<String, dynamic> json) =>
+      _$DriverInviteFromJson(json);
+}

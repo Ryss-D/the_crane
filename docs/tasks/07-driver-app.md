@@ -89,6 +89,37 @@ Flutter driver shell: go available, receive offers, execute the job.
   `JobOfferEvent.pickup_distance_km`/`commission_amount` directly now that the
   backend sends real values.
 
+  Follow-up: checked `backend/app/schemas/job.py`'s `JobOfferEvent` for the
+  real distance/commission fields a parallel backend agent was enriching it
+  with this same session — still only `vehicle_type`/`pickup`/`dropoff`/
+  `quoted_price`/`expires_in_seconds` as of this check, so that half is
+  still blocked; `ApiDriversRepository._toJobOffer`'s hardcoded
+  approximation is untouched. Picking this up needs a fresh check of that
+  schema.
+
+  Built instead: FCM foreground/resumed handling, previously entirely
+  missing (`firebase_messaging` was only ever used for `AUTH-6`'s token
+  registration — nothing listened for messages). `CraneSocket.reconnectNow()`
+  forces an immediate reconnect, skipping whatever backoff delay is
+  currently pending — wired from `FirebaseMessaging.onMessage` (`di.dart`,
+  real-backend branch) for a foreground data push, and
+  `didChangeAppLifecycleState(resumed)` (`main.dart`, via
+  `WidgetsBindingObserver`) for coming back from the background, the case
+  most likely to have actually left the socket stale (mobile OSes tend to
+  suspend networking while backgrounded). Honesty note: the backend doesn't
+  send FCM pushes for job offers yet either (`realtime.py`'s own
+  `TODO(FCM)` — no Firebase Admin credentials configured server-side), so
+  the `onMessage` listener is inert today; this only wires the client half
+  for whenever that lands, deliberately payload-agnostic since no message
+  shape exists yet to key off. Deliberately scoped to foreground/resumed
+  only — a killed-app, lock-screen notification experience needs
+  `flutter_local_notifications`, platform permission flows, and a
+  background isolate entry point (`FirebaseMessaging.onBackgroundMessage`),
+  none of which is attempted here. New tests: `CraneSocket.reconnectNow`'s
+  three states (before connect, already connected, mid-backoff) against
+  the existing fake WebSocket channel double. Not checking this off — the
+  distance/commission half is still blocked on the backend.
+
 - [ ] **DRV-3 — Active job screen** *(deps: JOB-6, TRK-4)*
   Status-advance button per phase (En camino → Llegué → Cargado → En ruta → Entregado), map with route, deep-link to Google Maps navigation, call-customer button, cancel (returns job to matching).
   Design: «Viaje activo» — shows vehicle/plate + pickup contact, not a rider (`docs/design/screen-references.md`)
@@ -114,6 +145,37 @@ Flutter driver shell: go available, receive offers, execute the job.
   errors (e.g. network) are still swallowed silently — only the typed
   rejection surfaces; no map route or Google Maps navigation deep-link, no
   call-customer button, no driver-side cancel.
+
+  Follow-up: navigation deep-link and driver-side cancel are now built too.
+  "Navegar" launches Google Maps' cross-platform web intent
+  (`maps/dir/?api=1&destination=...`) via `url_launcher` — no native Maps
+  SDK/API key needed — targeting the job's current leg (pickup up through
+  `arrived_pickup`, dropoff from `loading` onward). Driver cancel: added an
+  `asDriver` flag to `JobsRepository.cancelJob` (a fake-only distinction —
+  the real backend infers customer-vs-driver from the caller's own identity,
+  never a request field) so `FakeJobsRepository` returns the job to
+  `matching` instead of `cancelled`, mirroring the backend's
+  `DRIVER_CANCELLABLE`/`_driver_cancel`. `ActiveJobCubit.cancel()` calls it
+  and surfaces a rejection (attempted past `arrived_pickup`) the same way
+  `advance()` does; `ActiveJobScreen` gained a confirm-dialog-gated cancel
+  button, shown only in a driver-cancellable status.
+  `ApiJobsRepository.cancelJob` now also maps 403/409 into
+  `JobStatusRejectedException`, matching `updateJobStatus`'s existing
+  behavior (previously it didn't map these at all).
+
+  Still not built, and not a wiring gap this time — a real one: the
+  call-customer button. Checked `backend/app/schemas/job.py`'s
+  `JobRead`/`JobDriverInfo` directly: there is no customer phone number
+  anywhere in a job's payload — only the *driver's* phone is ever exposed,
+  to the customer, via `JobDriverSummary`. There is no symmetric "customer
+  summary" on the job at all. Without a backend change adding one, there is
+  no legitimate phone number for this button to call, so it isn't built
+  rather than faked. Map route stays blocked on FND-6, unchanged. Not
+  checking this off yet for that reason (map + call-customer are both still
+  outstanding, one blocked, one a real backend gap) — everything else in
+  the AC is met. New tests: `ActiveJobCubit.cancel()` success (back to
+  `matching`, local state cleared) and rejection-past-`arrived_pickup`,
+  against the fakes.
 
 - [ ] **DRV-4 — Cash collection + completion** *(deps: DRV-3, LED-1)*
   On delivered: fare + "collected in cash" confirmation; shows commission accrued for this job and new running balance.
@@ -179,7 +241,7 @@ Flutter driver shell: go available, receive offers, execute the job.
   services-per-period view, built separately. Verified against the fake
   (84 tests, later 88 once DRV-6 landed).
 
-- [ ] **DRV-6 — Services-per-period view** *(deps: DRV-5)* · Phase 3
+- [x] **DRV-6 — Services-per-period view** *(deps: DRV-5)* · Phase 3
   Period selector (Today / Week / Month / Custom range) over completed services: count, chart, and list for the selected range.
   Design: «Servicios por período» (`docs/design/screen-references.md`)
   *AC: range selector updates count, chart, and list together; custom range persists on reopen.*
@@ -195,3 +257,40 @@ Flutter driver shell: go available, receive offers, execute the job.
   Today/Week/Month/custom-range selector and chart from the AC are NOT
   built — this is a straight daily breakdown only. Verified against the
   fake (88 tests).
+
+  Follow-up: the full selector is built now too. `ServicesPeriodCubit`
+  gained a `ServicesPeriodFilter` (today/week/month/custom); switching it
+  re-slices the same already-loaded job list in memory rather than
+  re-fetching (`listHistory` has no date-range filtering to push this down
+  to anyway). `week`/`month` are rolling windows anchored on today (last 7
+  days / current calendar month) rather than locale-anchored calendar
+  weeks — the same "nothing this client-side pass can assume safely"
+  reasoning that originally picked day-grouping over week-grouping applies
+  to a Monday-vs-Sunday week start too, so this sidesteps it the same way.
+  `custom` uses Flutter's built-in `showDateRangePicker` (no new
+  dependency). `ServicesPeriodScreen` gained a `SegmentedButton` selector, a
+  totals card (count/fare/commission for whichever filter is active --
+  count, chart, and list all derive from the exact same filtered
+  `periods` list, so they can't drift apart), and a proportional-width bar
+  behind each day's fare as the AC's "chart" -- this app has no charting
+  package, and a bar-list is the "reasonable substitute" called out for
+  exactly this case rather than adding one.
+
+  Custom-range persistence: this app has no persistence layer
+  (shared_preferences or similar) at all yet, and `ServicesPeriodCubit` is
+  recreated on every visit to the screen (see the `services` route in
+  `lib/app/router.dart`), so a plain instance field wouldn't survive
+  leaving and reopening it. Built with static in-memory module state
+  instead (documented on the static fields themselves) -- honestly, this
+  is process-lifetime persistence, not disk persistence: it survives
+  navigating away and back within the same running app, not a full app
+  restart. That's the most honest thing buildable without introducing a
+  real persistence dependency.
+
+  New tests: filter-selection totals (today/week), custom-range exact
+  membership, `maxDayFare` (backs the bar widths), and the "remembered
+  across a fresh cubit instance" persistence behavior, against a small
+  seeded-history test double (the existing fake always completes jobs at
+  `DateTime.now()`, with no way to backdate one through its public API) --
+  plus a widget-level test that switching the selector keeps the shown
+  count in sync. Full suite green (146 passing, up from 142).

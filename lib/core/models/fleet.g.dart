@@ -59,3 +59,17 @@ Map<String, dynamic> _$FleetBalanceToJson(_FleetBalance instance) =>
       'owed_balance': instance.owedBalance,
       'members': instance.members.map((e) => e.toJson()).toList(),
     };
+
+_DriverInvite _$DriverInviteFromJson(Map<String, dynamic> json) =>
+    _DriverInvite(
+      inviteToken: json['invite_token'] as String,
+      truckId: json['truck_id'] as String,
+      phone: json['phone'] as String,
+    );
+
+Map<String, dynamic> _$DriverInviteToJson(_DriverInvite instance) =>
+    <String, dynamic>{
+      'invite_token': instance.inviteToken,
+      'truck_id': instance.truckId,
+      'phone': instance.phone,
+    };

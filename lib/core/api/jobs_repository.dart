@@ -73,13 +73,20 @@ abstract interface class JobsRepository {
   /// `POST /v1/jobs/{id}/accept` — driver accepts an offer.
   Future<Job> acceptJob(String id);
 
-  /// `POST /v1/jobs/{id}/cancel` (JOB-5) — customer cancels (any non-terminal
-  /// status the backend still allows, e.g. `assigned` within its grace
-  /// period) or the assigned driver cancels (job returns to matching).
-  /// Callers should only attempt this on a non-terminal job — the backend
-  /// 409s otherwise, per `CUSTOMER_CANCELLABLE` in
-  /// `backend/app/services/jobs.py`.
-  Future<Job> cancelJob(String id);
+  /// `POST /v1/jobs/{id}/cancel` (JOB-5/DRV-3) — customer cancels (any
+  /// non-terminal status the backend still allows, e.g. `assigned` within
+  /// its grace period) or the assigned driver cancels (job returns to
+  /// `matching`). Callers should only attempt this on a non-terminal job —
+  /// the backend 409s otherwise, per `CUSTOMER_CANCELLABLE`/
+  /// `DRIVER_CANCELLABLE` in `backend/app/services/jobs.py`.
+  ///
+  /// [asDriver] only matters to `FakeJobsRepository`: the real backend
+  /// infers customer-vs-driver from the caller's own identity server-side,
+  /// never from a request field, so `ApiJobsRepository` ignores it. The
+  /// fake has no such identity to infer from, so driver call sites
+  /// (`ActiveJobCubit`) must say so explicitly to get the "back to
+  /// matching" behavior instead of "cancelled".
+  Future<Job> cancelJob(String id, {bool asDriver = false});
 
   /// `POST /v1/jobs/{id}/status` — assigned driver advances the state
   /// machine (JOB-6).
@@ -137,7 +144,23 @@ class ApiJobsRepository implements JobsRepository {
         'vehicle_type': vehicleType.wire,
       },
     );
-    return Quote.fromJson(res.data!);
+    final data = res.data!;
+    final quote = Quote.fromJson(data);
+    // CUS-2: the real backend (`QuoteResponse` in
+    // `backend/app/schemas/job.py`) returns a relative `expires_in_seconds`
+    // (default 600 -- `QUOTE_TTL_SECONDS`), never an absolute `expires_at`,
+    // so `Quote.fromJson` alone leaves `expiresAt` null against the real
+    // API (only `FakeJobsRepository`'s seed sets it directly). Convert the
+    // relative TTL into an absolute timestamp here, at the moment the quote
+    // is received, so `RequestBloc`'s stale-quote re-fetch has a real
+    // deadline to schedule against either way.
+    if (quote.expiresAt == null && data['expires_in_seconds'] is num) {
+      final ttlSeconds = (data['expires_in_seconds'] as num).toInt();
+      return quote.copyWith(
+        expiresAt: DateTime.now().add(Duration(seconds: ttlSeconds)),
+      );
+    }
+    return quote;
   }
 
   @override
@@ -247,9 +270,21 @@ class ApiJobsRepository implements JobsRepository {
   }
 
   @override
-  Future<Job> cancelJob(String id) async {
-    final res = await _dio.post<Map<String, dynamic>>('/v1/jobs/$id/cancel');
-    return Job.fromJson(res.data!);
+  Future<Job> cancelJob(String id, {bool asDriver = false}) async {
+    // [asDriver] is ignored here — the real backend infers the actor from
+    // the caller's own identity (see the interface doc comment).
+    try {
+      final res = await _dio.post<Map<String, dynamic>>('/v1/jobs/$id/cancel');
+      return Job.fromJson(res.data!);
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 403 || code == 409) {
+        final data = e.response?.data;
+        final detail = data is Map ? data['detail']?.toString() : null;
+        throw JobStatusRejectedException(detail ?? 'Cancel rejected');
+      }
+      rethrow;
+    }
   }
 
   @override

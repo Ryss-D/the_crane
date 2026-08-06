@@ -12,7 +12,7 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   search, no reverse geocoding yet. Do not check this off once FND-6 lands
   without actually replacing the text fields with the real map/search flow.
 
-- [ ] **CUS-2 — Vehicle type + quote sheet** *(deps: CUS-1, JOB-4)*
+- [x] **CUS-2 — Vehicle type + quote sheet** *(deps: CUS-1, JOB-4)*
   Select moto / car / SUV (optionally pick a saved vehicle) → quote card with price (COP) + pickup ETA → confirm button.
   *AC: quote refreshes on any input change; stale quotes (>10 min) re-fetch.*
   Built: `RequestBloc` re-requests a quote on every pickup/dropoff/vehicle-type
@@ -20,6 +20,31 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   not by time) and CUS-6's saved-vehicle picker preselects type. Not built:
   the >10-minute staleness re-fetch — `Quote.expiresAt` exists on the model
   but nothing currently reads it to trigger an automatic re-quote.
+
+  Follow-up: the staleness re-fetch is now built too. First had to fix a
+  real gap the check above found: the real backend's `QuoteResponse`
+  (`backend/app/schemas/job.py`) only ever returns a relative
+  `expires_in_seconds` (default 600s, `QUOTE_TTL_SECONDS`), never an
+  absolute `expires_at` -- so `Quote.fromJson` alone left `expiresAt` null
+  against the real API every time; only `FakeJobsRepository`'s seed ever
+  set it directly. `ApiJobsRepository.requestQuote` now converts the
+  relative TTL into an absolute timestamp at the moment the quote arrives,
+  so both backends populate it consistently.
+
+  `RequestBloc` schedules a single one-shot `Timer` per quote (rescheduled
+  from scratch on every fresh quote, simpler than periodic polling) for
+  `quote.expiresAt` (falling back to a 10-minute default -- matching the
+  backend's own `QUOTE_TTL_SECONDS` -- for a hypothetical future
+  implementation that still leaves it null) that fires
+  `RequestQuoteRefreshed` automatically. Re-checked at fire time, not just
+  scheduled: a no-op if the quote's already been superseded (a newer one,
+  or the customer already confirmed and moved on to matching) by the time
+  it actually fires. Cancelled on confirm and on `close()`. 2 new
+  `RequestBloc` tests against a short-TTL test double (auto re-fetch
+  fires; does not fire once matching has started) -- `ApiJobsRepository`
+  itself has no test coverage in this codebase (no `Api*Repository` dio
+  -backed implementation does; everything is verified against the fakes),
+  consistent with existing convention.
 
 - [x] **CUS-3 — Matching & assignment states** *(deps: CUS-2, DSP-2)*
   "Buscando tu grúa" progress state → assigned: driver card (name, plate, truck type, rating, photo) → no-drivers state with retry.

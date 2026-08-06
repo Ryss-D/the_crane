@@ -16,6 +16,12 @@ class FakeAuthRepository implements AuthRepository {
   final UserRole role;
   AppUser? _user;
 
+  /// FLT-4: the signed-in fake user's verified phone — `FakeDriversRepository
+  /// .registerDriver` reads this to check an invite's phone against the
+  /// caller's own, mirroring the real backend's `claims.get("phone_number")`
+  /// check. Null before [sync] has run.
+  String? get currentPhone => _user?.phone;
+
   @override
   Future<AppUser> sync({String? name}) async {
     await Future<void>.delayed(delay);

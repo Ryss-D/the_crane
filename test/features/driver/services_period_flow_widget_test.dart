@@ -52,6 +52,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ServicesPeriodScreen), findsOneWidget);
 
+    // Defaults to "today" -- the job just completed shows up there.
+    expect(find.text('1 servicios'), findsOneWidget);
+
+    // DRV-6: switching the period filter updates the totals/list together.
+    await tester.tap(find.text('Semana'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 servicios'), findsOneWidget);
+
+    await tester.tap(find.text('Mes'));
+    await tester.pumpAndSettle();
     expect(find.text('1 servicios'), findsOneWidget);
   });
 }

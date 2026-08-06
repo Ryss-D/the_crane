@@ -38,6 +38,22 @@ abstract interface class FleetRepository {
   /// `GET /v1/fleets/me/balance` (FLT-2/FLT-5) — consolidated owed balance
   /// across every driver in the fleet, plus the per-driver breakdown.
   Future<FleetBalance> getBalance();
+
+  /// `POST /v1/fleets/me/invites` (FLT-4) — invite a driver who doesn't
+  /// have a truck (or an account) yet: pre-provisions the truck and hands
+  /// back a token the driver redeems via `DriversRepository.registerDriver`'s
+  /// `inviteToken`. Throws if the caller has no fleet (404), [phone]
+  /// already has a pending invite (409), or [plate] is already taken (409).
+  Future<DriverInvite> createInvite({
+    required String phone,
+    required String plate,
+    required TruckType truckType,
+    required TruckCapacity capacity,
+  });
+
+  /// `GET /v1/fleets/me/invites` (FLT-4) — the caller's outstanding
+  /// (pending, not yet redeemed) invites.
+  Future<List<DriverInvite>> listInvites();
 }
 
 /// Thrown by [FleetRepository.findTruckByPlate] when no truck has that
@@ -97,5 +113,32 @@ class ApiFleetRepository implements FleetRepository {
   Future<FleetBalance> getBalance() async {
     final res = await _dio.get<Map<String, dynamic>>('/v1/fleets/me/balance');
     return FleetBalance.fromJson(res.data!);
+  }
+
+  @override
+  Future<DriverInvite> createInvite({
+    required String phone,
+    required String plate,
+    required TruckType truckType,
+    required TruckCapacity capacity,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/v1/fleets/me/invites',
+      data: {
+        'phone': phone,
+        'plate': plate,
+        'truck_type': truckType.wire,
+        'capacity': capacity.wire,
+      },
+    );
+    return DriverInvite.fromJson(res.data!);
+  }
+
+  @override
+  Future<List<DriverInvite>> listInvites() async {
+    final res = await _dio.get<List<dynamic>>('/v1/fleets/me/invites');
+    return res.data!
+        .map((e) => DriverInvite.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

@@ -181,11 +181,45 @@ class FakeJobsRepository implements JobsRepository {
     JobStatus.assigned,
   };
 
+  /// Mirrors the backend's `DRIVER_CANCELLABLE` (DRV-3) — a driver may bail
+  /// any time up to (and including) `arrived_pickup`; once `loading` starts
+  /// they're committed to the job.
+  static const _driverCancellable = {
+    JobStatus.assigned,
+    JobStatus.enRoutePickup,
+    JobStatus.arrivedPickup,
+  };
+
   @override
-  Future<Job> cancelJob(String id) async {
+  Future<Job> cancelJob(String id, {bool asDriver = false}) async {
     await Future<void>.delayed(actionDelay);
     final job = _jobs[id];
     if (job == null) throw StateError('Unknown job: $id');
+    if (asDriver) {
+      if (!_driverCancellable.contains(job.status)) {
+        // Mirrors the real backend's 409 shape (`_driver_cancel` in
+        // `backend/app/services/jobs.py`) so DRV-3 tests can trigger the
+        // same `JobStatusRejectedException` `ActiveJobCubit.cancel()`
+        // catches against the real dio-backed repository.
+        throw JobStatusRejectedException(
+          'Driver cannot cancel a job in status ${job.status.wire}',
+        );
+      }
+      // Mirrors the real backend's `_driver_cancel` (`transition()` clears
+      // `driver_id` on the `-> matching` edge, no `cancel_reason` — that
+      // field is only ever set on the terminal `cancelled` status).
+      final backToMatching = job.copyWith(
+        status: JobStatus.matching,
+        driverId: null,
+        driver: null,
+      );
+      _put(backToMatching);
+      // Mirrors the real endpoint re-running the offer loop synchronously
+      // once a driver cancel releases a job back to the pool (DSP-2 hook
+      // site in `cancel_job_endpoint`).
+      Timer(matchingDelay, () => _resolveMatching(backToMatching.id));
+      return backToMatching;
+    }
     if (!_customerCancellable.contains(job.status)) {
       throw StateError('Customer cannot cancel a job in status ${job.status.wire}');
     }

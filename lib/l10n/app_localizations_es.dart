@@ -286,6 +286,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get jobDoneBody => 'Servicio finalizado. ¡Buen trabajo!';
 
   @override
+  String get navigateButton => 'Navegar';
+
+  @override
+  String get cancelJobButton => 'Cancelar servicio';
+
+  @override
+  String get cancelJobConfirmTitle => '¿Cancelar este servicio?';
+
+  @override
+  String get cancelJobConfirmBody =>
+      'El servicio volverá a la bolsa de despacho para que otro conductor lo atienda.';
+
+  @override
   String get rateTripButton => 'Calificar viaje';
 
   @override
@@ -344,6 +357,22 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get becomeDriverIntro =>
       'Registra tu grúa para empezar a recibir servicios.';
+
+  @override
+  String get becomeDriverModeOwnTruck => 'Tengo mi camión';
+
+  @override
+  String get becomeDriverModeInvite => 'Tengo una invitación';
+
+  @override
+  String get becomeDriverInviteIntro =>
+      'Ingresa el código que te compartió el dueño de la flota.';
+
+  @override
+  String get inviteTokenFieldLabel => 'Código de invitación';
+
+  @override
+  String get inviteTokenFieldHint => '00000000-0000-0000-0000-000000000000';
 
   @override
   String get plateFieldLabel => 'Placa';
@@ -467,6 +496,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detachTruckError => 'No pudimos quitar la grúa. Intenta de nuevo.';
 
   @override
+  String get inviteDriverTitle => 'Invitar conductor';
+
+  @override
+  String get inviteDriverIntro =>
+      'Invita a un conductor por celular; su camión queda listo para que lo reclame al registrarse.';
+
+  @override
+  String get invitePhoneFieldLabel => 'Celular del conductor';
+
+  @override
+  String get inviteSendButton => 'Enviar invitación';
+
+  @override
+  String get inviteSendError =>
+      'No pudimos enviar la invitación. Verifica los datos e intenta de nuevo.';
+
+  @override
+  String get pendingInvitesTitle => 'Invitaciones pendientes';
+
+  @override
+  String get pendingInvitesEmptyBody => 'No tienes invitaciones pendientes.';
+
+  @override
+  String get pendingInvitesLoadError =>
+      'No pudimos cargar las invitaciones. Intenta de nuevo.';
+
+  @override
   String get fleetBalanceTitle => 'Ganancias de la flota';
 
   @override
@@ -577,6 +633,21 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get servicesPeriodLoadError =>
       'No pudimos cargar tus servicios. Intenta de nuevo.';
+
+  @override
+  String get servicesPeriodFilterToday => 'Hoy';
+
+  @override
+  String get servicesPeriodFilterWeek => 'Semana';
+
+  @override
+  String get servicesPeriodFilterMonth => 'Mes';
+
+  @override
+  String get servicesPeriodFilterCustom => 'Personalizado';
+
+  @override
+  String get servicesPeriodPickRangeButton => 'Elegir rango de fechas';
 
   @override
   String servicesCountLabel(int count) {

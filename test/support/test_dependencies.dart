@@ -46,6 +46,18 @@ AppDependencies testDependencies({
     delay: const Duration(milliseconds: 10),
     role: authRole,
   );
+  final fleetRepository =
+      fleet ??
+      FakeFleetRepository(
+        auth: authRepository,
+        actionDelay: const Duration(milliseconds: 20),
+        // FLT-3/4/5 screen tests sign in directly as a fleet owner and
+        // need a fleet already there to load; the "become a fleet
+        // owner" flow itself (customer -> fleet_owner) instead wants a
+        // clean slate so `createFleet`'s real double-create guard stays
+        // exercised.
+        seeded: authRole == UserRole.fleetOwner,
+      );
   return AppDependencies(
     dio: createDio(baseUrl: 'http://localhost:8000'),
     jobsRepository: jobsRepository,
@@ -54,22 +66,12 @@ AppDependencies testDependencies({
         FakeDriversRepository(
           jobs: jobsRepository,
           auth: authRepository,
+          fleet: fleetRepository,
           actionDelay: const Duration(milliseconds: 20),
         ),
     vehiclesRepository:
         vehicles ?? FakeVehiclesRepository(delay: const Duration(milliseconds: 10)),
-    fleetRepository:
-        fleet ??
-        FakeFleetRepository(
-          auth: authRepository,
-          actionDelay: const Duration(milliseconds: 20),
-          // FLT-3/4/5 screen tests sign in directly as a fleet owner and
-          // need a fleet already there to load; the "become a fleet
-          // owner" flow itself (customer -> fleet_owner) instead wants a
-          // clean slate so `createFleet`'s real double-create guard stays
-          // exercised.
-          seeded: authRole == UserRole.fleetOwner,
-        ),
+    fleetRepository: fleetRepository,
     authCubit: AuthCubit(
       gateway: FakePhoneAuthGateway(
         sendDelay: const Duration(milliseconds: 10),

@@ -103,4 +103,54 @@ void main() {
       await cubit.close();
     },
   );
+
+  test(
+    'DRV-3: cancel() releases the job back to matching while still '
+    'cancellable, and clears the local state',
+    () async {
+      final jobs = FakeJobsRepository(actionDelay: Duration.zero);
+      final drivers =
+          FakeDriversRepository(jobs: jobs, actionDelay: Duration.zero);
+      final cubit = ActiveJobCubit(jobsRepository: jobs);
+
+      final offer = drivers.debugTriggerOffer();
+      cubit.start(await jobs.acceptJob(offer.job.id));
+      expect(cubit.state.job!.status, JobStatus.assigned);
+
+      await cubit.cancel();
+
+      expect(cubit.state.job, isNull);
+      final job = await jobs.getJob(offer.job.id);
+      expect(job.status, JobStatus.matching);
+      expect(job.driverId, isNull);
+
+      await cubit.close();
+    },
+  );
+
+  test(
+    'DRV-3: a rejected cancel() (past arrived_pickup) surfaces the '
+    'backend message and leaves the job untouched',
+    () async {
+      final jobs = FakeJobsRepository(actionDelay: Duration.zero);
+      final drivers =
+          FakeDriversRepository(jobs: jobs, actionDelay: Duration.zero);
+      final cubit = ActiveJobCubit(jobsRepository: jobs);
+
+      final offer = drivers.debugTriggerOffer();
+      cubit.start(await jobs.acceptJob(offer.job.id));
+      await cubit.advance(); // -> en_route_pickup
+      await cubit.advance(); // -> arrived_pickup
+      await cubit.advance(); // -> loading (no longer cancellable)
+      expect(cubit.state.job!.status, JobStatus.loading);
+
+      await cubit.cancel();
+
+      expect(cubit.state.errorMessage, isNotNull);
+      expect(cubit.state.job!.status, JobStatus.loading);
+
+      cubit.clear();
+      await cubit.close();
+    },
+  );
 }

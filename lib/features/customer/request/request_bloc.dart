@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/api/jobs_repository.dart';
 import '../../../core/models/job.dart';
 import '../../../core/models/lat_lng.dart';
+import '../../../core/models/quote.dart';
 import 'request_state.dart';
 
 /// Medellín city center, anchor for the fake geocoder below.
@@ -128,9 +129,22 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
   final JobsRepository _repo;
   StreamSubscription<Job>? _jobSub;
   int _quoteToken = 0;
+  Timer? _staleQuoteTimer;
+
+  /// CUS-2: how long a quote is trusted for when the backend doesn't say
+  /// otherwise (`Quote.expiresAt` null) — mirrors the backend's own
+  /// `QUOTE_TTL_SECONDS` default (`backend/app/services/pricing.py`), for
+  /// whichever `JobsRepository` implementation doesn't populate it (in
+  /// practice: none as of this check — `ApiJobsRepository.requestQuote`
+  /// now derives it from `expires_in_seconds`, and the fake sets it
+  /// directly — but this stays as a sensible fallback rather than assuming
+  /// that never changes).
+  static const _defaultQuoteTtl = Duration(minutes: 10);
 
   Future<void> _refreshQuote(Emitter<RequestState> emit) async {
-    // Any input change invalidates whatever quote request is in flight.
+    // Any input change invalidates whatever quote request is in flight —
+    // including a stale one this same re-fetch is about to replace.
+    _staleQuoteTimer?.cancel();
     final token = ++_quoteToken;
     if (!state.canQuote) {
       emit(state.copyWith(quote: null, isQuoting: false, quoteFailed: false));
@@ -145,10 +159,33 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
       );
       if (token != _quoteToken) return;
       emit(state.copyWith(quote: quote, isQuoting: false));
+      _scheduleStaleRefresh(quote);
     } catch (_) {
       if (token != _quoteToken) return;
       emit(state.copyWith(isQuoting: false, quoteFailed: true));
     }
+  }
+
+  /// CUS-2: once [quote] would go stale, automatically re-requests a fresh
+  /// one rather than letting the customer try to confirm at a stale price.
+  /// A single one-shot `Timer` per quote is the simplest correct approach —
+  /// no periodic polling needed, since a fresh quote just reschedules this
+  /// again from the top.
+  ///
+  /// Re-checked at fire time, not just at schedule time: a lot can happen
+  /// in up to ~10 minutes, so this is a no-op if [quote] has already been
+  /// superseded (a newer quote, or the customer already confirmed and
+  /// moved on to matching) by the time the timer actually fires.
+  void _scheduleStaleRefresh(Quote quote) {
+    final now = DateTime.now();
+    final staleAt = quote.expiresAt ?? now.add(_defaultQuoteTtl);
+    final delay = staleAt.isAfter(now) ? staleAt.difference(now) : Duration.zero;
+    _staleQuoteTimer = Timer(delay, () {
+      if (isClosed) return;
+      if (state.quote?.quoteId != quote.quoteId) return;
+      if (state.activeJob != null) return;
+      add(const RequestQuoteRefreshed());
+    });
   }
 
   Future<void> _confirm(Emitter<RequestState> emit) async {
@@ -161,6 +198,9 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
         pickupAddress: state.pickupAddress.trim(),
         dropoffAddress: state.dropoffAddress.trim(),
       );
+      // CUS-2: the quote is spent — nothing left for the stale-refresh
+      // timer to do.
+      _staleQuoteTimer?.cancel();
       emit(state.copyWith(activeJob: job, isCreatingJob: false));
       _watch(job.id);
     } catch (_) {
@@ -197,6 +237,7 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
   @override
   Future<void> close() {
     _jobSub?.cancel();
+    _staleQuoteTimer?.cancel();
     return super.close();
   }
 }

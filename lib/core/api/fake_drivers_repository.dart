@@ -9,6 +9,7 @@ import '../models/job_offer.dart';
 import '../models/truck.dart';
 import 'drivers_repository.dart';
 import 'fake_auth_repository.dart';
+import 'fake_fleet_repository.dart';
 import 'fake_jobs_repository.dart';
 import 'jobs_repository.dart';
 
@@ -19,12 +20,14 @@ class FakeDriversRepository implements DriversRepository {
   FakeDriversRepository({
     required FakeJobsRepository jobs,
     FakeAuthRepository? auth,
+    FakeFleetRepository? fleet,
     this.actionDelay = const Duration(milliseconds: 300),
     this.offerTtlSeconds = 30,
     bool verified = true,
     DriverStatus status = DriverStatus.offline,
   })  : _jobs = jobs,
         _auth = auth,
+        _fleet = fleet,
         _profile = DriverProfile(
           id: 'drv-profile-001',
           userId: 'drv-001',
@@ -49,6 +52,14 @@ class FakeDriversRepository implements DriversRepository {
   /// the shared fake user directly. Null in tests that don't wire one up
   /// (registration then just updates the local profile, no role flip).
   final FakeAuthRepository? _auth;
+
+  /// FLT-4: shared with `FakeFleetRepository` so [registerDriver] can
+  /// redeem an [DriverInvite] the same way the real backend's
+  /// `POST /v1/drivers/me/register` does for `invite_token` — links onto
+  /// the invite's pre-provisioned truck instead of creating a new one. Null
+  /// in tests that don't wire one up (redeeming an invite then just throws,
+  /// same as the real backend's 404 for an unknown token).
+  final FakeFleetRepository? _fleet;
   final Duration actionDelay;
 
   /// Offer TTL, normally read from `platform_config` (JOB-2). 30s per DSP-2.
@@ -131,13 +142,35 @@ class FakeDriversRepository implements DriversRepository {
 
   @override
   Future<DriverProfile> registerDriver({
-    required String plate,
-    required TruckType truckType,
-    required TruckCapacity capacity,
+    String? plate,
+    TruckType? truckType,
+    TruckCapacity? capacity,
+    String? inviteToken,
     String? licenseUrl,
     String? truckPhotoUrl,
   }) async {
     await Future<void>.delayed(actionDelay);
+    final Truck truck;
+    if (inviteToken != null) {
+      // FLT-4: redeem a fleet owner's invite instead of creating a new
+      // truck. Mirrors the real backend checking the invite's phone
+      // against the caller's own verified phone.
+      final fleet = _fleet;
+      if (fleet == null) throw StateError('Invite not found');
+      truck = fleet.redeemInvite(
+        inviteToken: inviteToken,
+        phone: _auth?.currentPhone ?? '',
+        driverId: _profile.userId,
+      );
+    } else {
+      truck = Truck(
+        id: 'trk-${++_truckSeq}',
+        driverId: _profile.userId,
+        plate: plate!,
+        type: truckType!,
+        capacity: capacity!,
+      );
+    }
     // Mirrors the real backend (AUTH-5): a fresh registration is unverified
     // and offline until an admin verifies it (ADM-2), regardless of the
     // constructor's `verified` seed for the pre-existing dev profile.
@@ -148,13 +181,7 @@ class FakeDriversRepository implements DriversRepository {
       verified: false,
       licenseUrl: licenseUrl,
       truckPhotoUrl: truckPhotoUrl,
-      truck: Truck(
-        id: 'trk-$_truckSeq',
-        driverId: _profile.userId,
-        plate: plate,
-        type: truckType,
-        capacity: capacity,
-      ),
+      truck: truck,
     );
     _auth?.debugPromoteToDriver();
     return _profile;

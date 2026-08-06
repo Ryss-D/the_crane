@@ -1,10 +1,31 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- TRK-5: driver location while the app is open and a job is active.
-         "Always"/background (screen-off) tracking needs ACCESS_BACKGROUND_LOCATION
-         + a foreground service, not yet added — that's a separate pass with real
-         device testing, not something to add speculatively without it. -->
+         Foreground-only permissions. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- TRK-5 (this pass): manifest-only prep for true background/locked
+         screen tracking. ACCESS_BACKGROUND_LOCATION is what actually lets
+         geolocator keep streaming fixes once the app is backgrounded or the
+         screen is locked (per geolocator's own README, checked in its
+         pub-cache copy rather than guessed:
+         ~/.pub-cache/hosted/pub.dev/geolocator-14.0.3/README.md).
+         FOREGROUND_SERVICE/FOREGROUND_SERVICE_LOCATION are what let it run
+         the Android foreground service backing that (FOREGROUND_SERVICE_LOCATION
+         specifically required from Android 14/SDK 34 per the same README);
+         POST_NOTIFICATIONS is for that service's required ongoing
+         notification (Android 13+). No service element is declared here
+         on purpose: geolocator_android's own AndroidManifest.xml (same
+         pub-cache path, android/src/main/AndroidManifest.xml) already
+         declares its GeolocatorLocationService with
+         android:foregroundServiceType="location"; Gradle manifest-merges
+         that into the app automatically, so redeclaring it here would just
+         risk a duplicate or mismatched service entry.
+         NOT verified on a real device: locked-screen behavior needs one;
+         this is manifest-only prep, see the TRK-5 doc note. -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:label="the_crane"
         android:name="${applicationName}"

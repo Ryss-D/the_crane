@@ -28,6 +28,25 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>La Grúa usa tu ubicación para guiarte hacia el cliente y compartir tu posición durante un servicio activo.</string>
+	<!-- TRK-5 (this pass): plist-only prep for true background/locked-screen
+	     tracking, checked against geolocator's own README (in its pub-cache
+	     copy, ~/.pub-cache/hosted/pub.dev/geolocator-14.0.3/README.md) for
+	     the exact keys it expects rather than guessing. NSLocationAlways-
+	     AndWhenInUseUsageDescription is the string iOS shows on the
+	     "Always" authorization prompt; UIBackgroundModes' "location" entry
+	     is what geolocator's README says iOS 16+ additionally requires to
+	     deliver fixes in the background. Neither of these makes the app
+	     request "Always" at runtime by itself: Geolocator.requestPermission
+	     (lib/core/location/location_source.dart) still only drives the
+	     when-in-use flow today; wiring the "Always" runtime request is a
+	     separate change. NOT verified on a real device: locked-screen
+	     behavior needs one; see the TRK-5 doc note. -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>La Grúa usa tu ubicación en segundo plano para seguir compartiendo tu posición mientras la pantalla está bloqueada durante un servicio activo.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

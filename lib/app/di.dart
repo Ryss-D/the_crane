@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../core/api/api_client.dart';
 import '../core/api/auth_repository.dart';
@@ -69,13 +70,20 @@ class AppDependencies {
       // this same fake user's role to driver, mirroring the real backend's
       // single-request role flip (see `FakeAuthRepository.debugPromoteToDriver`).
       final authRepository = FakeAuthRepository();
+      // FLT-4: shared with the drivers fake too, so redeeming an invite
+      // token in `registerDriver` links onto the exact truck this fake
+      // fleet repo pre-provisioned in `createInvite`.
+      final fleetRepository = FakeFleetRepository(auth: authRepository);
       return AppDependencies(
         dio: dio,
         jobsRepository: jobs,
-        driversRepository:
-            FakeDriversRepository(jobs: jobs, auth: authRepository),
+        driversRepository: FakeDriversRepository(
+          jobs: jobs,
+          auth: authRepository,
+          fleet: fleetRepository,
+        ),
         vehiclesRepository: FakeVehiclesRepository(),
-        fleetRepository: FakeFleetRepository(auth: authRepository),
+        fleetRepository: fleetRepository,
         authCubit: AuthCubit(
           gateway: FakePhoneAuthGateway(),
           authRepository: authRepository,
@@ -84,6 +92,19 @@ class AppDependencies {
       );
     }
     final socket = CraneSocket(tokenProvider: _firebaseIdToken)..connect();
+    // DRV-2: nudge the socket to reconnect right now (skipping whatever
+    // backoff delay it's mid-wait on) whenever a data message arrives while
+    // the app is foregrounded, rather than waiting out the backoff to
+    // notice a stale connection. Deliberately payload-agnostic: the backend
+    // doesn't send FCM pushes for job offers yet either (see
+    // `backend/app/services/realtime.py`'s `TODO(FCM)` — no Firebase Admin
+    // credentials configured server-side), so there is no message shape to
+    // key off yet; this only wires the client half for whenever that lands.
+    // Deliberately scoped to foreground/resumed only — a killed-app,
+    // lock-screen notification experience needs `flutter_local_notifications`
+    // plus platform permission flows and a background isolate entry point
+    // (`FirebaseMessaging.onBackgroundMessage`), none of which exist here.
+    FirebaseMessaging.onMessage.listen((_) => socket.reconnectNow());
     return AppDependencies(
       dio: dio,
       jobsRepository: ApiJobsRepository(dio, socket),
