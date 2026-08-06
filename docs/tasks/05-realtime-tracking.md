@@ -23,6 +23,40 @@ WebSocket layer for live positions and job events; FCM covers backgrounded apps.
   *AC: locked-screen Android device keeps streaming during an active job; iOS entitlement justification drafted for review.*
   Partial: `geolocator` wired end to end while the **app is open and a job is active** — `LocationSource` abstraction, live position replacing the pickup-point placeholder in `ActiveJobCubit`, permission requested on go-available, `ACCESS_FINE/COARSE_LOCATION` (Android) + `NSLocationWhenInUseUsageDescription` (iOS) declared. Still open: true background/locked-screen tracking (Android foreground service + `ACCESS_BACKGROUND_LOCATION`, iOS "Always" entitlement + App Store justification) — that needs a real device to verify and is a distinct, riskier pass.
 
+  Follow-up: manifest/plist prep for the still-open half, code only — NOT
+  device-verified, still not checking this off. Checked `geolocator`'s own
+  setup docs directly in its pub-cache copy
+  (`~/.pub-cache/hosted/pub.dev/geolocator-14.0.3/README.md`) for the exact
+  keys rather than guessing.
+
+  `android/app/src/main/AndroidManifest.xml` gains
+  `ACCESS_BACKGROUND_LOCATION` (what actually lets geolocator keep
+  streaming fixes once backgrounded/locked, per that README) plus
+  `FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_LOCATION` (the latter required
+  from Android 14/SDK 34) and `POST_NOTIFICATIONS` (the foreground
+  service's required ongoing notification, Android 13+). Deliberately did
+  *not* add a `<service>` element: `geolocator_android`'s own
+  `AndroidManifest.xml` (checked in the same pub-cache location,
+  `android/src/main/AndroidManifest.xml`) already declares
+  `.GeolocatorLocationService` with `android:foregroundServiceType="location"`
+  — Gradle manifest-merges that into the app automatically, so redeclaring
+  it here would only risk a duplicate/mismatched entry.
+
+  `ios/Runner/Info.plist` gains `NSLocationAlwaysAndWhenInUseUsageDescription`
+  (the "Always" authorization prompt string) and `UIBackgroundModes:
+  [location]` (what the same README says iOS 16+ additionally requires to
+  deliver fixes in the background). Neither of these makes the app request
+  "Always" at runtime by itself — `LocationSource.requestPermission`
+  (`lib/core/location/location_source.dart`) still only drives the
+  when-in-use flow today; wiring the "Always" runtime request (and, on
+  Android, actually starting geolocator in its foreground-service mode
+  from `ActiveJobCubit`) is further work this pass doesn't attempt.
+
+  Explicitly not claimed: none of this was run on a real device (or even a
+  simulator/emulator) — locked-screen streaming, the foreground-service
+  notification actually appearing, and the "Always" prompt's exact wording
+  on-device are all unverified. This is manifest/plist prep only.
+
 - [x] **TRK-6 — Share-track token backend** *(deps: TRK-3)*
   Mint `job_token` at creation; `GET /v1/track/{token}` + public WS/poll channel exposing only position, status, ETA (no PII beyond driver first name/plate).
   *AC: token works logged-out; expires after job completion + 24h.*
