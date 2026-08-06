@@ -9,12 +9,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => authClient.onAuthStateChanged(setUser), []);
 
-  const signInWithPhone = useCallback((phone: string) => authClient.signInWithPhone(phone), []);
+  const sendCode = useCallback((phone: string) => authClient.sendCode(phone), []);
+  const confirmCode = useCallback((code: string) => authClient.confirmCode(code), []);
   const signOut = useCallback(() => authClient.signOut(), []);
 
   const value = useMemo(
-    () => ({ user, signInWithPhone, signOut }),
-    [user, signInWithPhone, signOut],
+    () => ({ user, sendCode, confirmCode, signOut }),
+    [user, sendCode, confirmCode, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

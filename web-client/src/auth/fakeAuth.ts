@@ -4,13 +4,12 @@ const STORAGE_KEY = 'crane.fakeAuth.user';
 
 /**
  * Dev-only auth: enter any phone number → "logged in". Persists to
- * localStorage so refreshes keep the session. No OTP, no network.
- *
- * TODO(FND-1): replace selection with the Firebase web SDK implementation of
- * AuthClient once the Firebase project exists.
+ * localStorage so refreshes keep the session. No real OTP, no network —
+ * `sendCode` is a no-op and `confirmCode` accepts any non-empty code.
  */
 export class FakeAuth implements AuthClient {
   private user: AuthUser | null;
+  private pendingPhone: string | null = null;
   private readonly listeners = new Set<(user: AuthUser | null) => void>();
 
   constructor() {
@@ -41,9 +40,20 @@ export class FakeAuth implements AuthClient {
     return Promise.resolve(this.user ? `fake-id-token-${this.user.uid}` : null);
   }
 
-  signInWithPhone(phone: string): Promise<AuthUser> {
-    const normalized = phone.replace(/\s+/g, '');
-    const user: AuthUser = { uid: `fake-${normalized}`, phone: normalized };
+  sendCode(phone: string): Promise<void> {
+    this.pendingPhone = phone.replace(/\s+/g, '');
+    return Promise.resolve();
+  }
+
+  confirmCode(code: string): Promise<AuthUser> {
+    if (!this.pendingPhone) {
+      return Promise.reject(new Error('sendCode must be called before confirmCode'));
+    }
+    if (!code.trim()) {
+      return Promise.reject(new Error('code is required'));
+    }
+    const user: AuthUser = { uid: `fake-${this.pendingPhone}`, phone: this.pendingPhone };
+    this.pendingPhone = null;
     this.setUser(user);
     return Promise.resolve(user);
   }

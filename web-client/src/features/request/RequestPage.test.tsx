@@ -24,9 +24,11 @@ describe('request flow (WEB-2 skeleton)', () => {
     const user = userEvent.setup();
     renderApp();
 
-    // FakeAuth gate: any phone → logged in.
+    // FakeAuth gate: any phone + any code → logged in.
     await user.type(screen.getByLabelText(strings.auth.phoneLabel), '3001234567');
     await user.click(screen.getByRole('button', { name: strings.auth.submit }));
+    await user.type(await screen.findByLabelText(strings.auth.codeLabel), '123456');
+    await user.click(screen.getByRole('button', { name: strings.auth.confirm }));
 
     // Request form.
     await user.type(
@@ -58,6 +60,8 @@ describe('request flow (WEB-2 skeleton)', () => {
 
     await user.type(screen.getByLabelText(strings.auth.phoneLabel), '3000000000');
     await user.click(screen.getByRole('button', { name: strings.auth.submit }));
+    await user.type(await screen.findByLabelText(strings.auth.codeLabel), '123456');
+    await user.click(screen.getByRole('button', { name: strings.auth.confirm }));
 
     const quoteBtn = await screen.findByRole('button', { name: strings.request.getQuote });
     expect(quoteBtn).toBeDisabled();

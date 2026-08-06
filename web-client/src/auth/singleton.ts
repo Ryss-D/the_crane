@@ -1,13 +1,8 @@
 import type { AuthClient } from './types';
 import { FakeAuth } from './fakeAuth';
+import { FirebaseAuthClient } from './firebaseAuth';
 
-/**
- * Auth seam singleton.
- *
- * TODO(FND-1): when the Firebase project exists, instantiate the Firebase
- * implementation here when VITE_USE_MOCKS=false:
- *
- *   export const authClient: AuthClient =
- *     import.meta.env.VITE_USE_MOCKS !== 'false' ? new FakeAuth() : new FirebaseAuthClient();
- */
-export const authClient: AuthClient = new FakeAuth();
+/** Auth seam singleton — FakeAuth by default (VITE_USE_MOCKS=true), the real
+ * Firebase phone-OTP client once VITE_USE_MOCKS=false. */
+export const authClient: AuthClient =
+  import.meta.env.VITE_USE_MOCKS !== 'false' ? new FakeAuth() : new FirebaseAuthClient();

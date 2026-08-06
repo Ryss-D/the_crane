@@ -3,7 +3,8 @@ import type { AuthUser } from './types';
 
 export interface AuthContextValue {
   user: AuthUser | null;
-  signInWithPhone: (phone: string) => Promise<AuthUser>;
+  sendCode: (phone: string) => Promise<void>;
+  confirmCode: (code: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
 }
 

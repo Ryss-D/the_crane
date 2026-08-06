@@ -6,21 +6,21 @@ export interface AuthUser {
 export type Unsubscribe = () => void;
 
 /**
- * The auth seam. FakeAuth implements it today; the Firebase web SDK adapter
- * will implement the SAME interface later.
- *
- * TODO(FND-1): add `FirebaseAuthClient` (firebase/auth, phone OTP via
- * signInWithPhoneNumber + RecaptchaVerifier) once the Firebase project exists,
- * and select it in src/auth/index.ts when VITE_USE_MOCKS=false.
+ * The auth seam. FakeAuth (one-step, dev-only) and FirebaseAuthClient (real
+ * phone OTP) both implement this two-step shape: `sendCode` triggers the SMS
+ * (or, for the fake, does nothing but succeed), `confirmCode` completes
+ * sign-in against whatever `sendCode` most recently started. No handle is
+ * threaded between the two calls — each implementation holds its own
+ * in-flight verification state internally (mirrors the Firebase JS SDK's own
+ * `ConfirmationResult` model).
  */
 export interface AuthClient {
   /** Current Firebase ID token (or fake token) — attached as Bearer by HttpApi. */
   getIdToken(): Promise<string | null>;
-  /**
-   * Dev shape: one-step. The real flow is two-step (send OTP → confirm code);
-   * the interface grows a `confirmCode()` when FND-1 lands.
-   */
-  signInWithPhone(phone: string): Promise<AuthUser>;
+  /** Sends an OTP to `phone` (E.164, e.g. +573001234567). */
+  sendCode(phone: string): Promise<void>;
+  /** Confirms the code sent by the most recent `sendCode` call. */
+  confirmCode(code: string): Promise<AuthUser>;
   signOut(): Promise<void>;
   getCurrentUser(): AuthUser | null;
   onAuthStateChanged(cb: (user: AuthUser | null) => void): Unsubscribe;
