@@ -55,6 +55,37 @@ Flutter driver shell: go available, receive offers, execute the job.
   backgrounded yet (WS-only), and pickup distance/commission preview are
   still approximations (flat 15%, `0` distance) pending real dispatch data.
 
+  Follow-up: checked `backend/app/schemas/job.py`'s `JobOfferEvent` for the
+  real distance/commission fields a parallel backend agent was enriching it
+  with this same session — still only `vehicle_type`/`pickup`/`dropoff`/
+  `quoted_price`/`expires_in_seconds` as of this check, so that half is
+  still blocked; `ApiDriversRepository._toJobOffer`'s hardcoded
+  approximation is untouched. Picking this up needs a fresh check of that
+  schema.
+
+  Built instead: FCM foreground/resumed handling, previously entirely
+  missing (`firebase_messaging` was only ever used for `AUTH-6`'s token
+  registration — nothing listened for messages). `CraneSocket.reconnectNow()`
+  forces an immediate reconnect, skipping whatever backoff delay is
+  currently pending — wired from `FirebaseMessaging.onMessage` (`di.dart`,
+  real-backend branch) for a foreground data push, and
+  `didChangeAppLifecycleState(resumed)` (`main.dart`, via
+  `WidgetsBindingObserver`) for coming back from the background, the case
+  most likely to have actually left the socket stale (mobile OSes tend to
+  suspend networking while backgrounded). Honesty note: the backend doesn't
+  send FCM pushes for job offers yet either (`realtime.py`'s own
+  `TODO(FCM)` — no Firebase Admin credentials configured server-side), so
+  the `onMessage` listener is inert today; this only wires the client half
+  for whenever that lands, deliberately payload-agnostic since no message
+  shape exists yet to key off. Deliberately scoped to foreground/resumed
+  only — a killed-app, lock-screen notification experience needs
+  `flutter_local_notifications`, platform permission flows, and a
+  background isolate entry point (`FirebaseMessaging.onBackgroundMessage`),
+  none of which is attempted here. New tests: `CraneSocket.reconnectNow`'s
+  three states (before connect, already connected, mid-backoff) against
+  the existing fake WebSocket channel double. Not checking this off — the
+  distance/commission half is still blocked on the backend.
+
 - [ ] **DRV-3 — Active job screen** *(deps: JOB-6, TRK-4)*
   Status-advance button per phase (En camino → Llegué → Cargado → En ruta → Entregado), map with route, deep-link to Google Maps navigation, call-customer button, cancel (returns job to matching).
   Design: «Viaje activo» — shows vehicle/plate + pickup contact, not a rider (`docs/design/screen-references.md`)
@@ -80,6 +111,37 @@ Flutter driver shell: go available, receive offers, execute the job.
   errors (e.g. network) are still swallowed silently — only the typed
   rejection surfaces; no map route or Google Maps navigation deep-link, no
   call-customer button, no driver-side cancel.
+
+  Follow-up: navigation deep-link and driver-side cancel are now built too.
+  "Navegar" launches Google Maps' cross-platform web intent
+  (`maps/dir/?api=1&destination=...`) via `url_launcher` — no native Maps
+  SDK/API key needed — targeting the job's current leg (pickup up through
+  `arrived_pickup`, dropoff from `loading` onward). Driver cancel: added an
+  `asDriver` flag to `JobsRepository.cancelJob` (a fake-only distinction —
+  the real backend infers customer-vs-driver from the caller's own identity,
+  never a request field) so `FakeJobsRepository` returns the job to
+  `matching` instead of `cancelled`, mirroring the backend's
+  `DRIVER_CANCELLABLE`/`_driver_cancel`. `ActiveJobCubit.cancel()` calls it
+  and surfaces a rejection (attempted past `arrived_pickup`) the same way
+  `advance()` does; `ActiveJobScreen` gained a confirm-dialog-gated cancel
+  button, shown only in a driver-cancellable status.
+  `ApiJobsRepository.cancelJob` now also maps 403/409 into
+  `JobStatusRejectedException`, matching `updateJobStatus`'s existing
+  behavior (previously it didn't map these at all).
+
+  Still not built, and not a wiring gap this time — a real one: the
+  call-customer button. Checked `backend/app/schemas/job.py`'s
+  `JobRead`/`JobDriverInfo` directly: there is no customer phone number
+  anywhere in a job's payload — only the *driver's* phone is ever exposed,
+  to the customer, via `JobDriverSummary`. There is no symmetric "customer
+  summary" on the job at all. Without a backend change adding one, there is
+  no legitimate phone number for this button to call, so it isn't built
+  rather than faked. Map route stays blocked on FND-6, unchanged. Not
+  checking this off yet for that reason (map + call-customer are both still
+  outstanding, one blocked, one a real backend gap) — everything else in
+  the AC is met. New tests: `ActiveJobCubit.cancel()` success (back to
+  `matching`, local state cleared) and rejection-past-`arrived_pickup`,
+  against the fakes.
 
 - [ ] **DRV-4 — Cash collection + completion** *(deps: DRV-3, LED-1)*
   On delivered: fare + "collected in cash" confirmation; shows commission accrued for this job and new running balance.
