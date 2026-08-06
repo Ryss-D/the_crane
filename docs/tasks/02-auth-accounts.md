@@ -13,10 +13,12 @@ Phone-OTP identity via Firebase; profiles and roles live in Postgres.
 - [ ] **AUTH-3 — Flutter phone OTP flow** *(deps: FND-4, FND-1)*
   Screens: phone entry (+57 default) → OTP → profile completion (name) → calls `/auth/sync`. Dio interceptor injects/refreshes the ID token.
   *AC: full signup on dev flavor with a Firebase test number; token refresh survives app restart.*
+  Built: real phone-entry → OTP → sync → profile-completion screens, `PhoneAuthGateway`/`AuthRepository` seams (real + fake), `AuthCubit` driving the whole flow, `AuthInterceptor` already injects the real ID token. Verified against the fake gateway (47 tests, incl. dedicated `AuthCubit` unit tests) and a real iOS build. Not yet verified: an actual run against the live project's test number (`+57 300 0000000` / `123456`) with `USE_FAKE_BACKEND=false` end to end on a device/simulator — needs that manual pass before checking this off.
 
 - [ ] **AUTH-4 — Role-aware routing** *(deps: AUTH-3)*
   go_router guards: unauthenticated → auth stack; customer → customer shell; driver → driver shell; role stored on profile.
   *AC: switching the role in DB lands the user in the other shell on next launch.*
+  Built: `routerRedirect` is now genuinely reactive to `AuthCubit`'s state (bridged into go_router's `refreshListenable`), routes by the synced profile's `role`, and a driver-role fake repository test confirms it lands on the driver shell. Same "needs a live end-to-end pass" caveat as AUTH-3 — not yet checked off pending that.
 
 - [ ] **AUTH-5 — Driver registration flow** *(deps: AUTH-4)*
   From settings: "become a driver" — truck info (plate, type, capacity moto/car/both) + document upload (license, truck photo) to object storage; sets role=driver with `verified=false`. Truck data goes in a separate `trucks` table (fleet_id nullable, driver_id nullable) from the start — not columns on `driver_profiles` — so FLT-1 later attaches fleets without a migration.
