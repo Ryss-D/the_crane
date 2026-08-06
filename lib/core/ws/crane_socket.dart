@@ -14,13 +14,11 @@ import 'server_message.dart';
 typedef WebSocketChannelFactory = WebSocketChannel Function(Uri uri);
 
 /// Resolves the current user's Firebase ID token for the `?token=` query
-/// param `WS /v1/ws` requires (see `backend/app/api/ws.py`).
-///
-/// TODO(FND-1): once Firebase is wired, return
-/// `await FirebaseAuth.instance.currentUser?.getIdToken()` here — the same
-/// seam `AuthInterceptor` (`lib/core/api/auth_interceptor.dart`) stubs for
-/// REST calls. Until then this returns null, the socket connects without a
-/// token, and the backend closes it with code 4001 (expected/documented).
+/// param `WS /v1/ws` requires (see `backend/app/api/ws.py`). `AppDependencies`
+/// (`lib/app/di.dart`) injects the real Firebase-backed provider; the default
+/// below (used when a caller doesn't pass one — tests, fakes) returns null,
+/// which connects without a token and the backend closes with code 4001
+/// (expected/documented).
 typedef WsTokenProvider = Future<String?> Function();
 
 Future<String?> _defaultTokenProvider() async => null;

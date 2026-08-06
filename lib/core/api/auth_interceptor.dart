@@ -1,19 +1,17 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-/// Injects the Firebase ID token on every API request.
-///
-/// TODO(FND-1): once Firebase is wired (firebase_core + firebase_auth),
-/// fetch the current user's ID token here and set
-/// `options.headers['Authorization'] = 'Bearer <idToken>'`.
-/// Until then this interceptor is a pass-through stub.
+/// Injects the current Firebase user's ID token on every API request.
 class AuthInterceptor extends Interceptor {
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    // TODO(FND-1): final token = await FirebaseAuth.instance.currentUser
-    //   ?.getIdToken();
-    // if (token != null) {
-    //   options.headers['Authorization'] = 'Bearer $token';
-    // }
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+    if (token != null) {
+      options.headers['Authorization'] = 'Bearer $token';
+    }
     handler.next(options);
   }
 }

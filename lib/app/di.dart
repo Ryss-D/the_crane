@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../core/api/api_client.dart';
 import '../core/api/drivers_repository.dart';
@@ -9,14 +10,14 @@ import '../core/config/env.dart';
 import '../core/location/location_source.dart';
 import '../core/ws/crane_socket.dart';
 
-// TODO(FND-1): construct firebase_core / firebase_auth / firebase_messaging
-// instances here once the Firebase project is wired (needs native config
-// files from the Firebase console). CraneSocket's token provider
-// (`lib/core/ws/crane_socket.dart`) is the same seam to plug the real
-// Firebase ID token into once this lands.
+// TODO(FND-1): AUTH-6 — construct firebase_messaging here once push
+// notifications are wired; register/refresh the FCM token on login.
 // TODO(FND-6): construct google_maps here once Maps keys and native setup
 // are in place. Driver location (TRK-5) is separate and already wired below
 // via GeolocatorLocationSource.
+
+Future<String?> _firebaseIdToken() => FirebaseAuth.instance.currentUser?.getIdToken() ??
+    Future.value(null);
 
 /// Composition root: builds the HTTP client and repositories once at app
 /// start. The instances are exposed to the widget tree through
@@ -53,7 +54,7 @@ class AppDependencies {
         driversRepository: FakeDriversRepository(jobs: jobs),
       );
     }
-    final socket = CraneSocket()..connect();
+    final socket = CraneSocket(tokenProvider: _firebaseIdToken)..connect();
     return AppDependencies(
       dio: dio,
       jobsRepository: ApiJobsRepository(dio, socket),

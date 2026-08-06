@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -11,10 +12,13 @@ import 'core/location/location_source.dart';
 import 'core/ws/crane_socket.dart';
 import 'l10n/app_localizations.dart';
 
-void main() {
-  // TODO(FND-1): initialize Firebase here (WidgetsFlutterBinding +
-  // Firebase.initializeApp with per-flavor options) once the Firebase
-  // project is wired.
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // No `options:` — Android/iOS read their config from the native
+  // google-services.json / GoogleService-Info.plist dropped in by FND-1.
+  // (Only web/desktop targets need an explicit FirebaseOptions object; this
+  // app doesn't ship on those.)
+  await Firebase.initializeApp();
   runApp(TheCraneApp(dependencies: AppDependencies.fromEnv()));
 }
 

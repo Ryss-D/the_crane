@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "765176672838",
+    "project_id": "the-crane-c6b86",
+    "storage_bucket": "the-crane-c6b86.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:765176672838:android:bb04a005a33912aa9a1047",
+        "android_client_info": {
+          "package_name": "com.thecrane.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDi3orlp-9JQmBhc0wW80RGyJ8n8jYdklQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
