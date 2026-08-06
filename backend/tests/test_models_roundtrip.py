@@ -13,6 +13,7 @@ from app.models import (
     DriverLocationSnapshot,
     DriverProfile,
     DriverStatus,
+    Fleet,
     Job,
     JobOffer,
     JobStatus,
@@ -72,6 +73,36 @@ async def test_driver_profile_and_truck_roundtrip(
         assert truck.type is TruckType.flatbed
         assert truck.capacity is TruckCapacity.both
         assert truck.fleet_id is None
+
+
+async def test_fleet_roundtrip_and_truck_fk(
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
+    async with session_maker() as session:
+        owner = await _add_user(session, UserRole.fleet_owner)
+        driver = await _add_user(session, UserRole.driver)
+        fleet = Fleet(owner_user_id=owner.id, name="Grúas del Poblado")
+        session.add(fleet)
+        await session.flush()
+        session.add(
+            Truck(
+                plate="FLT001",
+                type=TruckType.standard,
+                capacity=TruckCapacity.car,
+                driver_id=driver.id,
+                fleet_id=fleet.id,
+            )
+        )
+        await session.commit()
+
+        loaded = await session.scalar(select(Fleet).where(Fleet.owner_user_id == owner.id))
+        assert loaded is not None
+        assert loaded.name == "Grúas del Poblado"
+        assert loaded.created_at is not None
+
+        truck = await session.scalar(select(Truck).where(Truck.plate == "FLT001"))
+        assert truck is not None
+        assert truck.fleet_id == fleet.id
 
 
 async def test_job_offer_and_snapshot_roundtrip(

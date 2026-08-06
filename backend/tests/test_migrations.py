@@ -31,6 +31,7 @@ EXPECTED_TABLES = {
     "platform_config",
     "platform_config_audit",
     "ratings",
+    "fleets",
 }
 
 
@@ -61,7 +62,17 @@ def test_upgrade_head_on_sqlite(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
         ledger_columns = {row[1]: row for row in conn.execute("PRAGMA table_info(driver_ledger)")}
         assert ledger_columns["note"][3] == 0  # notnull flag off
 
+        # 0007: trucks.fleet_id gains its FK to fleets (existing column, was FK-less).
+        fk_targets = {
+            fk[2] for fk in conn.execute("PRAGMA foreign_key_list(trucks)") if fk[3] == "fleet_id"
+        }
+        assert fk_targets == {"fleets"}
+
+        # 0008: customer_vehicles gains created_at (CUS-6's newest-first ordering).
+        vehicle_columns = {row[1] for row in conn.execute("PRAGMA table_info(customer_vehicles)")}
+        assert "created_at" in vehicle_columns
+
         head = conn.execute("SELECT version_num FROM alembic_version").fetchone()
-        assert head == ("0006",)
+        assert head == ("0008",)
     finally:
         conn.close()

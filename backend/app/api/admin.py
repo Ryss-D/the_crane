@@ -23,6 +23,7 @@ from app.core.database import get_session
 from app.core.redis import get_redis
 from app.core.security import AdminUser
 from app.models.driver import DriverProfile, DriverStatus, Truck
+from app.models.fleet import Fleet
 from app.models.job import DriverLocationSnapshot, Job, JobOffer, JobStatus
 from app.models.ledger import DriverLedgerEntry, LedgerEntryType
 from app.models.platform_config import PlatformConfig, PlatformConfigAudit
@@ -45,11 +46,18 @@ from app.schemas.admin import (
     LedgerSettleRequest,
 )
 from app.schemas.driver import TruckRead
+from app.schemas.fleet import (
+    FleetBalanceRead,
+    FleetMemberBalance,
+    FleetSettlementEntry,
+    FleetSettleRequest,
+    FleetSettleResponse,
+)
 from app.schemas.job import JobRead
 from app.services import dispatch
 from app.services.config import RedisLike, set_config
 from app.services.jobs import ALLOWED_TRANSITIONS, JobEventHook, get_job_event_hook, transition
-from app.services.ledger import driver_owed_balance
+from app.services.ledger import apportion, driver_owed_balance, fleet_member_balances
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -457,3 +465,92 @@ async def settle_driver(
     await session.commit()
     await session.refresh(entry)
     return DriverLedgerEntryRead.model_validate(entry)
+
+
+# ---- Fleets (FLT-2) -------------------------------------------------------------
+
+
+async def _get_fleet_or_404(session: AsyncSession, fleet_id: uuid.UUID) -> Fleet:
+    fleet = await session.get(Fleet, fleet_id)
+    if fleet is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fleet not found")
+    return fleet
+
+
+@router.get("/fleets/{fleet_id}/balance", response_model=FleetBalanceRead)
+async def get_fleet_balance(
+    fleet_id: uuid.UUID, admin: AdminUser, session: SessionDep
+) -> FleetBalanceRead:
+    """Consolidated owed balance across the fleet's member drivers, same rollup the
+    fleet owner sees at GET /v1/fleets/me/balance (app/services/ledger.py)."""
+    fleet = await _get_fleet_or_404(session, fleet_id)
+    balances = await fleet_member_balances(session, fleet.id)
+    users = (
+        {u.id: u for u in (await session.scalars(select(User).where(User.id.in_(balances))))}
+        if balances
+        else {}
+    )
+    members = [
+        FleetMemberBalance(
+            driver_id=driver_id,
+            name=users[driver_id].name if driver_id in users else None,
+            owed_balance=owed,
+        )
+        for driver_id, owed in balances.items()
+    ]
+    return FleetBalanceRead(fleet_id=fleet.id, owed_balance=sum(balances.values()), members=members)
+
+
+@router.post(
+    "/fleets/{fleet_id}/settle",
+    response_model=FleetSettleResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def settle_fleet(
+    fleet_id: uuid.UUID,
+    body: FleetSettleRequest,
+    admin: AdminUser,
+    session: SessionDep,
+) -> FleetSettleResponse:
+    """Records ONE settlement for the whole fleet, apportioned across its member
+    drivers' ledgers (`app/services/ledger.py`'s `apportion` — proportional to each
+    driver's current owed balance, largest-remainder rounded so the per-driver
+    payout rows sum to exactly `amount`). Each driver still gets their own `payout`
+    driver_ledger row (same shape LED-4's per-driver settle writes) so
+    driver_owed_balance and GET /v1/drivers/me/balance need no special-casing —
+    a fleet settlement just looks like several ordinary settlements that happened
+    to land at once, which is also why one settlement unblocks every capped member
+    (DSP-1's balance-cap gate reads the fleet total via fleet_owed_balance)."""
+    fleet = await _get_fleet_or_404(session, fleet_id)
+    if body.amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="amount must be positive"
+        )
+    balances = await fleet_member_balances(session, fleet.id)
+    if not balances:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Fleet has no drivers to settle"
+        )
+    driver_ids = list(balances.keys())
+    shares = apportion(body.amount, [balances[d] for d in driver_ids])
+
+    entries: list[FleetSettlementEntry] = []
+    for driver_id, share in zip(driver_ids, shares, strict=True):
+        entry_id = uuid.uuid4()
+        session.add(
+            DriverLedgerEntry(
+                id=entry_id,
+                driver_id=driver_id,
+                job_id=None,
+                gross=share,
+                commission=0,
+                net=share,
+                entry_type=LedgerEntryType.payout,
+                note=body.note,
+            )
+        )
+        entries.append(
+            FleetSettlementEntry(driver_id=driver_id, ledger_entry_id=entry_id, amount=share)
+        )
+    await session.commit()
+    return FleetSettleResponse(fleet_id=fleet.id, total_amount=body.amount, entries=entries)
