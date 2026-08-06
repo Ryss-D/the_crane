@@ -60,3 +60,16 @@ class FleetSettleResponse(BaseModel):
     fleet_id: uuid.UUID
     total_amount: int
     entries: list[FleetSettlementEntry]
+
+
+class AdminFleetListItem(BaseModel):
+    """GET /v1/admin/fleets row — enough to pick a fleet before drilling into its
+    balance (GET /v1/admin/fleets/{id}/balance) or settling it."""
+
+    id: uuid.UUID
+    owner_user_id: uuid.UUID
+    owner_name: str | None
+    name: str
+    truck_count: int
+    owed_balance: int
+    created_at: datetime

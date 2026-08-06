@@ -114,6 +114,39 @@ async def test_fleet_balance_404_for_unknown_fleet(
     assert response.status_code == 404
 
 
+async def test_list_fleets_shows_owner_truck_count_and_balance(
+    client: AsyncClient,
+    tokens: dict[str, dict[str, Any]],
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    fleet = await _make_fleet(session_maker, owner_firebase_uid="fleet-owner-list")
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="fleet-drv-list", status=DriverStatus.offline
+    )
+    await _attach_truck(session_maker, driver, fleet)
+    await _add_earning(session_maker, driver, 8000)
+
+    response = await client.get("/v1/admin/fleets", headers=AUTH_ADMIN)
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) == 1
+    item = items[0]
+    assert item["id"] == str(fleet.id)
+    assert item["owner_user_id"] == str(fleet.owner_user_id)
+    assert item["name"] == "Test Fleet"
+    assert item["truck_count"] == 1
+    assert item["owed_balance"] > 0
+
+
+async def test_list_fleets_empty_when_none_exist(
+    client: AsyncClient, tokens: dict[str, dict[str, Any]]
+) -> None:
+    response = await client.get("/v1/admin/fleets", headers=AUTH_ADMIN)
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 async def test_settle_fleet_apportions_and_sums_to_amount(
     client: AsyncClient,
     tokens: dict[str, dict[str, Any]],

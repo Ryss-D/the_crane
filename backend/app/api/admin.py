@@ -47,6 +47,7 @@ from app.schemas.admin import (
 )
 from app.schemas.driver import TruckRead
 from app.schemas.fleet import (
+    AdminFleetListItem,
     FleetBalanceRead,
     FleetMemberBalance,
     FleetSettlementEntry,
@@ -475,6 +476,44 @@ async def _get_fleet_or_404(session: AsyncSession, fleet_id: uuid.UUID) -> Fleet
     if fleet is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fleet not found")
     return fleet
+
+
+@router.get("/fleets", response_model=list[AdminFleetListItem])
+async def list_fleets(admin: AdminUser, session: SessionDep) -> list[AdminFleetListItem]:
+    """All fleets on the platform (ADM-7) — no ownership filter, admin sees all, same
+    convention as job listing. Unpaginated: fleets are expected to stay few for MVP
+    scale, same assumption GET /v1/fleets/me's truck list already makes."""
+    fleets = (await session.scalars(select(Fleet))).all()
+    if not fleets:
+        return []
+    owners = {
+        u.id: u
+        for u in (
+            await session.scalars(select(User).where(User.id.in_(f.owner_user_id for f in fleets)))
+        )
+    }
+    truck_counts = dict(
+        (
+            await session.execute(
+                select(Truck.fleet_id, func.count())
+                .where(Truck.fleet_id.in_(f.id for f in fleets))
+                .group_by(Truck.fleet_id)
+            )
+        ).all()
+    )
+    balances = {f.id: await fleet_member_balances(session, f.id) for f in fleets}
+    return [
+        AdminFleetListItem(
+            id=f.id,
+            owner_user_id=f.owner_user_id,
+            owner_name=owners[f.owner_user_id].name if f.owner_user_id in owners else None,
+            name=f.name,
+            truck_count=truck_counts.get(f.id, 0),
+            owed_balance=sum(balances[f.id].values()),
+            created_at=f.created_at,
+        )
+        for f in fleets
+    ]
 
 
 @router.get("/fleets/{fleet_id}/balance", response_model=FleetBalanceRead)
