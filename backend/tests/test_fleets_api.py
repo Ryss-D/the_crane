@@ -196,3 +196,23 @@ async def test_fleet_trucks_show_live_driver_status_and_name(
     unassigned_body = next(t for t in add2.json()["trucks"] if t["id"] == str(unassigned.id))
     assert unassigned_body["driver_status"] is None
     assert unassigned_body["driver_name"] == "D"
+
+
+async def test_find_truck_by_plate(
+    client: AsyncClient,
+    verified_tokens: dict[str, dict[str, Any]],
+    customer_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
+    """FLT-4: a fleet owner knows a driver's plate, not their truck's UUID."""
+    verified_tokens["customer-token"] = {"uid": customer_user.firebase_uid}
+    truck = await _register_driver_truck(
+        session_maker, firebase_uid="lookup-driver", plate="LOOKUP1"
+    )
+
+    found = await client.get("/v1/fleets/trucks/by-plate/LOOKUP1", headers=AUTH_CUSTOMER)
+    assert found.status_code == 200
+    assert found.json()["id"] == str(truck.id)
+
+    missing = await client.get("/v1/fleets/trucks/by-plate/NOPE999", headers=AUTH_CUSTOMER)
+    assert missing.status_code == 404

@@ -112,6 +112,19 @@ async def get_my_fleet(user: CurrentUser, session: SessionDep) -> FleetRead:
     return await _serialize_fleet(session, fleet)
 
 
+@router.get("/trucks/by-plate/{plate}", response_model=TruckRead)
+async def find_truck_by_plate(plate: str, user: CurrentUser, session: SessionDep) -> TruckRead:
+    """FLT-4: look up a truck before attaching it -- a fleet owner knows a driver's
+    plate, not their truck's UUID. Any authenticated user may look up any plate
+    (plates aren't secret; this doesn't expose anything `add_truck_to_fleet` below
+    wouldn't already reveal via its 404/409 either way) -- callers only get to act
+    on the result via the existing per-fleet attach endpoint's own checks."""
+    truck = await session.scalar(select(Truck).where(Truck.plate == plate))
+    if truck is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Truck not found")
+    return TruckRead.model_validate(truck)
+
+
 @router.post("/me/trucks/{truck_id}", response_model=FleetRead)
 async def add_truck_to_fleet(
     truck_id: uuid.UUID, user: CurrentUser, session: SessionDep

@@ -3,6 +3,13 @@
 - [x] **OPS-1 — Backend CI** *(deps: FND-2)*
   GitHub Actions on PR: ruff, pytest (with postgres/redis services), alembic upgrade check.
   *AC: red PR on lint/test/migration failure.*
+  Known flake (not yet root-caused): `tests/test_ws.py::test_location_from_assigned_driver_relays_to_customer`
+  intermittently fails with `no such table: driver_location_snapshots` when run as
+  part of the full suite (passes every time in isolation) -- smells like a
+  SQLite/`StaticPool` timing issue specific to this test's use of a sync
+  `starlette.testclient.TestClient` websocket alongside the async `client` fixture
+  (see the file's own docstring on why it needs both). Hasn't reproduced on repeated
+  isolated runs; noted here rather than chased down given how rarely it fires.
 
 - [x] **OPS-2 — Flutter CI** *(deps: FND-4)*
   flutter analyze + test on PR; build check for both flavors.
