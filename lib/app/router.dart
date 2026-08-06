@@ -35,6 +35,7 @@ import '../features/driver/job/active_job_cubit.dart';
 import '../features/driver/job/active_job_screen.dart';
 import '../features/fleet/home/fleet_cubit.dart';
 import '../features/fleet/home/fleet_home_screen.dart';
+import '../features/fleet/truck_detail/fleet_truck_detail_screen.dart';
 import '../features/shared/history/history_cubit.dart';
 import '../features/shared/history/history_screen.dart';
 
@@ -281,6 +282,14 @@ GoRouter createRouter(AuthCubit authCubit) {
           GoRoute(
             path: AppRoute.fleetHome,
             builder: (context, state) => const FleetHomeScreen(),
+            routes: [
+              GoRoute(
+                path: 'trucks/:truckId',
+                builder: (context, state) => FleetTruckDetailScreen(
+                  truckId: state.pathParameters['truckId']!,
+                ),
+              ),
+            ],
           ),
         ],
       ),

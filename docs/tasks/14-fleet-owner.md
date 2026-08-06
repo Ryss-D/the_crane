@@ -12,7 +12,7 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   *AC: fleet balance equals sum of member driver balances; one fleet settlement unblocks all capped members.*
   Built: `app/services/ledger.py` gains `fleet_member_driver_ids`/`fleet_member_balances`/`fleet_owed_balance` (a driver's fleet is found via their truck, not a stored column — no ledger schema change needed) plus an `apportion()` helper (largest-remainder rounding so per-driver shares always sum exactly to the settlement amount). `GET /v1/fleets/me/balance` (fleet owner) and `GET /v1/admin/fleets/{fleet_id}/balance` (admin) return the rollup + per-driver breakdown; `POST /v1/admin/fleets/{fleet_id}/settle` records ONE payment apportioned across every member driver as ordinary `payout` driver_ledger rows (409 if the fleet has no drivers, 422 on non-positive amount). `PATCH /v1/drivers/me/status`'s balance-cap gate now checks `fleet_owed_balance` instead of `driver_owed_balance` when the driver's truck has a `fleet_id`, independent drivers unaffected. 7 new tests in `tests/test_fleet_ledger.py` cover the rollup-equals-sum AC, apportionment/rounding, and the "one settlement unblocks every capped member" AC directly; full suite green (198 passed).
 
-- [ ] **FLT-3 — "Mi flota" screen** *(deps: AUTH-4, FLT-1)*
+- [x] **FLT-3 — "Mi flota" screen** *(deps: AUTH-4, FLT-1)*
   Fleet owner shell in the Flutter app: per-truck status at a glance (available / on job / unassigned / offline), tap-through to truck detail.
   Design: «Mi flota» (`docs/design/screen-references.md`)
   *AC: statuses reflect live dispatch state for a seeded fleet.*
@@ -33,8 +33,13 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   `FleetHomeScreen`) instead of the customer/driver shells. `FleetHomeScreen`
   lists every truck with its plate, driver name, and status at a glance
   (available/on job/offline/unassigned -- `TruckFleetStatusLabel` in
-  `labels.dart`). Not yet checking this off: tap-through to a truck detail
-  screen (this AC's own bullet) isn't built yet -- next commit.
+  `labels.dart`). Tapping a row now pushes `/fleet/trucks/:truckId` ->
+  `FleetTruckDetailScreen` (plate, type, capacity, driver name/status),
+  reading straight from `FleetCubit`'s already-loaded state rather than a
+  second fetch, so FLT-4's attach/detach will show up immediately. Checked
+  off: the AC ("statuses reflect live dispatch state for a seeded fleet")
+  and the "tap-through to truck detail" requirement are both covered by the
+  seeded-fleet widget tests. Full suite green (108 passed).
 
 - [ ] **FLT-4 — Assign driver to truck** *(deps: FLT-3)*
   Link a verified driver to an unassigned truck, or invite a new driver (phone invite → signup lands pre-linked); unassign flow.

@@ -526,6 +526,18 @@
   "@fleetTruckStatusUnassigned": {
     "description": "FLT-3: per-truck status label when the truck has no driver assigned yet"
   },
+  "fleetTruckDetailTitle": "Detalle de la grúa",
+  "@fleetTruckDetailTitle": {
+    "description": "FLT-3: truck detail screen app bar title"
+  },
+  "fleetTruckDriverLabel": "Conductor",
+  "@fleetTruckDriverLabel": {
+    "description": "FLT-3: label above the assigned driver's name on the truck detail screen"
+  },
+  "fleetTruckStatusLabel": "Estado",
+  "@fleetTruckStatusLabel": {
+    "description": "FLT-3: label above the status-at-a-glance value on the truck detail screen"
+  },
   "cashPaymentPendingBody": "Confirma que recibiste el pago en efectivo para finalizar el servicio.",
   "@cashPaymentPendingBody": {
     "description": "CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation"

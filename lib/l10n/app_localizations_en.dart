@@ -406,6 +406,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fleetTruckStatusUnassigned => 'No driver';
 
   @override
+  String get fleetTruckDetailTitle => 'Truck detail';
+
+  @override
+  String get fleetTruckDriverLabel => 'Driver';
+
+  @override
+  String get fleetTruckStatusLabel => 'Status';
+
+  @override
   String get cashPaymentPendingBody =>
       'Confirm you received the cash payment to finish the job.';
 

@@ -842,6 +842,24 @@ abstract class AppLocalizations {
   /// **'Sin conductor'**
   String get fleetTruckStatusUnassigned;
 
+  /// FLT-3: truck detail screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle de la grúa'**
+  String get fleetTruckDetailTitle;
+
+  /// FLT-3: label above the assigned driver's name on the truck detail screen
+  ///
+  /// In es, this message translates to:
+  /// **'Conductor'**
+  String get fleetTruckDriverLabel;
+
+  /// FLT-3: label above the status-at-a-glance value on the truck detail screen
+  ///
+  /// In es, this message translates to:
+  /// **'Estado'**
+  String get fleetTruckStatusLabel;
+
   /// CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation
   ///
   /// In es, this message translates to:

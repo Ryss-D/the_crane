@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_crane/core/models/app_user.dart';
 import 'package:the_crane/features/fleet/home/fleet_home_screen.dart';
+import 'package:the_crane/features/fleet/truck_detail/fleet_truck_detail_screen.dart';
 import 'package:the_crane/main.dart';
 
 import '../../support/test_dependencies.dart';
@@ -22,5 +23,21 @@ void main() {
     expect(find.byKey(const Key('fleetTruckRow_trk-fleet-2')), findsOneWidget);
     expect(find.text('Camilo Ríos · Disponible'), findsOneWidget);
     expect(find.text('Laura Gómez · Desconectado'), findsOneWidget);
+  });
+
+  testWidgets('FLT-3: tapping a truck goes to its detail view', (tester) async {
+    await tester.pumpWidget(
+      TheCraneApp(dependencies: testDependencies(authRole: UserRole.fleetOwner)),
+    );
+    await tester.pumpAndSettle();
+    await signIn(tester);
+
+    await tester.tap(find.byKey(const Key('fleetTruckRow_trk-fleet-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FleetTruckDetailScreen), findsOneWidget);
+    expect(find.text('FLT001'), findsOneWidget);
+    expect(find.text('Camilo Ríos'), findsOneWidget);
+    expect(find.text('Disponible'), findsOneWidget);
   });
 }
