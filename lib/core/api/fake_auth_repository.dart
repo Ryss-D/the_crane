@@ -39,4 +39,12 @@ class FakeAuthRepository implements AuthRepository {
     _user = current.copyWith(name: name);
     return _user!;
   }
+
+  String? lastFcmToken;
+
+  @override
+  Future<void> updateFcmToken(String? token) async {
+    await Future<void>.delayed(delay);
+    lastFcmToken = token;
+  }
 }

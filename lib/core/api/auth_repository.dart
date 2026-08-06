@@ -12,6 +12,10 @@ abstract interface class AuthRepository {
   Future<AppUser> sync({String? name});
 
   Future<AppUser> updateProfile({required String name});
+
+  /// Registers (or, passing null, clears on sign-out) this device's FCM
+  /// token (AUTH-6).
+  Future<void> updateFcmToken(String? token);
 }
 
 class ApiAuthRepository implements AuthRepository {
@@ -36,5 +40,10 @@ class ApiAuthRepository implements AuthRepository {
       data: {'name': name},
     );
     return AppUser.fromJson(res.data!);
+  }
+
+  @override
+  Future<void> updateFcmToken(String? token) async {
+    await _dio.patch<Map<String, dynamic>>('/v1/me', data: {'fcm_token': token});
   }
 }

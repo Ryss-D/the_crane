@@ -6,6 +6,7 @@ import 'package:the_crane/core/api/fake_auth_repository.dart';
 import 'package:the_crane/core/api/fake_drivers_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/auth/fake_phone_auth_gateway.dart';
+import 'package:the_crane/core/auth/fake_push_token_gateway.dart';
 import 'package:the_crane/core/models/app_user.dart';
 import 'package:the_crane/features/auth/auth_cubit.dart';
 
@@ -40,17 +41,21 @@ AppDependencies testDependencies({
   return AppDependencies(
     dio: createDio(baseUrl: 'http://localhost:8000'),
     jobsRepository: jobsRepository,
-    driversRepository: drivers ??
+    driversRepository:
+        drivers ??
         FakeDriversRepository(
           jobs: jobsRepository,
           actionDelay: const Duration(milliseconds: 20),
         ),
     authCubit: AuthCubit(
-      gateway: FakePhoneAuthGateway(sendDelay: const Duration(milliseconds: 10)),
+      gateway: FakePhoneAuthGateway(
+        sendDelay: const Duration(milliseconds: 10),
+      ),
       authRepository: FakeAuthRepository(
         delay: const Duration(milliseconds: 10),
         role: authRole,
       ),
+      pushTokenGateway: FakePushTokenGateway(),
     ),
   );
 }
@@ -61,7 +66,10 @@ AppDependencies testDependencies({
 /// rather than a debug-only bypass. Assumes `TheCraneApp` is already pumped
 /// and sitting on the sign-in screen.
 Future<void> signIn(WidgetTester tester, {String name = 'Sofía Test'}) async {
-  await tester.enterText(find.byKey(const Key('signInPhoneField')), '3000000000');
+  await tester.enterText(
+    find.byKey(const Key('signInPhoneField')),
+    '3000000000',
+  );
   await tester.pump();
   await tester.tap(find.byKey(const Key('sendCodeButton')));
   await tester.pumpAndSettle();
@@ -71,7 +79,10 @@ Future<void> signIn(WidgetTester tester, {String name = 'Sofía Test'}) async {
   await tester.tap(find.byKey(const Key('confirmCodeButton')));
   await tester.pumpAndSettle();
 
-  await tester.enterText(find.byKey(const Key('completeProfileNameField')), name);
+  await tester.enterText(
+    find.byKey(const Key('completeProfileNameField')),
+    name,
+  );
   await tester.pump();
   await tester.tap(find.byKey(const Key('completeProfileSaveButton')));
   await tester.pumpAndSettle();

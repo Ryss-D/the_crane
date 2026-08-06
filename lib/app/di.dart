@@ -9,20 +9,20 @@ import '../core/api/fake_drivers_repository.dart';
 import '../core/api/fake_jobs_repository.dart';
 import '../core/api/jobs_repository.dart';
 import '../core/auth/fake_phone_auth_gateway.dart';
+import '../core/auth/fake_push_token_gateway.dart';
 import '../core/auth/phone_auth_gateway.dart';
+import '../core/auth/push_token_gateway.dart';
 import '../core/config/env.dart';
 import '../core/location/location_source.dart';
 import '../core/ws/crane_socket.dart';
 import '../features/auth/auth_cubit.dart';
 
-// TODO(FND-1): AUTH-6 — construct firebase_messaging here once push
-// notifications are wired; register/refresh the FCM token on login.
 // TODO(FND-6): construct google_maps here once Maps keys and native setup
 // are in place. Driver location (TRK-5) is separate and already wired below
 // via GeolocatorLocationSource.
 
-Future<String?> _firebaseIdToken() => FirebaseAuth.instance.currentUser?.getIdToken() ??
-    Future.value(null);
+Future<String?> _firebaseIdToken() =>
+    FirebaseAuth.instance.currentUser?.getIdToken() ?? Future.value(null);
 
 /// Composition root: builds the HTTP client and repositories once at app
 /// start. The instances are exposed to the widget tree through
@@ -66,6 +66,7 @@ class AppDependencies {
         authCubit: AuthCubit(
           gateway: FakePhoneAuthGateway(),
           authRepository: FakeAuthRepository(),
+          pushTokenGateway: FakePushTokenGateway(),
         ),
       );
     }
@@ -79,6 +80,7 @@ class AppDependencies {
       authCubit: AuthCubit(
         gateway: FirebasePhoneAuthGateway(),
         authRepository: ApiAuthRepository(dio),
+        pushTokenGateway: FirebasePushTokenGateway(),
       ),
     );
   }
