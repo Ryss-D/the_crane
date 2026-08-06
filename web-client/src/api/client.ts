@@ -12,6 +12,9 @@ export interface CraneApi {
   /** POST /v1/jobs/{id}/confirm-delivery (CUS-5/LED-1) — customer confirms
    * cash payment; only valid from `delivered`, moves the job to `completed`. */
   confirmDelivery(id: string): Promise<Job>;
+  /** POST /v1/jobs/{id}/rating (RAT-1) — rate the other side of a completed
+   * job; `to_user_id` is inferred server-side, never sent. */
+  submitRating(jobId: string, stars: number, comment?: string): Promise<void>;
   /** Public share-track endpoint — no auth. */
   getTrack(token: string): Promise<TrackInfo>;
 }
@@ -70,6 +73,12 @@ export class HttpApi implements CraneApi {
 
   confirmDelivery(id: string): Promise<Job> {
     return this.request('POST', `/v1/jobs/${encodeURIComponent(id)}/confirm-delivery`);
+  }
+
+  async submitRating(jobId: string, stars: number, comment?: string): Promise<void> {
+    await this.request('POST', `/v1/jobs/${encodeURIComponent(jobId)}/rating`, {
+      body: { stars, comment },
+    });
   }
 
   getTrack(token: string): Promise<TrackInfo> {

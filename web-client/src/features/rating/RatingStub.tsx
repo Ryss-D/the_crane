@@ -1,16 +1,18 @@
 import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { api } from '../../api';
 import { strings } from '../../i18n/strings';
 import { Button, Card } from '../../ui';
 
-/**
- * WEB-3 skeleton: local-only star rating shown when the job completes.
- * TODO(WEB-3): POST to the ratings endpoint once it exists in the spec.
- */
-export function RatingStub() {
+/** Star rating shown when the job completes — posts to the real RAT-1
+ * endpoint (POST /v1/jobs/{id}/rating). */
+export function RatingStub({ jobId }: { jobId: string }) {
   const [stars, setStars] = useState(0);
-  const [sent, setSent] = useState(false);
+  const mutation = useMutation({
+    mutationFn: () => api.submitRating(jobId, stars),
+  });
 
-  if (sent) {
+  if (mutation.isSuccess) {
     return (
       <Card>
         <p className="text-center text-sm font-semibold text-emerald-300">
@@ -46,9 +48,14 @@ export function RatingStub() {
           </button>
         ))}
       </div>
-      <Button onClick={() => setSent(true)} disabled={stars === 0}>
-        {strings.rating.submit}
+      <Button onClick={() => mutation.mutate()} disabled={stars === 0 || mutation.isPending}>
+        {mutation.isPending ? strings.rating.submitting : strings.rating.submit}
       </Button>
+      {mutation.isError && (
+        <p role="alert" className="text-sm text-rose-400">
+          {strings.rating.error}
+        </p>
+      )}
     </Card>
   );
 }

@@ -182,6 +182,13 @@ export class MockApi implements CraneApi {
     return this.materialize(rec);
   }
 
+  async submitRating(jobId: string, _stars: number, _comment?: string): Promise<void> {
+    await this.delay();
+    if (!this.jobs.has(jobId)) throw new ApiError(404, `job ${jobId} not found`);
+    // Nothing further to simulate — RatingStub already shows its own
+    // "thanks" state client-side once this resolves.
+  }
+
   async getTrack(token: string): Promise<TrackInfo> {
     await this.delay();
     const rec = [...this.jobs.values()].find((r) => r.job.share_token === token);

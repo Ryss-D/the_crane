@@ -125,7 +125,7 @@ export function TrackingPage() {
         </Card>
       )}
 
-      {job.status === 'completed' && <RatingStub />}
+      {job.status === 'completed' && <RatingStub jobId={job.id} />}
     </div>
   );
 }

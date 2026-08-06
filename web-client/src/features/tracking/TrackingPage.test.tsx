@@ -56,6 +56,12 @@ describe('tracking page (WEB-3 skeleton)', () => {
     expect(
       screen.queryByRole('button', { name: strings.tracking.confirmCash }),
     ).not.toBeInTheDocument();
+
+    // RAT-1: rating actually posts (MockApi.submitRating) rather than being
+    // a local-only stub.
+    await user.click(screen.getByRole('radio', { name: '5' }));
+    await user.click(screen.getByRole('button', { name: strings.rating.submit }));
+    expect(await screen.findByText(strings.rating.thanks)).toBeInTheDocument();
   });
 
   it('renders the public share-track page from a token, without auth', async () => {

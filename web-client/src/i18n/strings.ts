@@ -71,7 +71,9 @@ export const strings = {
   rating: {
     title: 'Califica tu servicio',
     submit: 'Enviar calificación',
+    submitting: 'Enviando…',
     thanks: '¡Gracias por tu calificación!',
+    error: 'No pudimos enviar tu calificación. Intenta de nuevo.',
   },
 
   vehicleTypes: {
