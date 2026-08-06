@@ -12,7 +12,7 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   *AC: fleet balance equals sum of member driver balances; one fleet settlement unblocks all capped members.*
   Built: `app/services/ledger.py` gains `fleet_member_driver_ids`/`fleet_member_balances`/`fleet_owed_balance` (a driver's fleet is found via their truck, not a stored column — no ledger schema change needed) plus an `apportion()` helper (largest-remainder rounding so per-driver shares always sum exactly to the settlement amount). `GET /v1/fleets/me/balance` (fleet owner) and `GET /v1/admin/fleets/{fleet_id}/balance` (admin) return the rollup + per-driver breakdown; `POST /v1/admin/fleets/{fleet_id}/settle` records ONE payment apportioned across every member driver as ordinary `payout` driver_ledger rows (409 if the fleet has no drivers, 422 on non-positive amount). `PATCH /v1/drivers/me/status`'s balance-cap gate now checks `fleet_owed_balance` instead of `driver_owed_balance` when the driver's truck has a `fleet_id`, independent drivers unaffected. 7 new tests in `tests/test_fleet_ledger.py` cover the rollup-equals-sum AC, apportionment/rounding, and the "one settlement unblocks every capped member" AC directly; full suite green (198 passed).
 
-- [ ] **FLT-3 — "Mi flota" screen** *(deps: AUTH-4, FLT-1)*
+- [x] **FLT-3 — "Mi flota" screen** *(deps: AUTH-4, FLT-1)*
   Fleet owner shell in the Flutter app: per-truck status at a glance (available / on job / unassigned / offline), tap-through to truck detail.
   Design: «Mi flota» (`docs/design/screen-references.md`)
   *AC: statuses reflect live dispatch state for a seeded fleet.*
@@ -22,6 +22,24 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   via one batched query each across the fleet -- neither lives on `Truck` itself).
   Tested (`test_fleet_trucks_show_live_driver_status_and_name`), full suite green
   (217 passed).
+
+  Flutter half in progress: `Truck` gained the same `driverStatus`/`driverName`
+  fields, plus `Fleet`/`FleetBalance` models and a `FleetRepository` (interface +
+  `ApiFleetRepository` + `FakeFleetRepository`, same seam every other repository
+  uses). The onboarding half also landed -- a "Crear mi flota" entry in
+  `SettingsScreen` -> `BecomeFleetOwnerScreen` (fleet name only) ->
+  `FleetRepository.createFleet` -> `AuthCubit.refreshUser()`, and `routerRedirect`
+  now sends `fleet_owner` to a new `/fleet` `ShellRoute` (`FleetCubit` +
+  `FleetHomeScreen`) instead of the customer/driver shells. `FleetHomeScreen`
+  lists every truck with its plate, driver name, and status at a glance
+  (available/on job/offline/unassigned -- `TruckFleetStatusLabel` in
+  `labels.dart`). Tapping a row now pushes `/fleet/trucks/:truckId` ->
+  `FleetTruckDetailScreen` (plate, type, capacity, driver name/status),
+  reading straight from `FleetCubit`'s already-loaded state rather than a
+  second fetch, so FLT-4's attach/detach will show up immediately. Checked
+  off: the AC ("statuses reflect live dispatch state for a seeded fleet")
+  and the "tap-through to truck detail" requirement are both covered by the
+  seeded-fleet widget tests. Full suite green (108 passed).
 
 - [ ] **FLT-4 — Assign driver to truck** *(deps: FLT-3)*
   Link a verified driver to an unassigned truck, or invite a new driver (phone invite → signup lands pre-linked); unassign flow.
@@ -34,7 +52,38 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   backend invite/token mechanism that doesn't exist -- out of scope until someone
   builds it.
 
-- [ ] **FLT-5 — Fleet earnings screen** *(deps: FLT-2)*
+  Built (the buildable half): a new "agregar camión" flow (`AddTruckScreen`,
+  reachable from "Mi flota"'s FAB) -- a fleet owner types a plate,
+  `FleetRepository.findTruckByPlate` looks it up, and if it's unclaimed
+  (`fleetId == null`) a confirm button calls `attachTruck`; if it's already
+  claimed by another fleet, that's shown as a clear, distinct message instead of
+  a generic error, and there's no attach button to tap. An unknown plate (404,
+  `TruckNotFoundException`) gets its own message too. `FleetTruckDetailScreen`
+  gained a detach action (confirm dialog -> `detachTruck` -> pops back to "Mi
+  flota", which refreshes via `FleetCubit.refresh()`). Not checking this off --
+  the AC talks about "a verified driver" and dispatch capacity implications that
+  assume the invite/consent flow this task originally specified; that half
+  genuinely cannot be built without new backend work (no invite/token
+  mechanism exists -- see the backend note above). What's built is the full
+  extent of what's buildable today. 4 new widget tests (attach, already
+  -claimed, not-found, detach), full suite green (112 passed).
+
+- [x] **FLT-5 — Fleet earnings screen** *(deps: FLT-2)*
   Commission accrued per truck, consolidated balance owed, settlement action (cash instructions; Wompi via PAY-3 pattern later).
   Design: «Ganancias de la flota» (`docs/design/screen-references.md`)
   *AC: per-truck numbers reconcile with the ledger; consolidated total matches FLT-2.*
+  Built: `FleetBalanceCubit` + `FleetBalanceScreen`, reachable from "Mi flota"'s
+  app bar wallet icon (same pattern as DRV-5's `EarningsScreen` off the driver
+  home screen). Shows the consolidated owed balance
+  (`FleetRepository.getBalance`, FLT-2's rollup) plus the per-driver breakdown
+  list it's built from. Consolidated total matching the per-driver sum is
+  exactly what FLT-2's backend already guarantees (`owed_balance` is
+  `sum(balances.values())` server-side) -- covered client-side by a cubit test
+  asserting the total equals the sum of the seeded members. Settlement action
+  (cash instructions / Wompi) is not built -- FLT-2's `POST
+  /v1/admin/fleets/{fleet_id}/settle` is an ADM-2-style admin action, not
+  something this fleet-owner-facing screen calls; leaving that as a
+  deliberately separate, not-yet-scoped piece rather than inventing a
+  fleet-owner-initiated settlement flow the backend doesn't expose. 3 new
+  tests (cubit load/failure, end-to-end widget flow), full suite green
+  (115 passed).

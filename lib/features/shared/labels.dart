@@ -71,3 +71,14 @@ extension DriverStatusLabel on DriverStatus {
         DriverStatus.onJob => l10n.availabilityOnJob,
       };
 }
+
+/// FLT-3: per-truck status at a glance in "Mi flota". "Unassigned" is
+/// purely client-side (`driverId == null`, no `driver_status` to read yet);
+/// the other three map directly from `Truck.driverStatus` (populated only
+/// by `GET /v1/fleets/me` — see `Truck`'s doc comment).
+extension TruckFleetStatusLabel on Truck {
+  String fleetStatusLabel(AppLocalizations l10n) {
+    if (driverId == null) return l10n.fleetTruckStatusUnassigned;
+    return (driverStatus ?? DriverStatus.offline).label(l10n);
+  }
+}

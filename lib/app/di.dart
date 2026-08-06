@@ -6,8 +6,10 @@ import '../core/api/auth_repository.dart';
 import '../core/api/drivers_repository.dart';
 import '../core/api/fake_auth_repository.dart';
 import '../core/api/fake_drivers_repository.dart';
+import '../core/api/fake_fleet_repository.dart';
 import '../core/api/fake_jobs_repository.dart';
 import '../core/api/fake_vehicles_repository.dart';
+import '../core/api/fleet_repository.dart';
 import '../core/api/jobs_repository.dart';
 import '../core/api/vehicles_repository.dart';
 import '../core/auth/fake_phone_auth_gateway.dart';
@@ -35,6 +37,7 @@ class AppDependencies {
     required this.jobsRepository,
     required this.driversRepository,
     required this.vehiclesRepository,
+    required this.fleetRepository,
     required this.authCubit,
     this.socket,
     this.locationSource,
@@ -72,6 +75,7 @@ class AppDependencies {
         driversRepository:
             FakeDriversRepository(jobs: jobs, auth: authRepository),
         vehiclesRepository: FakeVehiclesRepository(),
+        fleetRepository: FakeFleetRepository(auth: authRepository),
         authCubit: AuthCubit(
           gateway: FakePhoneAuthGateway(),
           authRepository: authRepository,
@@ -85,6 +89,7 @@ class AppDependencies {
       jobsRepository: ApiJobsRepository(dio, socket),
       driversRepository: ApiDriversRepository(dio, socket),
       vehiclesRepository: ApiVehiclesRepository(dio),
+      fleetRepository: ApiFleetRepository(dio),
       socket: socket,
       locationSource: GeolocatorLocationSource(),
       authCubit: AuthCubit(
@@ -99,6 +104,7 @@ class AppDependencies {
   final JobsRepository jobsRepository;
   final DriversRepository driversRepository;
   final VehiclesRepository vehiclesRepository;
+  final FleetRepository fleetRepository;
   final AuthCubit authCubit;
 
   /// Null when [Env.useFakeBackend] is true — the fakes don't use a socket.

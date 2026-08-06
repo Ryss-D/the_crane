@@ -776,6 +776,192 @@ abstract class AppLocalizations {
   /// **'No pudimos completar el registro. Intenta de nuevo.'**
   String get becomeDriverSubmitError;
 
+  /// Settings menu item leading to the FLT-1 fleet creation screen
+  ///
+  /// In es, this message translates to:
+  /// **'Crear mi flota'**
+  String get becomeFleetOwnerMenuItem;
+
+  /// Become-a-fleet-owner screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Crea tu flota'**
+  String get becomeFleetOwnerTitle;
+
+  /// Become-a-fleet-owner screen intro copy
+  ///
+  /// In es, this message translates to:
+  /// **'Dale un nombre a tu flota para empezar a administrar tus grúas y conductores.'**
+  String get becomeFleetOwnerIntro;
+
+  /// Fleet name field label
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre de la flota'**
+  String get fleetNameFieldLabel;
+
+  /// Fleet name field placeholder
+  ///
+  /// In es, this message translates to:
+  /// **'Grúas del Valle'**
+  String get fleetNameFieldHint;
+
+  /// Submits the become-a-fleet-owner form
+  ///
+  /// In es, this message translates to:
+  /// **'Crear flota'**
+  String get becomeFleetOwnerSubmitButton;
+
+  /// Shown when fleet creation fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos crear tu flota. Intenta de nuevo.'**
+  String get becomeFleetOwnerSubmitError;
+
+  /// FLT-3: fleet-owner home ('Mi flota') screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Mi flota'**
+  String get fleetHomeTitle;
+
+  /// FLT-3: shown when loading the fleet fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar tu flota. Intenta de nuevo.'**
+  String get fleetLoadError;
+
+  /// FLT-3: shown when the fleet has no trucks yet
+  ///
+  /// In es, this message translates to:
+  /// **'Tu flota aún no tiene grúas. Agrega una con su placa.'**
+  String get fleetEmptyBody;
+
+  /// FLT-3: per-truck status label when the truck has no driver assigned yet
+  ///
+  /// In es, this message translates to:
+  /// **'Sin conductor'**
+  String get fleetTruckStatusUnassigned;
+
+  /// FLT-3: truck detail screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle de la grúa'**
+  String get fleetTruckDetailTitle;
+
+  /// FLT-3: label above the assigned driver's name on the truck detail screen
+  ///
+  /// In es, this message translates to:
+  /// **'Conductor'**
+  String get fleetTruckDriverLabel;
+
+  /// FLT-3: label above the status-at-a-glance value on the truck detail screen
+  ///
+  /// In es, this message translates to:
+  /// **'Estado'**
+  String get fleetTruckStatusLabel;
+
+  /// FLT-4: add-truck screen app bar title, and the fleet home FAB tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar camión'**
+  String get addTruckTitle;
+
+  /// FLT-4: add-truck screen intro copy
+  ///
+  /// In es, this message translates to:
+  /// **'Busca una grúa por su placa para agregarla a tu flota.'**
+  String get addTruckIntro;
+
+  /// FLT-4: searches for a truck by plate
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar'**
+  String get addTruckSearchButton;
+
+  /// FLT-4: shown when no truck matches the searched plate
+  ///
+  /// In es, this message translates to:
+  /// **'No encontramos ninguna grúa con esa placa.'**
+  String get addTruckNotFoundBody;
+
+  /// FLT-4: shown when the plate lookup fails for a reason other than not-found
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos buscar la grúa. Intenta de nuevo.'**
+  String get addTruckSearchError;
+
+  /// FLT-4: shown when the found truck already belongs to a fleet
+  ///
+  /// In es, this message translates to:
+  /// **'Esta grúa ya pertenece a otra flota y no se puede agregar.'**
+  String get addTruckAlreadyClaimedBody;
+
+  /// FLT-4: confirms attaching the found, unclaimed truck to the caller's fleet
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar a mi flota'**
+  String get addTruckAttachButton;
+
+  /// FLT-4: shown when attaching the truck fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos agregar la grúa. Intenta de nuevo.'**
+  String get addTruckAttachError;
+
+  /// FLT-4: detach-truck confirmation dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'¿Quitar grúa de la flota?'**
+  String get detachTruckConfirmTitle;
+
+  /// FLT-4: detach-truck confirmation dialog body
+  ///
+  /// In es, this message translates to:
+  /// **'El conductor asignado ya no pertenecerá a esta flota.'**
+  String get detachTruckConfirmBody;
+
+  /// FLT-4: detaches a truck from the caller's fleet
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar de la flota'**
+  String get detachTruckButton;
+
+  /// FLT-4: shown when detaching the truck fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos quitar la grúa. Intenta de nuevo.'**
+  String get detachTruckError;
+
+  /// FLT-5: fleet earnings screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Ganancias de la flota'**
+  String get fleetBalanceTitle;
+
+  /// FLT-5: label above the fleet's consolidated owed balance
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo pendiente consolidado'**
+  String get fleetBalanceOwedLabel;
+
+  /// FLT-5: heading above the per-driver balance breakdown list
+  ///
+  /// In es, this message translates to:
+  /// **'Desglose por conductor'**
+  String get fleetBalanceMembersTitle;
+
+  /// FLT-5: shown when the fleet has no members with a balance yet
+  ///
+  /// In es, this message translates to:
+  /// **'Tu flota aún no tiene conductores con saldo.'**
+  String get fleetBalanceNoMembersBody;
+
+  /// FLT-5: shown when loading the fleet balance fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar las ganancias de la flota. Intenta de nuevo.'**
+  String get fleetBalanceLoadError;
+
   /// CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation
   ///
   /// In es, this message translates to:

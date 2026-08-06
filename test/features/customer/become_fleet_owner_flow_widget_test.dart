@@ -1,0 +1,68 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/features/customer/request/request_screen.dart';
+import 'package:the_crane/features/customer/settings/become_fleet_owner_screen.dart';
+import 'package:the_crane/features/customer/settings/settings_screen.dart';
+import 'package:the_crane/features/fleet/home/fleet_home_screen.dart';
+import 'package:the_crane/main.dart';
+
+import '../../support/test_dependencies.dart';
+
+void main() {
+  testWidgets(
+      'FLT-1: a signed-in customer creates a fleet and lands on the fleet '
+      'shell', (tester) async {
+    await tester.pumpWidget(TheCraneApp(dependencies: testDependencies()));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    expect(find.byType(RequestScreen), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('settingsNavButton')));
+    await tester.pumpAndSettle();
+    expect(find.byType(SettingsScreen), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('becomeFleetOwnerMenuItem')));
+    await tester.pumpAndSettle();
+    expect(find.byType(BecomeFleetOwnerScreen), findsOneWidget);
+
+    // Submit is disabled until a name is entered.
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const Key('becomeFleetOwnerSubmitButton')),
+          )
+          .onPressed,
+      isNull,
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('fleetNameField')),
+      'Grúas del Valle',
+    );
+    await tester.pump();
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const Key('becomeFleetOwnerSubmitButton')),
+          )
+          .onPressed,
+      isNotNull,
+    );
+
+    await tester.tap(find.byKey(const Key('becomeFleetOwnerSubmitButton')));
+    // createFleet's actionDelay + refreshUser's sync delay, then the
+    // fleet cubit's own load() + the router redirect's route transition.
+    // Not `pumpAndSettle`: the submit button's indeterminate
+    // CircularProgressIndicator keeps animating until this screen is
+    // popped by the redirect, which would hang it.
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(FleetHomeScreen), findsOneWidget);
+    // The fake pre-links two seed trucks onto a freshly created fleet.
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byKey(const Key('fleetTruckRow_trk-fleet-1')), findsOneWidget);
+    expect(find.byKey(const Key('fleetTruckRow_trk-fleet-2')), findsOneWidget);
+  });
+}

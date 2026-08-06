@@ -58,4 +58,13 @@ class FakeAuthRepository implements AuthRepository {
     final current = _user;
     if (current != null) _user = current.copyWith(role: UserRole.driver);
   }
+
+  /// Dev/test-only: mirrors the real backend's role flip in
+  /// `POST /v1/fleets/me` (FLT-1) — `FakeFleetRepository` shares this
+  /// instance and calls it right after a successful `createFleet`, same
+  /// pattern as [debugPromoteToDriver] above.
+  void debugPromoteToFleetOwner() {
+    final current = _user;
+    if (current != null) _user = current.copyWith(role: UserRole.fleetOwner);
+  }
 }

@@ -482,6 +482,130 @@
   "@becomeDriverSubmitError": {
     "description": "Shown when driver registration fails"
   },
+  "becomeFleetOwnerMenuItem": "Crear mi flota",
+  "@becomeFleetOwnerMenuItem": {
+    "description": "Settings menu item leading to the FLT-1 fleet creation screen"
+  },
+  "becomeFleetOwnerTitle": "Crea tu flota",
+  "@becomeFleetOwnerTitle": {
+    "description": "Become-a-fleet-owner screen app bar title"
+  },
+  "becomeFleetOwnerIntro": "Dale un nombre a tu flota para empezar a administrar tus grúas y conductores.",
+  "@becomeFleetOwnerIntro": {
+    "description": "Become-a-fleet-owner screen intro copy"
+  },
+  "fleetNameFieldLabel": "Nombre de la flota",
+  "@fleetNameFieldLabel": {
+    "description": "Fleet name field label"
+  },
+  "fleetNameFieldHint": "Grúas del Valle",
+  "@fleetNameFieldHint": {
+    "description": "Fleet name field placeholder"
+  },
+  "becomeFleetOwnerSubmitButton": "Crear flota",
+  "@becomeFleetOwnerSubmitButton": {
+    "description": "Submits the become-a-fleet-owner form"
+  },
+  "becomeFleetOwnerSubmitError": "No pudimos crear tu flota. Intenta de nuevo.",
+  "@becomeFleetOwnerSubmitError": {
+    "description": "Shown when fleet creation fails"
+  },
+  "fleetHomeTitle": "Mi flota",
+  "@fleetHomeTitle": {
+    "description": "FLT-3: fleet-owner home ('Mi flota') screen app bar title"
+  },
+  "fleetLoadError": "No pudimos cargar tu flota. Intenta de nuevo.",
+  "@fleetLoadError": {
+    "description": "FLT-3: shown when loading the fleet fails"
+  },
+  "fleetEmptyBody": "Tu flota aún no tiene grúas. Agrega una con su placa.",
+  "@fleetEmptyBody": {
+    "description": "FLT-3: shown when the fleet has no trucks yet"
+  },
+  "fleetTruckStatusUnassigned": "Sin conductor",
+  "@fleetTruckStatusUnassigned": {
+    "description": "FLT-3: per-truck status label when the truck has no driver assigned yet"
+  },
+  "fleetTruckDetailTitle": "Detalle de la grúa",
+  "@fleetTruckDetailTitle": {
+    "description": "FLT-3: truck detail screen app bar title"
+  },
+  "fleetTruckDriverLabel": "Conductor",
+  "@fleetTruckDriverLabel": {
+    "description": "FLT-3: label above the assigned driver's name on the truck detail screen"
+  },
+  "fleetTruckStatusLabel": "Estado",
+  "@fleetTruckStatusLabel": {
+    "description": "FLT-3: label above the status-at-a-glance value on the truck detail screen"
+  },
+  "addTruckTitle": "Agregar camión",
+  "@addTruckTitle": {
+    "description": "FLT-4: add-truck screen app bar title, and the fleet home FAB tooltip"
+  },
+  "addTruckIntro": "Busca una grúa por su placa para agregarla a tu flota.",
+  "@addTruckIntro": {
+    "description": "FLT-4: add-truck screen intro copy"
+  },
+  "addTruckSearchButton": "Buscar",
+  "@addTruckSearchButton": {
+    "description": "FLT-4: searches for a truck by plate"
+  },
+  "addTruckNotFoundBody": "No encontramos ninguna grúa con esa placa.",
+  "@addTruckNotFoundBody": {
+    "description": "FLT-4: shown when no truck matches the searched plate"
+  },
+  "addTruckSearchError": "No pudimos buscar la grúa. Intenta de nuevo.",
+  "@addTruckSearchError": {
+    "description": "FLT-4: shown when the plate lookup fails for a reason other than not-found"
+  },
+  "addTruckAlreadyClaimedBody": "Esta grúa ya pertenece a otra flota y no se puede agregar.",
+  "@addTruckAlreadyClaimedBody": {
+    "description": "FLT-4: shown when the found truck already belongs to a fleet"
+  },
+  "addTruckAttachButton": "Agregar a mi flota",
+  "@addTruckAttachButton": {
+    "description": "FLT-4: confirms attaching the found, unclaimed truck to the caller's fleet"
+  },
+  "addTruckAttachError": "No pudimos agregar la grúa. Intenta de nuevo.",
+  "@addTruckAttachError": {
+    "description": "FLT-4: shown when attaching the truck fails"
+  },
+  "detachTruckConfirmTitle": "¿Quitar grúa de la flota?",
+  "@detachTruckConfirmTitle": {
+    "description": "FLT-4: detach-truck confirmation dialog title"
+  },
+  "detachTruckConfirmBody": "El conductor asignado ya no pertenecerá a esta flota.",
+  "@detachTruckConfirmBody": {
+    "description": "FLT-4: detach-truck confirmation dialog body"
+  },
+  "detachTruckButton": "Quitar de la flota",
+  "@detachTruckButton": {
+    "description": "FLT-4: detaches a truck from the caller's fleet"
+  },
+  "detachTruckError": "No pudimos quitar la grúa. Intenta de nuevo.",
+  "@detachTruckError": {
+    "description": "FLT-4: shown when detaching the truck fails"
+  },
+  "fleetBalanceTitle": "Ganancias de la flota",
+  "@fleetBalanceTitle": {
+    "description": "FLT-5: fleet earnings screen app bar title, and the nav button tooltip"
+  },
+  "fleetBalanceOwedLabel": "Saldo pendiente consolidado",
+  "@fleetBalanceOwedLabel": {
+    "description": "FLT-5: label above the fleet's consolidated owed balance"
+  },
+  "fleetBalanceMembersTitle": "Desglose por conductor",
+  "@fleetBalanceMembersTitle": {
+    "description": "FLT-5: heading above the per-driver balance breakdown list"
+  },
+  "fleetBalanceNoMembersBody": "Tu flota aún no tiene conductores con saldo.",
+  "@fleetBalanceNoMembersBody": {
+    "description": "FLT-5: shown when the fleet has no members with a balance yet"
+  },
+  "fleetBalanceLoadError": "No pudimos cargar las ganancias de la flota. Intenta de nuevo.",
+  "@fleetBalanceLoadError": {
+    "description": "FLT-5: shown when loading the fleet balance fails"
+  },
   "cashPaymentPendingBody": "Confirma que recibiste el pago en efectivo para finalizar el servicio.",
   "@cashPaymentPendingBody": {
     "description": "CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation"
