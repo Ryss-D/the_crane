@@ -320,4 +320,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ratingFromDriverLabel => 'Rating for the customer';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get becomeDriverMenuItem => 'Become a driver';
+
+  @override
+  String get becomeDriverTitle => 'Become a driver';
+
+  @override
+  String get becomeDriverIntro =>
+      'Register your tow truck to start receiving jobs.';
+
+  @override
+  String get plateFieldLabel => 'Plate';
+
+  @override
+  String get plateFieldHint => 'ABC123';
+
+  @override
+  String get truckTypeFieldLabel => 'Truck type';
+
+  @override
+  String get capacityFieldLabel => 'Truck capacity';
+
+  @override
+  String get capacityMoto => 'Motorcycles';
+
+  @override
+  String get capacityCar => 'Cars';
+
+  @override
+  String get capacityBoth => 'Motorcycles and cars';
+
+  @override
+  String get licenseUrlFieldLabel => 'License document URL (optional)';
+
+  @override
+  String get truckPhotoUrlFieldLabel => 'Truck photo URL (optional)';
+
+  @override
+  String get becomeDriverSubmitButton => 'Submit registration';
+
+  @override
+  String get becomeDriverSubmitError =>
+      'We could not complete registration. Please try again.';
 }

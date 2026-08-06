@@ -38,6 +38,10 @@ AppDependencies testDependencies({
   UserRole authRole = UserRole.customer,
 }) {
   final jobsRepository = jobs ?? fastFakeJobs();
+  final authRepository = FakeAuthRepository(
+    delay: const Duration(milliseconds: 10),
+    role: authRole,
+  );
   return AppDependencies(
     dio: createDio(baseUrl: 'http://localhost:8000'),
     jobsRepository: jobsRepository,
@@ -45,16 +49,14 @@ AppDependencies testDependencies({
         drivers ??
         FakeDriversRepository(
           jobs: jobsRepository,
+          auth: authRepository,
           actionDelay: const Duration(milliseconds: 20),
         ),
     authCubit: AuthCubit(
       gateway: FakePhoneAuthGateway(
         sendDelay: const Duration(milliseconds: 10),
       ),
-      authRepository: FakeAuthRepository(
-        delay: const Duration(milliseconds: 10),
-        role: authRole,
-      ),
+      authRepository: authRepository,
       pushTokenGateway: FakePushTokenGateway(),
     ),
   );

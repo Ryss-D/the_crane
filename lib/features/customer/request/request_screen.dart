@@ -39,6 +39,12 @@ class RequestScreen extends StatelessWidget {
               tooltip: l10n.historyTitle,
               onPressed: () => context.push(AppRoute.customerHistory),
             ),
+            IconButton(
+              key: const Key('settingsNavButton'),
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: l10n.settingsTitle,
+              onPressed: () => context.push(AppRoute.customerSettings),
+            ),
           ],
         ),
         body: SafeArea(

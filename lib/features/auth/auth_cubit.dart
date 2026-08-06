@@ -87,6 +87,17 @@ class AuthCubit extends Cubit<AuthState> {
     if (authenticated) unawaited(_registerPushToken());
   }
 
+  /// Re-syncs the backend profile without moving the phase off
+  /// `authenticated` — used after an out-of-band role change (AUTH-5's
+  /// "become a driver" registration happens through `DriversRepository`,
+  /// not this cubit) so `routerRedirect` picks up the new role on its next
+  /// evaluation.
+  Future<void> refreshUser() async {
+    if (!state.isAuthenticated) return;
+    final user = await _authRepository.sync();
+    emit(state.copyWith(user: user));
+  }
+
   Future<void> completeProfile(String name) async {
     final user = await _authRepository.updateProfile(name: name);
     emit(state.copyWith(phase: AuthPhase.authenticated, user: user));

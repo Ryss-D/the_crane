@@ -685,6 +685,96 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Calificación al cliente'**
   String get ratingFromDriverLabel;
+
+  /// Settings screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Configuración'**
+  String get settingsTitle;
+
+  /// Settings menu item leading to the AUTH-5 driver registration screen
+  ///
+  /// In es, this message translates to:
+  /// **'Convertirme en conductor'**
+  String get becomeDriverMenuItem;
+
+  /// Become-a-driver screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Conviértete en conductor'**
+  String get becomeDriverTitle;
+
+  /// Become-a-driver screen intro copy
+  ///
+  /// In es, this message translates to:
+  /// **'Registra tu grúa para empezar a recibir servicios.'**
+  String get becomeDriverIntro;
+
+  /// Truck plate field label
+  ///
+  /// In es, this message translates to:
+  /// **'Placa'**
+  String get plateFieldLabel;
+
+  /// Truck plate field placeholder
+  ///
+  /// In es, this message translates to:
+  /// **'ABC123'**
+  String get plateFieldHint;
+
+  /// Truck type selector label on the become-a-driver screen
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo de grúa'**
+  String get truckTypeFieldLabel;
+
+  /// Truck capacity selector label on the become-a-driver screen
+  ///
+  /// In es, this message translates to:
+  /// **'Capacidad de la grúa'**
+  String get capacityFieldLabel;
+
+  /// Truck capacity: motorcycles only
+  ///
+  /// In es, this message translates to:
+  /// **'Motos'**
+  String get capacityMoto;
+
+  /// Truck capacity: cars only
+  ///
+  /// In es, this message translates to:
+  /// **'Carros'**
+  String get capacityCar;
+
+  /// Truck capacity: both motorcycles and cars
+  ///
+  /// In es, this message translates to:
+  /// **'Motos y carros'**
+  String get capacityBoth;
+
+  /// Optional driver license document URL field
+  ///
+  /// In es, this message translates to:
+  /// **'URL de la licencia (opcional)'**
+  String get licenseUrlFieldLabel;
+
+  /// Optional truck photo URL field
+  ///
+  /// In es, this message translates to:
+  /// **'URL de foto de la grúa (opcional)'**
+  String get truckPhotoUrlFieldLabel;
+
+  /// Submits the become-a-driver registration form
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar registro'**
+  String get becomeDriverSubmitButton;
+
+  /// Shown when driver registration fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos completar el registro. Intenta de nuevo.'**
+  String get becomeDriverSubmitError;
 }
 
 class _AppLocalizationsDelegate

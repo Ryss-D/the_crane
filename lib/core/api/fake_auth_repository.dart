@@ -47,4 +47,15 @@ class FakeAuthRepository implements AuthRepository {
     await Future<void>.delayed(delay);
     lastFcmToken = token;
   }
+
+  /// Dev/test-only: mirrors the real backend's role flip in
+  /// `POST /v1/drivers/me/register` (AUTH-5) — `FakeDriversRepository`
+  /// shares this instance and calls it right after a successful
+  /// `registerDriver`, so a subsequent `AuthCubit.refreshUser()` re-sync
+  /// (i.e. another call to [sync]) observes the new role, same as the real
+  /// backend does on its next `/auth/sync`.
+  void debugPromoteToDriver() {
+    final current = _user;
+    if (current != null) _user = current.copyWith(role: UserRole.driver);
+  }
 }

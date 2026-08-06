@@ -97,5 +97,20 @@
   "ratingsSectionTitle": "Ratings",
   "noRatingsBody": "No ratings yet.",
   "ratingFromCustomerLabel": "Rating for the driver",
-  "ratingFromDriverLabel": "Rating for the customer"
+  "ratingFromDriverLabel": "Rating for the customer",
+  "settingsTitle": "Settings",
+  "becomeDriverMenuItem": "Become a driver",
+  "becomeDriverTitle": "Become a driver",
+  "becomeDriverIntro": "Register your tow truck to start receiving jobs.",
+  "plateFieldLabel": "Plate",
+  "plateFieldHint": "ABC123",
+  "truckTypeFieldLabel": "Truck type",
+  "capacityFieldLabel": "Truck capacity",
+  "capacityMoto": "Motorcycles",
+  "capacityCar": "Cars",
+  "capacityBoth": "Motorcycles and cars",
+  "licenseUrlFieldLabel": "License document URL (optional)",
+  "truckPhotoUrlFieldLabel": "Truck photo URL (optional)",
+  "becomeDriverSubmitButton": "Submit registration",
+  "becomeDriverSubmitError": "We could not complete registration. Please try again."
 }

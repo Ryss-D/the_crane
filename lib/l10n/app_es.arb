@@ -421,5 +421,65 @@
   "ratingFromDriverLabel": "Calificación al cliente",
   "@ratingFromDriverLabel": {
     "description": "Label for a rating the driver left for the customer"
+  },
+  "settingsTitle": "Configuración",
+  "@settingsTitle": {
+    "description": "Settings screen app bar title, and the nav button tooltip"
+  },
+  "becomeDriverMenuItem": "Convertirme en conductor",
+  "@becomeDriverMenuItem": {
+    "description": "Settings menu item leading to the AUTH-5 driver registration screen"
+  },
+  "becomeDriverTitle": "Conviértete en conductor",
+  "@becomeDriverTitle": {
+    "description": "Become-a-driver screen app bar title"
+  },
+  "becomeDriverIntro": "Registra tu grúa para empezar a recibir servicios.",
+  "@becomeDriverIntro": {
+    "description": "Become-a-driver screen intro copy"
+  },
+  "plateFieldLabel": "Placa",
+  "@plateFieldLabel": {
+    "description": "Truck plate field label"
+  },
+  "plateFieldHint": "ABC123",
+  "@plateFieldHint": {
+    "description": "Truck plate field placeholder"
+  },
+  "truckTypeFieldLabel": "Tipo de grúa",
+  "@truckTypeFieldLabel": {
+    "description": "Truck type selector label on the become-a-driver screen"
+  },
+  "capacityFieldLabel": "Capacidad de la grúa",
+  "@capacityFieldLabel": {
+    "description": "Truck capacity selector label on the become-a-driver screen"
+  },
+  "capacityMoto": "Motos",
+  "@capacityMoto": {
+    "description": "Truck capacity: motorcycles only"
+  },
+  "capacityCar": "Carros",
+  "@capacityCar": {
+    "description": "Truck capacity: cars only"
+  },
+  "capacityBoth": "Motos y carros",
+  "@capacityBoth": {
+    "description": "Truck capacity: both motorcycles and cars"
+  },
+  "licenseUrlFieldLabel": "URL de la licencia (opcional)",
+  "@licenseUrlFieldLabel": {
+    "description": "Optional driver license document URL field"
+  },
+  "truckPhotoUrlFieldLabel": "URL de foto de la grúa (opcional)",
+  "@truckPhotoUrlFieldLabel": {
+    "description": "Optional truck photo URL field"
+  },
+  "becomeDriverSubmitButton": "Enviar registro",
+  "@becomeDriverSubmitButton": {
+    "description": "Submits the become-a-driver registration form"
+  },
+  "becomeDriverSubmitError": "No pudimos completar el registro. Intenta de nuevo.",
+  "@becomeDriverSubmitError": {
+    "description": "Shown when driver registration fails"
   }
 }

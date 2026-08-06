@@ -4,6 +4,7 @@ import '../models/driver_profile.dart';
 import '../models/job_offer.dart';
 import '../models/truck.dart';
 import 'drivers_repository.dart';
+import 'fake_auth_repository.dart';
 import 'fake_jobs_repository.dart';
 
 /// In-memory [DriversRepository] with a seeded profile and a dev-only offer
@@ -12,21 +13,36 @@ import 'fake_jobs_repository.dart';
 class FakeDriversRepository implements DriversRepository {
   FakeDriversRepository({
     required FakeJobsRepository jobs,
+    FakeAuthRepository? auth,
     this.actionDelay = const Duration(milliseconds: 300),
     this.offerTtlSeconds = 30,
     bool verified = true,
   })  : _jobs = jobs,
+        _auth = auth,
         _profile = DriverProfile(
+          id: 'drv-profile-001',
           userId: 'drv-001',
           status: DriverStatus.offline,
           verified: verified,
-          truckPlate: 'TGX 123',
-          truckType: TruckType.flatbed,
-          capacity: TruckCapacity.both,
+          truck: const Truck(
+            id: 'trk-001',
+            driverId: 'drv-001',
+            plate: 'TGX 123',
+            type: TruckType.flatbed,
+            capacity: TruckCapacity.both,
+          ),
           ratingAvg: 4.8,
         );
 
   final FakeJobsRepository _jobs;
+
+  /// AUTH-5: shared with [FakeAuthRepository] so [registerDriver] can flip
+  /// the fake signed-in user's role the same way the real backend does in
+  /// the same request — the real client picks this up on its next
+  /// `AuthCubit.refreshUser()` re-sync; this fake mirrors that by mutating
+  /// the shared fake user directly. Null in tests that don't wire one up
+  /// (registration then just updates the local profile, no role flip).
+  final FakeAuthRepository? _auth;
   final Duration actionDelay;
 
   /// Offer TTL, normally read from `platform_config` (JOB-2). 30s per DSP-2.
@@ -49,6 +65,39 @@ class FakeDriversRepository implements DriversRepository {
 
   @override
   Stream<JobOffer> incomingOffers() => _offers.stream;
+
+  int _truckSeq = 0;
+
+  @override
+  Future<DriverProfile> registerDriver({
+    required String plate,
+    required TruckType truckType,
+    required TruckCapacity capacity,
+    String? licenseUrl,
+    String? truckPhotoUrl,
+  }) async {
+    await Future<void>.delayed(actionDelay);
+    // Mirrors the real backend (AUTH-5): a fresh registration is unverified
+    // and offline until an admin verifies it (ADM-2), regardless of the
+    // constructor's `verified` seed for the pre-existing dev profile.
+    _profile = DriverProfile(
+      id: 'drv-profile-${++_truckSeq}',
+      userId: _profile.userId,
+      status: DriverStatus.offline,
+      verified: false,
+      licenseUrl: licenseUrl,
+      truckPhotoUrl: truckPhotoUrl,
+      truck: Truck(
+        id: 'trk-$_truckSeq',
+        driverId: _profile.userId,
+        plate: plate,
+        type: truckType,
+        capacity: capacity,
+      ),
+    );
+    _auth?.debugPromoteToDriver();
+    return _profile;
+  }
 
   /// Dev-only: seeds a matching job in the fake jobs repo and pushes an
   /// offer for it, simulating the DSP-2 fan-out. Wired to a debug button on

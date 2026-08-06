@@ -56,6 +56,14 @@ extension TruckTypeLabel on TruckType {
       };
 }
 
+extension TruckCapacityLabel on TruckCapacity {
+  String label(AppLocalizations l10n) => switch (this) {
+        TruckCapacity.moto => l10n.capacityMoto,
+        TruckCapacity.car => l10n.capacityCar,
+        TruckCapacity.both => l10n.capacityBoth,
+      };
+}
+
 extension DriverStatusLabel on DriverStatus {
   String label(AppLocalizations l10n) => switch (this) {
         DriverStatus.offline => l10n.availabilityOffline,

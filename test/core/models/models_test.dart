@@ -36,6 +36,7 @@ void main() {
     const backendPayload = {
       'id': 'trk-9',
       'driver_id': 'drv-001',
+      'fleet_id': null,
       'plate': 'TGX 123',
       'type': 'moto_only',
       'capacity': 'moto',
@@ -47,6 +48,7 @@ void main() {
       final truck = Truck.fromJson(backendPayload);
       expect(truck.type, TruckType.motoOnly);
       expect(truck.capacity, TruckCapacity.moto);
+      expect(truck.fleetId, isNull);
       expect(Truck.fromJson(truck.toJson()), truck);
       expect(truck.toJson()['type'], 'moto_only');
       expect(truck.toJson()['driver_id'], 'drv-001');
@@ -54,35 +56,51 @@ void main() {
   });
 
   group('DriverProfile', () {
+    // Backend shape (`DriverProfileRead` in
+    // `backend/app/schemas/driver.py`): truck info nests under `truck`
+    // (a `TruckRead`), not flat `truck_plate`/`truck_type`/`capacity` keys —
+    // an earlier version of `DriverProfile` had those flat fields instead,
+    // which silently parsed to null against this exact payload.
     const backendPayload = {
+      'id': 'drv-profile-1',
       'user_id': 'drv-001',
       'status': 'on_job',
       'verified': true,
       'license_url': null,
-      'truck_plate': 'TGX 123',
-      'truck_type': 'flatbed',
-      'capacity': 'both',
+      'truck_photo_url': null,
       'rating_avg': 4.8,
+      'truck': {
+        'id': 'trk-1',
+        'driver_id': 'drv-001',
+        'fleet_id': null,
+        'plate': 'TGX 123',
+        'type': 'flatbed',
+        'capacity': 'both',
+      },
     };
 
     test('parses and round-trips a backend payload', () {
       final profile = DriverProfile.fromJson(backendPayload);
       expect(profile.status, DriverStatus.onJob);
       expect(profile.verified, isTrue);
-      expect(profile.capacity, TruckCapacity.both);
+      expect(profile.truck, isNotNull);
+      expect(profile.truck!.plate, 'TGX 123');
+      expect(profile.truck!.type, TruckType.flatbed);
+      expect(profile.truck!.capacity, TruckCapacity.both);
       expect(DriverProfile.fromJson(profile.toJson()), profile);
       expect(profile.toJson()['status'], 'on_job');
       expect(profile.toJson()['rating_avg'], 4.8);
+      expect((profile.toJson()['truck'] as Map)['plate'], 'TGX 123');
     });
 
-    test('rating defaults to 0 when missing', () {
+    test('rating defaults to 0 and truck is null when missing', () {
       final profile = DriverProfile.fromJson(const {
         'user_id': 'drv-002',
         'status': 'offline',
         'verified': false,
       });
       expect(profile.ratingAvg, 0);
-      expect(profile.truckType, isNull);
+      expect(profile.truck, isNull);
     });
   });
 

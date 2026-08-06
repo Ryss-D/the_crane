@@ -9,6 +9,7 @@ part of 'truck.dart';
 _Truck _$TruckFromJson(Map<String, dynamic> json) => _Truck(
   id: json['id'] as String,
   driverId: json['driver_id'] as String?,
+  fleetId: json['fleet_id'] as String?,
   plate: json['plate'] as String,
   type: $enumDecode(_$TruckTypeEnumMap, json['type']),
   capacity: $enumDecode(_$TruckCapacityEnumMap, json['capacity']),
@@ -19,6 +20,7 @@ _Truck _$TruckFromJson(Map<String, dynamic> json) => _Truck(
 Map<String, dynamic> _$TruckToJson(_Truck instance) => <String, dynamic>{
   'id': instance.id,
   'driver_id': instance.driverId,
+  'fleet_id': instance.fleetId,
   'plate': instance.plate,
   'type': _$TruckTypeEnumMap[instance.type]!,
   'capacity': _$TruckCapacityEnumMap[instance.capacity]!,

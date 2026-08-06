@@ -19,17 +19,24 @@ enum DriverStatus {
 }
 
 /// Driver profile as returned by the drivers API
-/// (`PATCH /v1/drivers/me/status`).
+/// (`POST /v1/drivers/me/register`, `PATCH /v1/drivers/me/status`).
+///
+/// Mirrors `backend/app/schemas/driver.py::DriverProfileRead` exactly: truck
+/// info is nested under [truck] (a separate `trucks` row), not flattened
+/// here — an earlier version of this model had flat `truckPlate`/
+/// `truckType`/`capacity` fields, which silently parsed to null against the
+/// real backend since the response actually nests them (same class of bug
+/// `AppUser.name`/`phone` hit and got fixed for earlier in the project).
 @freezed
 abstract class DriverProfile with _$DriverProfile {
   const factory DriverProfile({
+    String? id,
     required String userId,
     required DriverStatus status,
     required bool verified,
     String? licenseUrl,
-    String? truckPlate,
-    TruckType? truckType,
-    TruckCapacity? capacity,
+    String? truckPhotoUrl,
+    Truck? truck,
     @Default(0) double ratingAvg,
   }) = _DriverProfile;
 

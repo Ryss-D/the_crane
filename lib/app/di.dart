@@ -59,13 +59,18 @@ class AppDependencies {
     final dio = createDio(baseUrl: Env.apiBaseUrl);
     if (Env.useFakeBackend) {
       final jobs = FakeJobsRepository();
+      // Shared with the drivers fake so AUTH-5's `registerDriver` can flip
+      // this same fake user's role to driver, mirroring the real backend's
+      // single-request role flip (see `FakeAuthRepository.debugPromoteToDriver`).
+      final authRepository = FakeAuthRepository();
       return AppDependencies(
         dio: dio,
         jobsRepository: jobs,
-        driversRepository: FakeDriversRepository(jobs: jobs),
+        driversRepository:
+            FakeDriversRepository(jobs: jobs, auth: authRepository),
         authCubit: AuthCubit(
           gateway: FakePhoneAuthGateway(),
-          authRepository: FakeAuthRepository(),
+          authRepository: authRepository,
           pushTokenGateway: FakePushTokenGateway(),
         ),
       );

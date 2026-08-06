@@ -320,4 +320,51 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get ratingFromDriverLabel => 'Calificación al cliente';
+
+  @override
+  String get settingsTitle => 'Configuración';
+
+  @override
+  String get becomeDriverMenuItem => 'Convertirme en conductor';
+
+  @override
+  String get becomeDriverTitle => 'Conviértete en conductor';
+
+  @override
+  String get becomeDriverIntro =>
+      'Registra tu grúa para empezar a recibir servicios.';
+
+  @override
+  String get plateFieldLabel => 'Placa';
+
+  @override
+  String get plateFieldHint => 'ABC123';
+
+  @override
+  String get truckTypeFieldLabel => 'Tipo de grúa';
+
+  @override
+  String get capacityFieldLabel => 'Capacidad de la grúa';
+
+  @override
+  String get capacityMoto => 'Motos';
+
+  @override
+  String get capacityCar => 'Carros';
+
+  @override
+  String get capacityBoth => 'Motos y carros';
+
+  @override
+  String get licenseUrlFieldLabel => 'URL de la licencia (opcional)';
+
+  @override
+  String get truckPhotoUrlFieldLabel => 'URL de foto de la grúa (opcional)';
+
+  @override
+  String get becomeDriverSubmitButton => 'Enviar registro';
+
+  @override
+  String get becomeDriverSubmitError =>
+      'No pudimos completar el registro. Intenta de nuevo.';
 }

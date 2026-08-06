@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../models/driver_profile.dart';
 import '../models/job.dart';
 import '../models/job_offer.dart';
+import '../models/truck.dart';
 import '../ws/crane_socket.dart';
 import '../ws/server_message.dart';
 
@@ -12,6 +13,19 @@ import '../ws/server_message.dart';
 /// `FakeDriversRepository`. The composition root in `lib/app/di.dart`
 /// picks one from `Env.useFakeBackend`.
 abstract interface class DriversRepository {
+  /// `POST /v1/drivers/me/register` (AUTH-5) — a signed-in customer becomes
+  /// a driver: creates the `driver_profiles` + `trucks` rows server-side and
+  /// flips the caller's role to `driver` (unverified, offline until an
+  /// admin verifies it). Document upload is out of scope — `licenseUrl`/
+  /// `truckPhotoUrl` are plain strings, same as the backend schema.
+  Future<DriverProfile> registerDriver({
+    required String plate,
+    required TruckType truckType,
+    required TruckCapacity capacity,
+    String? licenseUrl,
+    String? truckPhotoUrl,
+  });
+
   /// `PATCH /v1/drivers/me/status` — go available/offline.
   Future<DriverProfile> setStatus(DriverStatus status);
 
@@ -31,6 +45,29 @@ class ApiDriversRepository implements DriversRepository {
 
   /// The realtime channel (TRK-4). Null when the caller didn't wire one up.
   final CraneSocket? _socket;
+
+  @override
+  Future<DriverProfile> registerDriver({
+    required String plate,
+    required TruckType truckType,
+    required TruckCapacity capacity,
+    String? licenseUrl,
+    String? truckPhotoUrl,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/v1/drivers/me/register',
+      data: {
+        'plate': plate,
+        'truck_type': truckType.wire,
+        'capacity': capacity.wire,
+        // ignore: use_null_aware_elements
+        if (licenseUrl != null) 'license_url': licenseUrl,
+        // ignore: use_null_aware_elements
+        if (truckPhotoUrl != null) 'truck_photo_url': truckPhotoUrl,
+      },
+    );
+    return DriverProfile.fromJson(res.data!);
+  }
 
   @override
   Future<DriverProfile> setStatus(DriverStatus status) async {
