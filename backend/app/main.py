@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import admin, auth, drivers, fleets, jobs, ratings, users, vehicles, ws
@@ -72,6 +73,15 @@ def _real_offer_notifier(
 
 def create_app() -> FastAPI:
     app = FastAPI(title="The Crane API", version="0.1.0", lifespan=lifespan)
+
+    # WEB-1: web-client/admin call this API directly from the browser.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=get_settings().cors_origins_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.get("/health", tags=["ops"])
     async def health() -> dict[str, str]:
