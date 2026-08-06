@@ -802,6 +802,26 @@
   "@servicesPeriodLoadError": {
     "description": "DRV-6: shown when loading services-per-period fails"
   },
+  "servicesPeriodFilterToday": "Hoy",
+  "@servicesPeriodFilterToday": {
+    "description": "DRV-6: period selector option -- today only"
+  },
+  "servicesPeriodFilterWeek": "Semana",
+  "@servicesPeriodFilterWeek": {
+    "description": "DRV-6: period selector option -- rolling last 7 days"
+  },
+  "servicesPeriodFilterMonth": "Mes",
+  "@servicesPeriodFilterMonth": {
+    "description": "DRV-6: period selector option -- current calendar month"
+  },
+  "servicesPeriodFilterCustom": "Personalizado",
+  "@servicesPeriodFilterCustom": {
+    "description": "DRV-6: period selector option -- a custom date range"
+  },
+  "servicesPeriodPickRangeButton": "Elegir rango de fechas",
+  "@servicesPeriodPickRangeButton": {
+    "description": "DRV-6: opens the date-range picker for the custom filter, shown before a range has been picked yet"
+  },
   "servicesCountLabel": "{count} servicios",
   "@servicesCountLabel": {
     "description": "DRV-6: count of completed jobs for a given day",

@@ -635,6 +635,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'No pudimos cargar tus servicios. Intenta de nuevo.';
 
   @override
+  String get servicesPeriodFilterToday => 'Hoy';
+
+  @override
+  String get servicesPeriodFilterWeek => 'Semana';
+
+  @override
+  String get servicesPeriodFilterMonth => 'Mes';
+
+  @override
+  String get servicesPeriodFilterCustom => 'Personalizado';
+
+  @override
+  String get servicesPeriodPickRangeButton => 'Elegir rango de fechas';
+
+  @override
   String servicesCountLabel(int count) {
     return '$count servicios';
   }

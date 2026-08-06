@@ -1256,6 +1256,36 @@ abstract class AppLocalizations {
   /// **'No pudimos cargar tus servicios. Intenta de nuevo.'**
   String get servicesPeriodLoadError;
 
+  /// DRV-6: period selector option -- today only
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy'**
+  String get servicesPeriodFilterToday;
+
+  /// DRV-6: period selector option -- rolling last 7 days
+  ///
+  /// In es, this message translates to:
+  /// **'Semana'**
+  String get servicesPeriodFilterWeek;
+
+  /// DRV-6: period selector option -- current calendar month
+  ///
+  /// In es, this message translates to:
+  /// **'Mes'**
+  String get servicesPeriodFilterMonth;
+
+  /// DRV-6: period selector option -- a custom date range
+  ///
+  /// In es, this message translates to:
+  /// **'Personalizado'**
+  String get servicesPeriodFilterCustom;
+
+  /// DRV-6: opens the date-range picker for the custom filter, shown before a range has been picked yet
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir rango de fechas'**
+  String get servicesPeriodPickRangeButton;
+
   /// DRV-6: count of completed jobs for a given day
   ///
   /// In es, this message translates to:

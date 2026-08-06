@@ -207,7 +207,7 @@ Flutter driver shell: go available, receive offers, execute the job.
   services-per-period view, built separately. Verified against the fake
   (84 tests, later 88 once DRV-6 landed).
 
-- [ ] **DRV-6 — Services-per-period view** *(deps: DRV-5)* · Phase 3
+- [x] **DRV-6 — Services-per-period view** *(deps: DRV-5)* · Phase 3
   Period selector (Today / Week / Month / Custom range) over completed services: count, chart, and list for the selected range.
   Design: «Servicios por período» (`docs/design/screen-references.md`)
   *AC: range selector updates count, chart, and list together; custom range persists on reopen.*
@@ -223,3 +223,40 @@ Flutter driver shell: go available, receive offers, execute the job.
   Today/Week/Month/custom-range selector and chart from the AC are NOT
   built — this is a straight daily breakdown only. Verified against the
   fake (88 tests).
+
+  Follow-up: the full selector is built now too. `ServicesPeriodCubit`
+  gained a `ServicesPeriodFilter` (today/week/month/custom); switching it
+  re-slices the same already-loaded job list in memory rather than
+  re-fetching (`listHistory` has no date-range filtering to push this down
+  to anyway). `week`/`month` are rolling windows anchored on today (last 7
+  days / current calendar month) rather than locale-anchored calendar
+  weeks — the same "nothing this client-side pass can assume safely"
+  reasoning that originally picked day-grouping over week-grouping applies
+  to a Monday-vs-Sunday week start too, so this sidesteps it the same way.
+  `custom` uses Flutter's built-in `showDateRangePicker` (no new
+  dependency). `ServicesPeriodScreen` gained a `SegmentedButton` selector, a
+  totals card (count/fare/commission for whichever filter is active --
+  count, chart, and list all derive from the exact same filtered
+  `periods` list, so they can't drift apart), and a proportional-width bar
+  behind each day's fare as the AC's "chart" -- this app has no charting
+  package, and a bar-list is the "reasonable substitute" called out for
+  exactly this case rather than adding one.
+
+  Custom-range persistence: this app has no persistence layer
+  (shared_preferences or similar) at all yet, and `ServicesPeriodCubit` is
+  recreated on every visit to the screen (see the `services` route in
+  `lib/app/router.dart`), so a plain instance field wouldn't survive
+  leaving and reopening it. Built with static in-memory module state
+  instead (documented on the static fields themselves) -- honestly, this
+  is process-lifetime persistence, not disk persistence: it survives
+  navigating away and back within the same running app, not a full app
+  restart. That's the most honest thing buildable without introducing a
+  real persistence dependency.
+
+  New tests: filter-selection totals (today/week), custom-range exact
+  membership, `maxDayFare` (backs the bar widths), and the "remembered
+  across a fresh cubit instance" persistence behavior, against a small
+  seeded-history test double (the existing fake always completes jobs at
+  `DateTime.now()`, with no way to backdate one through its public API) --
+  plus a widget-level test that switching the selector keeps the shown
+  count in sync. Full suite green (146 passing, up from 142).

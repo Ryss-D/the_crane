@@ -12,7 +12,7 @@ part of 'services_period_cubit.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$ServicesPeriodSummary {
+mixin _$ServicesPeriodSummary implements DiagnosticableTreeMixin {
 
  DateTime get day; int get jobCount; int get totalFare; int get totalCommission;
 /// Create a copy of ServicesPeriodSummary
@@ -22,6 +22,12 @@ mixin _$ServicesPeriodSummary {
 $ServicesPeriodSummaryCopyWith<ServicesPeriodSummary> get copyWith => _$ServicesPeriodSummaryCopyWithImpl<ServicesPeriodSummary>(this as ServicesPeriodSummary, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'ServicesPeriodSummary'))
+    ..add(DiagnosticsProperty('day', day))..add(DiagnosticsProperty('jobCount', jobCount))..add(DiagnosticsProperty('totalFare', totalFare))..add(DiagnosticsProperty('totalCommission', totalCommission));
+}
 
 @override
 bool operator ==(Object other) {
@@ -33,7 +39,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,day,jobCount,totalFare,totalCommission);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'ServicesPeriodSummary(day: $day, jobCount: $jobCount, totalFare: $totalFare, totalCommission: $totalCommission)';
 }
 
@@ -208,7 +214,7 @@ return $default(_that.day,_that.jobCount,_that.totalFare,_that.totalCommission);
 /// @nodoc
 
 
-class _ServicesPeriodSummary implements ServicesPeriodSummary {
+class _ServicesPeriodSummary with DiagnosticableTreeMixin implements ServicesPeriodSummary {
   const _ServicesPeriodSummary({required this.day, required this.jobCount, required this.totalFare, required this.totalCommission});
   
 
@@ -224,6 +230,12 @@ class _ServicesPeriodSummary implements ServicesPeriodSummary {
 _$ServicesPeriodSummaryCopyWith<_ServicesPeriodSummary> get copyWith => __$ServicesPeriodSummaryCopyWithImpl<_ServicesPeriodSummary>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'ServicesPeriodSummary'))
+    ..add(DiagnosticsProperty('day', day))..add(DiagnosticsProperty('jobCount', jobCount))..add(DiagnosticsProperty('totalFare', totalFare))..add(DiagnosticsProperty('totalCommission', totalCommission));
+}
 
 @override
 bool operator ==(Object other) {
@@ -235,7 +247,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,day,jobCount,totalFare,totalCommission);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'ServicesPeriodSummary(day: $day, jobCount: $jobCount, totalFare: $totalFare, totalCommission: $totalCommission)';
 }
 
@@ -278,9 +290,9 @@ as int,
 }
 
 /// @nodoc
-mixin _$ServicesPeriodState {
+mixin _$ServicesPeriodState implements DiagnosticableTreeMixin {
 
- List<ServicesPeriodSummary> get periods; bool get isLoading; bool get loadFailed;
+ List<ServicesPeriodSummary> get periods; bool get isLoading; bool get loadFailed; ServicesPeriodFilter get filter; DateTime? get customStart; DateTime? get customEnd;
 /// Create a copy of ServicesPeriodState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -288,19 +300,25 @@ mixin _$ServicesPeriodState {
 $ServicesPeriodStateCopyWith<ServicesPeriodState> get copyWith => _$ServicesPeriodStateCopyWithImpl<ServicesPeriodState>(this as ServicesPeriodState, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'ServicesPeriodState'))
+    ..add(DiagnosticsProperty('periods', periods))..add(DiagnosticsProperty('isLoading', isLoading))..add(DiagnosticsProperty('loadFailed', loadFailed))..add(DiagnosticsProperty('filter', filter))..add(DiagnosticsProperty('customStart', customStart))..add(DiagnosticsProperty('customEnd', customEnd));
+}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ServicesPeriodState&&const DeepCollectionEquality().equals(other.periods, periods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.loadFailed, loadFailed) || other.loadFailed == loadFailed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ServicesPeriodState&&const DeepCollectionEquality().equals(other.periods, periods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.loadFailed, loadFailed) || other.loadFailed == loadFailed)&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.customStart, customStart) || other.customStart == customStart)&&(identical(other.customEnd, customEnd) || other.customEnd == customEnd));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(periods),isLoading,loadFailed);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(periods),isLoading,loadFailed,filter,customStart,customEnd);
 
 @override
-String toString() {
-  return 'ServicesPeriodState(periods: $periods, isLoading: $isLoading, loadFailed: $loadFailed)';
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'ServicesPeriodState(periods: $periods, isLoading: $isLoading, loadFailed: $loadFailed, filter: $filter, customStart: $customStart, customEnd: $customEnd)';
 }
 
 
@@ -311,7 +329,7 @@ abstract mixin class $ServicesPeriodStateCopyWith<$Res>  {
   factory $ServicesPeriodStateCopyWith(ServicesPeriodState value, $Res Function(ServicesPeriodState) _then) = _$ServicesPeriodStateCopyWithImpl;
 @useResult
 $Res call({
- List<ServicesPeriodSummary> periods, bool isLoading, bool loadFailed
+ List<ServicesPeriodSummary> periods, bool isLoading, bool loadFailed, ServicesPeriodFilter filter, DateTime? customStart, DateTime? customEnd
 });
 
 
@@ -328,12 +346,15 @@ class _$ServicesPeriodStateCopyWithImpl<$Res>
 
 /// Create a copy of ServicesPeriodState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? periods = null,Object? isLoading = null,Object? loadFailed = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? periods = null,Object? isLoading = null,Object? loadFailed = null,Object? filter = null,Object? customStart = freezed,Object? customEnd = freezed,}) {
   return _then(_self.copyWith(
 periods: null == periods ? _self.periods : periods // ignore: cast_nullable_to_non_nullable
 as List<ServicesPeriodSummary>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,loadFailed: null == loadFailed ? _self.loadFailed : loadFailed // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,filter: null == filter ? _self.filter : filter // ignore: cast_nullable_to_non_nullable
+as ServicesPeriodFilter,customStart: freezed == customStart ? _self.customStart : customStart // ignore: cast_nullable_to_non_nullable
+as DateTime?,customEnd: freezed == customEnd ? _self.customEnd : customEnd // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -418,10 +439,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ServicesPeriodSummary> periods,  bool isLoading,  bool loadFailed)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ServicesPeriodSummary> periods,  bool isLoading,  bool loadFailed,  ServicesPeriodFilter filter,  DateTime? customStart,  DateTime? customEnd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ServicesPeriodState() when $default != null:
-return $default(_that.periods,_that.isLoading,_that.loadFailed);case _:
+return $default(_that.periods,_that.isLoading,_that.loadFailed,_that.filter,_that.customStart,_that.customEnd);case _:
   return orElse();
 
 }
@@ -439,10 +460,10 @@ return $default(_that.periods,_that.isLoading,_that.loadFailed);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ServicesPeriodSummary> periods,  bool isLoading,  bool loadFailed)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ServicesPeriodSummary> periods,  bool isLoading,  bool loadFailed,  ServicesPeriodFilter filter,  DateTime? customStart,  DateTime? customEnd)  $default,) {final _that = this;
 switch (_that) {
 case _ServicesPeriodState():
-return $default(_that.periods,_that.isLoading,_that.loadFailed);case _:
+return $default(_that.periods,_that.isLoading,_that.loadFailed,_that.filter,_that.customStart,_that.customEnd);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -459,10 +480,10 @@ return $default(_that.periods,_that.isLoading,_that.loadFailed);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ServicesPeriodSummary> periods,  bool isLoading,  bool loadFailed)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ServicesPeriodSummary> periods,  bool isLoading,  bool loadFailed,  ServicesPeriodFilter filter,  DateTime? customStart,  DateTime? customEnd)?  $default,) {final _that = this;
 switch (_that) {
 case _ServicesPeriodState() when $default != null:
-return $default(_that.periods,_that.isLoading,_that.loadFailed);case _:
+return $default(_that.periods,_that.isLoading,_that.loadFailed,_that.filter,_that.customStart,_that.customEnd);case _:
   return null;
 
 }
@@ -473,8 +494,8 @@ return $default(_that.periods,_that.isLoading,_that.loadFailed);case _:
 /// @nodoc
 
 
-class _ServicesPeriodState implements ServicesPeriodState {
-  const _ServicesPeriodState({final  List<ServicesPeriodSummary> periods = const <ServicesPeriodSummary>[], this.isLoading = true, this.loadFailed = false}): _periods = periods;
+class _ServicesPeriodState extends ServicesPeriodState with DiagnosticableTreeMixin {
+  const _ServicesPeriodState({final  List<ServicesPeriodSummary> periods = const <ServicesPeriodSummary>[], this.isLoading = true, this.loadFailed = false, this.filter = ServicesPeriodFilter.today, this.customStart, this.customEnd}): _periods = periods,super._();
   
 
  final  List<ServicesPeriodSummary> _periods;
@@ -486,6 +507,9 @@ class _ServicesPeriodState implements ServicesPeriodState {
 
 @override@JsonKey() final  bool isLoading;
 @override@JsonKey() final  bool loadFailed;
+@override@JsonKey() final  ServicesPeriodFilter filter;
+@override final  DateTime? customStart;
+@override final  DateTime? customEnd;
 
 /// Create a copy of ServicesPeriodState
 /// with the given fields replaced by the non-null parameter values.
@@ -494,19 +518,25 @@ class _ServicesPeriodState implements ServicesPeriodState {
 _$ServicesPeriodStateCopyWith<_ServicesPeriodState> get copyWith => __$ServicesPeriodStateCopyWithImpl<_ServicesPeriodState>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'ServicesPeriodState'))
+    ..add(DiagnosticsProperty('periods', periods))..add(DiagnosticsProperty('isLoading', isLoading))..add(DiagnosticsProperty('loadFailed', loadFailed))..add(DiagnosticsProperty('filter', filter))..add(DiagnosticsProperty('customStart', customStart))..add(DiagnosticsProperty('customEnd', customEnd));
+}
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ServicesPeriodState&&const DeepCollectionEquality().equals(other._periods, _periods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.loadFailed, loadFailed) || other.loadFailed == loadFailed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ServicesPeriodState&&const DeepCollectionEquality().equals(other._periods, _periods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.loadFailed, loadFailed) || other.loadFailed == loadFailed)&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.customStart, customStart) || other.customStart == customStart)&&(identical(other.customEnd, customEnd) || other.customEnd == customEnd));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_periods),isLoading,loadFailed);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_periods),isLoading,loadFailed,filter,customStart,customEnd);
 
 @override
-String toString() {
-  return 'ServicesPeriodState(periods: $periods, isLoading: $isLoading, loadFailed: $loadFailed)';
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'ServicesPeriodState(periods: $periods, isLoading: $isLoading, loadFailed: $loadFailed, filter: $filter, customStart: $customStart, customEnd: $customEnd)';
 }
 
 
@@ -517,7 +547,7 @@ abstract mixin class _$ServicesPeriodStateCopyWith<$Res> implements $ServicesPer
   factory _$ServicesPeriodStateCopyWith(_ServicesPeriodState value, $Res Function(_ServicesPeriodState) _then) = __$ServicesPeriodStateCopyWithImpl;
 @override @useResult
 $Res call({
- List<ServicesPeriodSummary> periods, bool isLoading, bool loadFailed
+ List<ServicesPeriodSummary> periods, bool isLoading, bool loadFailed, ServicesPeriodFilter filter, DateTime? customStart, DateTime? customEnd
 });
 
 
@@ -534,12 +564,15 @@ class __$ServicesPeriodStateCopyWithImpl<$Res>
 
 /// Create a copy of ServicesPeriodState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? periods = null,Object? isLoading = null,Object? loadFailed = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? periods = null,Object? isLoading = null,Object? loadFailed = null,Object? filter = null,Object? customStart = freezed,Object? customEnd = freezed,}) {
   return _then(_ServicesPeriodState(
 periods: null == periods ? _self._periods : periods // ignore: cast_nullable_to_non_nullable
 as List<ServicesPeriodSummary>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,loadFailed: null == loadFailed ? _self.loadFailed : loadFailed // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,filter: null == filter ? _self.filter : filter // ignore: cast_nullable_to_non_nullable
+as ServicesPeriodFilter,customStart: freezed == customStart ? _self.customStart : customStart // ignore: cast_nullable_to_non_nullable
+as DateTime?,customEnd: freezed == customEnd ? _self.customEnd : customEnd // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
