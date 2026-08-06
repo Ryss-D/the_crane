@@ -614,6 +614,30 @@ abstract class AppLocalizations {
   /// **'Servicio finalizado. ¡Buen trabajo!'**
   String get jobDoneBody;
 
+  /// DRV-3: opens Google Maps navigation to the job's current leg
+  ///
+  /// In es, this message translates to:
+  /// **'Navegar'**
+  String get navigateButton;
+
+  /// DRV-3: driver-side cancel button on the active job screen, and its confirm-dialog action
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar servicio'**
+  String get cancelJobButton;
+
+  /// DRV-3: driver cancel confirmation dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cancelar este servicio?'**
+  String get cancelJobConfirmTitle;
+
+  /// DRV-3: driver cancel confirmation dialog body
+  ///
+  /// In es, this message translates to:
+  /// **'El servicio volverá a la bolsa de despacho para que otro conductor lo atienda.'**
+  String get cancelJobConfirmBody;
+
   /// Opens the RAT-2 rating dialog after a job is completed
   ///
   /// In es, this message translates to:

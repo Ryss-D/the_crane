@@ -374,6 +374,22 @@
   "@jobDoneBody": {
     "description": "Shown on the active job screen once completed"
   },
+  "navigateButton": "Navegar",
+  "@navigateButton": {
+    "description": "DRV-3: opens Google Maps navigation to the job's current leg"
+  },
+  "cancelJobButton": "Cancelar servicio",
+  "@cancelJobButton": {
+    "description": "DRV-3: driver-side cancel button on the active job screen, and its confirm-dialog action"
+  },
+  "cancelJobConfirmTitle": "¿Cancelar este servicio?",
+  "@cancelJobConfirmTitle": {
+    "description": "DRV-3: driver cancel confirmation dialog title"
+  },
+  "cancelJobConfirmBody": "El servicio volverá a la bolsa de despacho para que otro conductor lo atienda.",
+  "@cancelJobConfirmBody": {
+    "description": "DRV-3: driver cancel confirmation dialog body"
+  },
   "rateTripButton": "Calificar viaje",
   "@rateTripButton": {
     "description": "Opens the RAT-2 rating dialog after a job is completed"

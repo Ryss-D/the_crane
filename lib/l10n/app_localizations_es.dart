@@ -286,6 +286,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get jobDoneBody => 'Servicio finalizado. ¡Buen trabajo!';
 
   @override
+  String get navigateButton => 'Navegar';
+
+  @override
+  String get cancelJobButton => 'Cancelar servicio';
+
+  @override
+  String get cancelJobConfirmTitle => '¿Cancelar este servicio?';
+
+  @override
+  String get cancelJobConfirmBody =>
+      'El servicio volverá a la bolsa de despacho para que otro conductor lo atienda.';
+
+  @override
   String get rateTripButton => 'Calificar viaje';
 
   @override

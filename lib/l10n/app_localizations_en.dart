@@ -286,6 +286,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get jobDoneBody => 'Job finished. Great work!';
 
   @override
+  String get navigateButton => 'Navigate';
+
+  @override
+  String get cancelJobButton => 'Cancel job';
+
+  @override
+  String get cancelJobConfirmTitle => 'Cancel this job?';
+
+  @override
+  String get cancelJobConfirmBody =>
+      'The job goes back to the dispatch pool for another driver to pick up.';
+
+  @override
   String get rateTripButton => 'Rate trip';
 
   @override

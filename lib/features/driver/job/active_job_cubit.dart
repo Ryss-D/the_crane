@@ -56,6 +56,7 @@ class ActiveJobCubit extends Cubit<ActiveJobState> {
   final Duration locationInterval;
 
   bool _advancing = false;
+  bool _cancelling = false;
   Timer? _locationTimer;
   StreamSubscription<LatLng>? _positionSub;
   LatLng? _lastFix;
@@ -114,6 +115,37 @@ class ActiveJobCubit extends Cubit<ActiveJobState> {
       // Non-rejection failure (e.g. network) — nothing to surface yet.
     } finally {
       _advancing = false;
+    }
+  }
+
+  /// DRV-3: the driver bails on the job before `loading` starts — the
+  /// backend releases it back to the pool (`matching`) rather than marking
+  /// it `cancelled` (that terminal status, and the grace-period nuance, are
+  /// customer-only — see `DRIVER_CANCELLABLE` in
+  /// `backend/app/services/jobs.py`). A rejection (already past
+  /// `arrived_pickup`) surfaces the same way [advance]'s does.
+  ///
+  /// Clears the local job/location-tracking state on success, same as
+  /// [clear] — there's nothing left for this screen to show once the job no
+  /// longer belongs to this driver.
+  Future<void> cancel() async {
+    final job = state.job;
+    if (job == null || _cancelling) return;
+    _cancelling = true;
+    emit(state.copyWith(errorMessage: null));
+    try {
+      await _repo.cancelJob(job.id, asDriver: true);
+      _stopLocationTracking();
+      _jobSub?.cancel();
+      _jobSub = null;
+      emit(const ActiveJobState());
+    } on JobStatusRejectedException catch (e) {
+      emit(state.copyWith(errorMessage: e.message));
+    } catch (_) {
+      // Non-rejection failure (e.g. network) — nothing to surface yet, same
+      // convention as advance().
+    } finally {
+      _cancelling = false;
     }
   }
 
