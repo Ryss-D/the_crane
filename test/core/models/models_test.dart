@@ -4,6 +4,7 @@ import 'package:the_crane/core/models/job.dart';
 import 'package:the_crane/core/models/job_offer.dart';
 import 'package:the_crane/core/models/lat_lng.dart';
 import 'package:the_crane/core/models/quote.dart';
+import 'package:the_crane/core/models/saved_vehicle.dart';
 import 'package:the_crane/core/models/truck.dart';
 
 void main() {
@@ -101,6 +102,41 @@ void main() {
       });
       expect(profile.ratingAvg, 0);
       expect(profile.truck, isNull);
+    });
+  });
+
+  group('SavedVehicle (CUS-6)', () {
+    // Matches the `vehicles` API contract exactly:
+    // GET /v1/me/vehicles -> [{"id", "type", "make", "model", "plate"}].
+    const backendPayload = {
+      'id': 'veh-1',
+      'type': 'car',
+      'make': 'Chevrolet',
+      'model': 'Spark',
+      'plate': 'ABC123',
+    };
+
+    test('parses and round-trips a backend payload', () {
+      final vehicle = SavedVehicle.fromJson(backendPayload);
+      expect(vehicle.type, VehicleType.car);
+      expect(vehicle.make, 'Chevrolet');
+      expect(vehicle.model, 'Spark');
+      expect(vehicle.plate, 'ABC123');
+      expect(SavedVehicle.fromJson(vehicle.toJson()), vehicle);
+      expect(vehicle.toJson()['type'], 'car');
+    });
+
+    test('make/model are nullable', () {
+      final vehicle = SavedVehicle.fromJson(const {
+        'id': 'veh-2',
+        'type': 'moto',
+        'make': null,
+        'model': null,
+        'plate': 'XYZ987',
+      });
+      expect(vehicle.make, isNull);
+      expect(vehicle.model, isNull);
+      expect(vehicle.type, VehicleType.moto);
     });
   });
 

@@ -382,4 +382,48 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get waitingCashConfirmationBody =>
       'Waiting for the customer to confirm the cash payment.';
+
+  @override
+  String get savedVehiclesMenuItem => 'My saved vehicles';
+
+  @override
+  String get savedVehiclesTitle => 'Saved vehicles';
+
+  @override
+  String get noSavedVehiclesBody => 'You have no saved vehicles yet.';
+
+  @override
+  String get loadVehiclesError =>
+      'We could not load your vehicles. Please try again.';
+
+  @override
+  String get addVehicleButton => 'Add vehicle';
+
+  @override
+  String get editVehicleTitle => 'Edit vehicle';
+
+  @override
+  String get vehicleMakeFieldLabel => 'Make (optional)';
+
+  @override
+  String get vehicleModelFieldLabel => 'Model (optional)';
+
+  @override
+  String get vehicleSaveButton => 'Save';
+
+  @override
+  String get vehicleSaveError =>
+      'We could not save the vehicle. Please try again.';
+
+  @override
+  String get deleteVehicleConfirmTitle => 'Delete vehicle?';
+
+  @override
+  String get deleteVehicleConfirmBody => 'This action cannot be undone.';
+
+  @override
+  String get deleteButton => 'Delete';
+
+  @override
+  String get savedVehiclePickerLabel => 'Saved vehicle (optional)';
 }

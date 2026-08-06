@@ -51,11 +51,33 @@ void main() {
     expect(find.text('SUV'), findsOneWidget);
   });
 
+  testWidgets(
+      'CUS-6: picking a saved vehicle preselects its type in the quote step',
+      (tester) async {
+    await pumpToRequestScreen(tester, fastFakeJobs());
+    await enterAddressesAndQuote(tester);
+    // Seeded fake vehicle veh-2 is a moto (see FakeVehiclesRepository); the
+    // request draft otherwise defaults to VehicleType.car.
+    await tester.pump(const Duration(milliseconds: 20)); // vehicles list load
+    expect(find.byKey(const Key('savedVehicleChip_veh-2')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('savedVehicleChip_veh-2')));
+    await tester.pump(const Duration(milliseconds: 100)); // re-quote
+
+    final selected = tester
+        .widget<SegmentedButton<VehicleType>>(
+          find.byType(SegmentedButton<VehicleType>),
+        )
+        .selected;
+    expect(selected, {VehicleType.moto});
+  });
+
   testWidgets('CUS-3: confirm → searching → assigned driver card',
       (tester) async {
     await pumpToRequestScreen(tester, fastFakeJobs());
     await enterAddressesAndQuote(tester);
 
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
     await tester.tap(find.byKey(const Key('confirmRequestButton')));
     await tester.pump(const Duration(milliseconds: 50)); // createDelay
     await tester.pump(const Duration(milliseconds: 400)); // route transition
@@ -75,6 +97,7 @@ void main() {
     await pumpToRequestScreen(tester, jobs);
     await enterAddressesAndQuote(tester);
 
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
     await tester.tap(find.byKey(const Key('confirmRequestButton')));
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pump(const Duration(milliseconds: 400));
@@ -99,6 +122,7 @@ void main() {
     await pumpToRequestScreen(tester, jobs);
     await enterAddressesAndQuote(tester);
 
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
     await tester.tap(find.byKey(const Key('confirmRequestButton')));
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pump(const Duration(milliseconds: 400));

@@ -116,5 +116,19 @@
   "cashPaymentPendingBody": "Confirm you received the cash payment to finish the job.",
   "cashConfirmButton": "Paid in cash",
   "cashPaymentConfirmError": "We could not confirm the payment. Please try again.",
-  "waitingCashConfirmationBody": "Waiting for the customer to confirm the cash payment."
+  "waitingCashConfirmationBody": "Waiting for the customer to confirm the cash payment.",
+  "savedVehiclesMenuItem": "My saved vehicles",
+  "savedVehiclesTitle": "Saved vehicles",
+  "noSavedVehiclesBody": "You have no saved vehicles yet.",
+  "loadVehiclesError": "We could not load your vehicles. Please try again.",
+  "addVehicleButton": "Add vehicle",
+  "editVehicleTitle": "Edit vehicle",
+  "vehicleMakeFieldLabel": "Make (optional)",
+  "vehicleModelFieldLabel": "Model (optional)",
+  "vehicleSaveButton": "Save",
+  "vehicleSaveError": "We could not save the vehicle. Please try again.",
+  "deleteVehicleConfirmTitle": "Delete vehicle?",
+  "deleteVehicleConfirmBody": "This action cannot be undone.",
+  "deleteButton": "Delete",
+  "savedVehiclePickerLabel": "Saved vehicle (optional)"
 }

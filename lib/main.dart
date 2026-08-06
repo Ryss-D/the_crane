@@ -8,6 +8,7 @@ import 'app/router.dart';
 import 'app/theme.dart';
 import 'core/api/drivers_repository.dart';
 import 'core/api/jobs_repository.dart';
+import 'core/api/vehicles_repository.dart';
 import 'core/location/location_source.dart';
 import 'core/ws/crane_socket.dart';
 import 'features/auth/auth_cubit.dart';
@@ -50,6 +51,9 @@ class _TheCraneAppState extends State<TheCraneApp> {
         ),
         RepositoryProvider<DriversRepository>.value(
           value: widget.dependencies.driversRepository,
+        ),
+        RepositoryProvider<VehiclesRepository>.value(
+          value: widget.dependencies.vehiclesRepository,
         ),
         // Null under `Env.useFakeBackend` (see `AppDependencies.fromEnv`);
         // `ActiveJobCubit` treats a null socket as "no location push".

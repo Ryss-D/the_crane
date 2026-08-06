@@ -799,6 +799,90 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Esperando que el cliente confirme el pago en efectivo.'**
   String get waitingCashConfirmationBody;
+
+  /// Settings menu item leading to the CUS-6 saved-vehicles screen
+  ///
+  /// In es, this message translates to:
+  /// **'Mis vehículos guardados'**
+  String get savedVehiclesMenuItem;
+
+  /// Saved-vehicles screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Vehículos guardados'**
+  String get savedVehiclesTitle;
+
+  /// Saved-vehicles empty state
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no tienes vehículos guardados.'**
+  String get noSavedVehiclesBody;
+
+  /// Saved-vehicles load error state
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar tus vehículos. Intenta de nuevo.'**
+  String get loadVehiclesError;
+
+  /// Add-vehicle FAB tooltip and form dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar vehículo'**
+  String get addVehicleButton;
+
+  /// Edit-vehicle form dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'Editar vehículo'**
+  String get editVehicleTitle;
+
+  /// Saved-vehicle make field label
+  ///
+  /// In es, this message translates to:
+  /// **'Marca (opcional)'**
+  String get vehicleMakeFieldLabel;
+
+  /// Saved-vehicle model field label
+  ///
+  /// In es, this message translates to:
+  /// **'Modelo (opcional)'**
+  String get vehicleModelFieldLabel;
+
+  /// Saves the vehicle form
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar'**
+  String get vehicleSaveButton;
+
+  /// Shown when creating/updating a saved vehicle fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos guardar el vehículo. Intenta de nuevo.'**
+  String get vehicleSaveError;
+
+  /// Delete-vehicle confirmation dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar vehículo?'**
+  String get deleteVehicleConfirmTitle;
+
+  /// Delete-vehicle confirmation dialog body
+  ///
+  /// In es, this message translates to:
+  /// **'Esta acción no se puede deshacer.'**
+  String get deleteVehicleConfirmBody;
+
+  /// Generic delete/confirm-delete button
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get deleteButton;
+
+  /// CUS-6: label above the saved-vehicle picker on the request screen
+  ///
+  /// In es, this message translates to:
+  /// **'Vehículo guardado (opcional)'**
+  String get savedVehiclePickerLabel;
 }
 
 class _AppLocalizationsDelegate

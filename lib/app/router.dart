@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/api/drivers_repository.dart';
 import '../core/api/jobs_repository.dart';
+import '../core/api/vehicles_repository.dart';
 import '../core/location/location_source.dart';
 import '../core/models/app_user.dart';
 import '../core/ws/crane_socket.dart';
@@ -18,6 +19,8 @@ import '../features/customer/request/matching_screen.dart';
 import '../features/customer/request/request_bloc.dart';
 import '../features/customer/request/request_screen.dart';
 import '../features/customer/settings/become_driver_screen.dart';
+import '../features/customer/settings/saved_vehicles_cubit.dart';
+import '../features/customer/settings/saved_vehicles_screen.dart';
 import '../features/customer/settings/settings_screen.dart';
 import '../features/driver/home/driver_home_cubit.dart';
 import '../features/driver/home/driver_home_screen.dart';
@@ -37,6 +40,7 @@ abstract final class AppRoute {
   static const customerHistory = '/customer/history';
   static const customerSettings = '/customer/settings';
   static const customerBecomeDriver = '/customer/settings/become-driver';
+  static const customerVehicles = '/customer/settings/vehicles';
   static const driverHome = '/driver';
   static const driverJob = '/driver/job';
   static const driverHistory = '/driver/history';
@@ -151,6 +155,15 @@ GoRouter createRouter(AuthCubit authCubit) {
                   GoRoute(
                     path: 'become-driver',
                     builder: (context, state) => const BecomeDriverScreen(),
+                  ),
+                  GoRoute(
+                    path: 'vehicles',
+                    builder: (context, state) => BlocProvider(
+                      create: (context) => SavedVehiclesCubit(
+                        vehiclesRepository: context.read<VehiclesRepository>(),
+                      )..load(),
+                      child: const SavedVehiclesScreen(),
+                    ),
                   ),
                 ],
               ),

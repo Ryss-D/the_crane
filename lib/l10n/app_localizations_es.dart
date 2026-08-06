@@ -382,4 +382,48 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get waitingCashConfirmationBody =>
       'Esperando que el cliente confirme el pago en efectivo.';
+
+  @override
+  String get savedVehiclesMenuItem => 'Mis vehículos guardados';
+
+  @override
+  String get savedVehiclesTitle => 'Vehículos guardados';
+
+  @override
+  String get noSavedVehiclesBody => 'Aún no tienes vehículos guardados.';
+
+  @override
+  String get loadVehiclesError =>
+      'No pudimos cargar tus vehículos. Intenta de nuevo.';
+
+  @override
+  String get addVehicleButton => 'Agregar vehículo';
+
+  @override
+  String get editVehicleTitle => 'Editar vehículo';
+
+  @override
+  String get vehicleMakeFieldLabel => 'Marca (opcional)';
+
+  @override
+  String get vehicleModelFieldLabel => 'Modelo (opcional)';
+
+  @override
+  String get vehicleSaveButton => 'Guardar';
+
+  @override
+  String get vehicleSaveError =>
+      'No pudimos guardar el vehículo. Intenta de nuevo.';
+
+  @override
+  String get deleteVehicleConfirmTitle => '¿Eliminar vehículo?';
+
+  @override
+  String get deleteVehicleConfirmBody => 'Esta acción no se puede deshacer.';
+
+  @override
+  String get deleteButton => 'Eliminar';
+
+  @override
+  String get savedVehiclePickerLabel => 'Vehículo guardado (opcional)';
 }

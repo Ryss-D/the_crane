@@ -42,3 +42,17 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   CRUD for customer vehicles (type, make, model, plate) to speed repeat requests.
   Design: «Vehículos guardados» (`docs/design/screen-references.md`)
   *AC: saved vehicle preselects type in CUS-2.*
+  Built: `SavedVehicle` freezed model (reuses the existing `VehicleType`
+  enum/wire-mapping from `job.dart`, per the contract), `VehiclesRepository`
+  (real dio + fake, matching `GET/POST /v1/me/vehicles` and
+  `PATCH/DELETE /v1/me/vehicles/{id}` exactly), `SavedVehiclesCubit`, and a
+  list/add/edit/delete screen reachable from the new settings screen
+  (alongside AUTH-5's entry). A saved-vehicle chip picker was added to the
+  request screen's quote step — selecting one dispatches the existing
+  `RequestVehicleTypeChanged` event, preselecting its type (AC met). Wired
+  into `AppDependencies`/`main.dart`/`test_dependencies.dart` the same way
+  every other repository is. Verified against the fake (77 tests). The
+  backend team's real `/v1/me/vehicles` endpoints weren't live while this
+  was built (parallel work) — `ApiVehiclesRepository` matches the
+  documented contract but hasn't been run against a live server; reconcile
+  if their shipped shape differs.

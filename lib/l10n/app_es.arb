@@ -497,5 +497,61 @@
   "waitingCashConfirmationBody": "Esperando que el cliente confirme el pago en efectivo.",
   "@waitingCashConfirmationBody": {
     "description": "DRV-4: shown to the driver once a job is delivered, since only the customer can complete it"
+  },
+  "savedVehiclesMenuItem": "Mis vehículos guardados",
+  "@savedVehiclesMenuItem": {
+    "description": "Settings menu item leading to the CUS-6 saved-vehicles screen"
+  },
+  "savedVehiclesTitle": "Vehículos guardados",
+  "@savedVehiclesTitle": {
+    "description": "Saved-vehicles screen app bar title"
+  },
+  "noSavedVehiclesBody": "Aún no tienes vehículos guardados.",
+  "@noSavedVehiclesBody": {
+    "description": "Saved-vehicles empty state"
+  },
+  "loadVehiclesError": "No pudimos cargar tus vehículos. Intenta de nuevo.",
+  "@loadVehiclesError": {
+    "description": "Saved-vehicles load error state"
+  },
+  "addVehicleButton": "Agregar vehículo",
+  "@addVehicleButton": {
+    "description": "Add-vehicle FAB tooltip and form dialog title"
+  },
+  "editVehicleTitle": "Editar vehículo",
+  "@editVehicleTitle": {
+    "description": "Edit-vehicle form dialog title"
+  },
+  "vehicleMakeFieldLabel": "Marca (opcional)",
+  "@vehicleMakeFieldLabel": {
+    "description": "Saved-vehicle make field label"
+  },
+  "vehicleModelFieldLabel": "Modelo (opcional)",
+  "@vehicleModelFieldLabel": {
+    "description": "Saved-vehicle model field label"
+  },
+  "vehicleSaveButton": "Guardar",
+  "@vehicleSaveButton": {
+    "description": "Saves the vehicle form"
+  },
+  "vehicleSaveError": "No pudimos guardar el vehículo. Intenta de nuevo.",
+  "@vehicleSaveError": {
+    "description": "Shown when creating/updating a saved vehicle fails"
+  },
+  "deleteVehicleConfirmTitle": "¿Eliminar vehículo?",
+  "@deleteVehicleConfirmTitle": {
+    "description": "Delete-vehicle confirmation dialog title"
+  },
+  "deleteVehicleConfirmBody": "Esta acción no se puede deshacer.",
+  "@deleteVehicleConfirmBody": {
+    "description": "Delete-vehicle confirmation dialog body"
+  },
+  "deleteButton": "Eliminar",
+  "@deleteButton": {
+    "description": "Generic delete/confirm-delete button"
+  },
+  "savedVehiclePickerLabel": "Vehículo guardado (opcional)",
+  "@savedVehiclePickerLabel": {
+    "description": "CUS-6: label above the saved-vehicle picker on the request screen"
   }
 }
