@@ -85,6 +85,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               title: Text(l10n.driverHomeTitle),
               actions: [
                 IconButton(
+                  key: const Key('earningsNavButton'),
+                  icon: const Icon(Icons.account_balance_wallet_outlined),
+                  tooltip: l10n.earningsTitle,
+                  onPressed: () => context.push(AppRoute.driverEarnings),
+                ),
+                IconButton(
                   key: const Key('historyNavButton'),
                   icon: const Icon(Icons.history),
                   tooltip: l10n.historyTitle,

@@ -426,4 +426,30 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get savedVehiclePickerLabel => 'Vehículo guardado (opcional)';
+
+  @override
+  String get earningsTitle => 'Ganancias y saldo';
+
+  @override
+  String get earningsOwedLabel => 'Saldo pendiente';
+
+  @override
+  String get earningsCapLabel =>
+      'Límite de saldo antes de bloquear disponibilidad';
+
+  @override
+  String get earningsSettlementsTitle => 'Liquidaciones recientes';
+
+  @override
+  String get earningsNoSettlementsBody => 'Aún no hay liquidaciones.';
+
+  @override
+  String get earningsLoadError =>
+      'No pudimos cargar tus ganancias. Intenta de nuevo.';
+
+  @override
+  String get jobCommissionLabel => 'Comisión de este servicio';
+
+  @override
+  String get runningBalanceLabel => 'Nuevo saldo pendiente';
 }

@@ -36,6 +36,24 @@ Flutter driver shell: go available, receive offers, execute the job.
   Completed jobs list, cash totals per day/week, commission balance owed, settlement instructions (static text until PAY-* lands).
   Design: «Ganancias y saldo» (`docs/design/screen-references.md`)
   *AC: numbers reconcile with `driver_ledger` for a seeded dataset.*
+  Built: `DriverBalance`/`Settlement` freezed models matching
+  `GET /v1/drivers/me/balance` exactly, a `DriversRepository.balance()`
+  method (real dio + fake — the fake computes owed commission from
+  completed jobs the seed driver worked, mirroring the backend's
+  `driver_owed_balance` formula, minus one seeded settlement), a
+  `DriverBalanceCubit`, and a new `EarningsScreen` reachable from a wallet
+  icon on the driver home app bar: current owed balance (formatted COP),
+  the balance cap when the platform has one configured, and a list of
+  recent settlements. NOTE on units: the documented contract names fields
+  `owed_cents`/`balance_cap_cents`/`amount_cents`, but every other money
+  value in this codebase (and the backend's own `Numeric(12, 0)` ledger
+  columns) is a plain integer COP amount with no real subunit — this was
+  built treating those fields as plain COP too (formatted directly via
+  `formatCop`, not divided by 100). Flag for reconciliation once the real
+  endpoint ships if the backend team intended true cents. Not yet built:
+  the "completed jobs list" and "cash totals per day/week" part of this
+  AC's grouping — that's DRV-6's services-per-period view, built
+  separately. Verified against the fake (84 tests).
 
 - [ ] **DRV-6 — Services-per-period view** *(deps: DRV-5)* · Phase 3
   Period selector (Today / Week / Month / Custom range) over completed services: count, chart, and list for the selected range.

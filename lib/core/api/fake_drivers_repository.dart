@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import '../models/driver_balance.dart';
 import '../models/driver_profile.dart';
+import '../models/job.dart';
 import '../models/job_offer.dart';
 import '../models/truck.dart';
 import 'drivers_repository.dart';
 import 'fake_auth_repository.dart';
 import 'fake_jobs_repository.dart';
+import 'jobs_repository.dart';
 
 /// In-memory [DriversRepository] with a seeded profile and a dev-only offer
 /// trigger, used while dispatch (DSP-2) and the WebSocket (TRK-4) are not
@@ -56,6 +59,19 @@ class FakeDriversRepository implements DriversRepository {
   final _offers = StreamController<JobOffer>.broadcast();
   int _offerSeq = 0;
 
+  /// Dev-seeded settlement history (DRV-5), so the balance screen has
+  /// something to show. Real settlements come from the admin-recorded
+  /// `POST /v1/admin/ledger/{driver_id}/settle` (ADM-2) — nothing here
+  /// simulates that flow, it's just fixed seed data.
+  final List<Settlement> _settlements = [
+    Settlement(
+      id: 'set-1',
+      amountCents: 180000,
+      settledAt: DateTime.now().subtract(const Duration(days: 7)),
+      note: 'Liquidación semanal',
+    ),
+  ];
+
   @override
   Future<DriverProfile> setStatus(DriverStatus status) async {
     await Future<void>.delayed(actionDelay);
@@ -97,6 +113,30 @@ class FakeDriversRepository implements DriversRepository {
     );
     _auth?.debugPromoteToDriver();
     return _profile;
+  }
+
+  @override
+  Future<DriverBalance> balance() async {
+    await Future<void>.delayed(actionDelay);
+    // Mirrors the backend formula (`driver_owed_balance` in
+    // `backend/app/services/ledger.py`): sum of commission earned on
+    // completed jobs, minus settlements already paid out.
+    final page =
+        await _jobs.listHistory(role: JobHistoryRole.driver, limit: 1000);
+    final accrued = page.items
+        .where((job) => job.status == JobStatus.completed)
+        .fold<int>(0, (sum, job) => sum + _commission(job));
+    final settled =
+        _settlements.fold<int>(0, (sum, entry) => sum + entry.amountCents);
+    return DriverBalance(
+      owedCents: accrued - settled,
+      recentSettlements: List.unmodifiable(_settlements),
+    );
+  }
+
+  int _commission(Job job) {
+    final fare = job.finalPrice ?? job.quotedPrice;
+    return (fare * _commissionRate / 100).round() * 100;
   }
 
   /// Dev-only: seeds a matching job in the fake jobs repo and pushes an

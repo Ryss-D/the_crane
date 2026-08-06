@@ -883,6 +883,54 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Vehículo guardado (opcional)'**
   String get savedVehiclePickerLabel;
+
+  /// DRV-5: earnings/balance screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Ganancias y saldo'**
+  String get earningsTitle;
+
+  /// DRV-5: label above the driver's owed commission balance
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo pendiente'**
+  String get earningsOwedLabel;
+
+  /// DRV-5: label above the balance cap, when the platform has one configured
+  ///
+  /// In es, this message translates to:
+  /// **'Límite de saldo antes de bloquear disponibilidad'**
+  String get earningsCapLabel;
+
+  /// DRV-5: heading above the recent-settlements list
+  ///
+  /// In es, this message translates to:
+  /// **'Liquidaciones recientes'**
+  String get earningsSettlementsTitle;
+
+  /// DRV-5: shown when there are no recent settlements
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay liquidaciones.'**
+  String get earningsNoSettlementsBody;
+
+  /// DRV-5: shown when loading the balance fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar tus ganancias. Intenta de nuevo.'**
+  String get earningsLoadError;
+
+  /// DRV-4: label for the commission accrued on a just-completed job
+  ///
+  /// In es, this message translates to:
+  /// **'Comisión de este servicio'**
+  String get jobCommissionLabel;
+
+  /// DRV-4: label for the driver's updated running balance after a job completes
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo saldo pendiente'**
+  String get runningBalanceLabel;
 }
 
 class _AppLocalizationsDelegate

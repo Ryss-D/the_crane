@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../models/driver_balance.dart';
 import '../models/driver_profile.dart';
 import '../models/job.dart';
 import '../models/job_offer.dart';
@@ -35,6 +36,10 @@ abstract interface class DriversRepository {
   /// wired; the dio implementation returns an empty stream otherwise (no
   /// FCM tap-through when backgrounded yet either — that's still open).
   Stream<JobOffer> incomingOffers();
+
+  /// `GET /v1/drivers/me/balance` (DRV-5/LED-1) — owed commission balance
+  /// plus recent settlements.
+  Future<DriverBalance> balance();
 }
 
 /// Dio-backed implementation hitting the FastAPI v1 endpoints.
@@ -116,5 +121,11 @@ class ApiDriversRepository implements DriversRepository {
   Future<Job> _fetchJob(String id) async {
     final res = await _dio.get<Map<String, dynamic>>('/v1/jobs/$id');
     return Job.fromJson(res.data!);
+  }
+
+  @override
+  Future<DriverBalance> balance() async {
+    final res = await _dio.get<Map<String, dynamic>>('/v1/drivers/me/balance');
+    return DriverBalance.fromJson(res.data!);
   }
 }

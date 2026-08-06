@@ -426,4 +426,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get savedVehiclePickerLabel => 'Saved vehicle (optional)';
+
+  @override
+  String get earningsTitle => 'Earnings & balance';
+
+  @override
+  String get earningsOwedLabel => 'Owed balance';
+
+  @override
+  String get earningsCapLabel => 'Balance cap before availability is blocked';
+
+  @override
+  String get earningsSettlementsTitle => 'Recent settlements';
+
+  @override
+  String get earningsNoSettlementsBody => 'No settlements yet.';
+
+  @override
+  String get earningsLoadError =>
+      'We could not load your earnings. Please try again.';
+
+  @override
+  String get jobCommissionLabel => 'Commission for this job';
+
+  @override
+  String get runningBalanceLabel => 'New owed balance';
 }

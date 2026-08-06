@@ -130,5 +130,13 @@
   "deleteVehicleConfirmTitle": "Delete vehicle?",
   "deleteVehicleConfirmBody": "This action cannot be undone.",
   "deleteButton": "Delete",
-  "savedVehiclePickerLabel": "Saved vehicle (optional)"
+  "savedVehiclePickerLabel": "Saved vehicle (optional)",
+  "earningsTitle": "Earnings & balance",
+  "earningsOwedLabel": "Owed balance",
+  "earningsCapLabel": "Balance cap before availability is blocked",
+  "earningsSettlementsTitle": "Recent settlements",
+  "earningsNoSettlementsBody": "No settlements yet.",
+  "earningsLoadError": "We could not load your earnings. Please try again.",
+  "jobCommissionLabel": "Commission for this job",
+  "runningBalanceLabel": "New owed balance"
 }

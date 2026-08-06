@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/core/models/driver_balance.dart';
 import 'package:the_crane/core/models/driver_profile.dart';
 import 'package:the_crane/core/models/job.dart';
 import 'package:the_crane/core/models/job_offer.dart';
@@ -137,6 +138,47 @@ void main() {
       expect(vehicle.make, isNull);
       expect(vehicle.model, isNull);
       expect(vehicle.type, VehicleType.moto);
+    });
+  });
+
+  group('DriverBalance (DRV-5)', () {
+    // Matches GET /v1/drivers/me/balance exactly.
+    const backendPayload = {
+      'owed_cents': 45000,
+      'balance_cap_cents': 200000,
+      'recent_settlements': [
+        {
+          'id': 'set-1',
+          'amount_cents': 180000,
+          'settled_at': '2026-07-28T10:00:00.000Z',
+          'note': 'Liquidación semanal',
+        },
+      ],
+    };
+
+    test('parses and round-trips a backend payload', () {
+      final balance = DriverBalance.fromJson(backendPayload);
+      expect(balance.owedCents, 45000);
+      expect(balance.balanceCapCents, 200000);
+      expect(balance.recentSettlements, hasLength(1));
+      expect(balance.recentSettlements.single.amountCents, 180000);
+      expect(balance.recentSettlements.single.note, 'Liquidación semanal');
+      expect(DriverBalance.fromJson(balance.toJson()), balance);
+      expect(balance.toJson()['owed_cents'], 45000);
+      expect(
+        (balance.toJson()['recent_settlements'] as List).single['amount_cents'],
+        180000,
+      );
+    });
+
+    test('balanceCapCents null and empty settlements parse cleanly', () {
+      final balance = DriverBalance.fromJson(const {
+        'owed_cents': 0,
+        'balance_cap_cents': null,
+        'recent_settlements': <Map<String, dynamic>>[],
+      });
+      expect(balance.balanceCapCents, isNull);
+      expect(balance.recentSettlements, isEmpty);
     });
   });
 

@@ -553,5 +553,37 @@
   "savedVehiclePickerLabel": "Vehículo guardado (opcional)",
   "@savedVehiclePickerLabel": {
     "description": "CUS-6: label above the saved-vehicle picker on the request screen"
+  },
+  "earningsTitle": "Ganancias y saldo",
+  "@earningsTitle": {
+    "description": "DRV-5: earnings/balance screen app bar title, and the nav button tooltip"
+  },
+  "earningsOwedLabel": "Saldo pendiente",
+  "@earningsOwedLabel": {
+    "description": "DRV-5: label above the driver's owed commission balance"
+  },
+  "earningsCapLabel": "Límite de saldo antes de bloquear disponibilidad",
+  "@earningsCapLabel": {
+    "description": "DRV-5: label above the balance cap, when the platform has one configured"
+  },
+  "earningsSettlementsTitle": "Liquidaciones recientes",
+  "@earningsSettlementsTitle": {
+    "description": "DRV-5: heading above the recent-settlements list"
+  },
+  "earningsNoSettlementsBody": "Aún no hay liquidaciones.",
+  "@earningsNoSettlementsBody": {
+    "description": "DRV-5: shown when there are no recent settlements"
+  },
+  "earningsLoadError": "No pudimos cargar tus ganancias. Intenta de nuevo.",
+  "@earningsLoadError": {
+    "description": "DRV-5: shown when loading the balance fails"
+  },
+  "jobCommissionLabel": "Comisión de este servicio",
+  "@jobCommissionLabel": {
+    "description": "DRV-4: label for the commission accrued on a just-completed job"
+  },
+  "runningBalanceLabel": "Nuevo saldo pendiente",
+  "@runningBalanceLabel": {
+    "description": "DRV-4: label for the driver's updated running balance after a job completes"
   }
 }
