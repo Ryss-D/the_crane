@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../../api';
+import { fakeGeocode } from '../../api/geocode';
 import type { Quote, VehicleType } from '../../api/types';
 import { useAuth } from '../../auth';
 import { strings } from '../../i18n/strings';
@@ -26,8 +27,8 @@ export function RequestPage() {
     mutationFn: () =>
       api.quote({
         vehicle_type: vehicleType as VehicleType,
-        pickup_address: pickup.trim(),
-        dropoff_address: dropoff.trim(),
+        pickup: fakeGeocode(pickup),
+        dropoff: fakeGeocode(dropoff),
       }),
     onSuccess: setQuote,
   });
@@ -37,8 +38,8 @@ export function RequestPage() {
       api.createJob({
         quote_id: (quote as Quote).quote_id,
         vehicle_type: vehicleType as VehicleType,
-        pickup_address: pickup.trim(),
-        dropoff_address: dropoff.trim(),
+        pickup: { ...fakeGeocode(pickup), address: pickup.trim() },
+        dropoff: { ...fakeGeocode(dropoff), address: dropoff.trim() },
       }),
     onSuccess: (job) => {
       setActiveJob(job.id, job.status);

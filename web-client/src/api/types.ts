@@ -40,11 +40,16 @@ export interface LatLng {
 
 export interface QuoteRequest {
   vehicle_type: VehicleType;
-  pickup_address: string;
-  dropoff_address: string;
-  /** TODO(FND-6): filled from browser geolocation / Places once Maps is wired. */
-  pickup?: LatLng;
-  dropoff?: LatLng;
+  /** TODO(FND-6): filled from browser geolocation / Places once Maps is
+   * wired — `fakeGeocode` (src/api/geocode.ts) stands in until then. */
+  pickup: LatLng;
+  dropoff: LatLng;
+}
+
+/** A point plus its human-readable address (job creation) — matches the
+ * backend's `LocationIn` exactly. */
+export interface LocationIn extends LatLng {
+  address: string;
 }
 
 export interface Quote {
@@ -58,10 +63,9 @@ export interface Quote {
 export interface CreateJobRequest {
   quote_id: string;
   vehicle_type: VehicleType;
-  pickup_address: string;
-  dropoff_address: string;
-  pickup?: LatLng;
-  dropoff?: LatLng;
+  pickup: LocationIn;
+  dropoff: LocationIn;
+  customer_vehicle_id?: string;
 }
 
 export interface Driver {

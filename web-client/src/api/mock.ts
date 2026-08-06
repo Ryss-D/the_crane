@@ -1,5 +1,6 @@
 import type { CraneApi } from './client';
 import { ApiError } from './client';
+import { hash } from './geocode';
 import type {
   CreateJobRequest,
   Driver,
@@ -34,13 +35,6 @@ const MOCK_DRIVER: Driver = {
   plate: 'TKX-482',
   truck_description: 'Grúa plataforma — Chevrolet NPR blanca',
 };
-
-/** Deterministic tiny hash so the same addresses always quote the same trip. */
-function hash(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
-}
 
 interface MockJobRecord {
   job: Job;
@@ -115,7 +109,7 @@ export class MockApi implements CraneApi {
 
   async quote(req: QuoteRequest): Promise<Quote> {
     await this.delay();
-    const h = hash(`${req.pickup_address}|${req.dropoff_address}`);
+    const h = hash(`${req.pickup.lat},${req.pickup.lng}|${req.dropoff.lat},${req.dropoff.lng}`);
     const distanceKm = Math.round((3 + (h % 120) / 10) * 10) / 10; // 3.0–14.9 km
     const price =
       Math.round((BASE_FARE[req.vehicle_type] + distanceKm * PER_KM[req.vehicle_type]) / 100) * 100;
@@ -138,8 +132,8 @@ export class MockApi implements CraneApi {
       id,
       status: 'requested',
       vehicle_type: req.vehicle_type,
-      pickup_address: req.pickup_address,
-      dropoff_address: req.dropoff_address,
+      pickup_address: req.pickup.address,
+      dropoff_address: req.dropoff.address,
       quoted_price: quote.price,
       final_price: null,
       distance_km: quote.distance_km,
