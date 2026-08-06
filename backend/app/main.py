@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api import admin, auth, drivers, fleets, jobs, ratings, users, ws
+from app.api import admin, auth, drivers, fleets, jobs, ratings, users, vehicles, ws
 from app.core.config import get_settings
 from app.core.database import dispose_engine, get_session, get_sessionmaker
 from app.core.redis import close_redis, get_redis, get_redis_client
@@ -85,6 +85,7 @@ def create_app() -> FastAPI:
     app.include_router(ratings.router, prefix="/v1")  # RAT-1: /v1/jobs/{id}/rating(s)
     app.include_router(drivers.router, prefix="/v1")
     app.include_router(fleets.router, prefix="/v1")
+    app.include_router(vehicles.router, prefix="/v1")
     app.include_router(ws.router, prefix="/v1")
 
     # TRK-3: wire the real broadcasters as the actual overrides — the no-op defaults

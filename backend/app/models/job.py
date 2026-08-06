@@ -65,6 +65,8 @@ class CustomerVehicle(Base):
     make: Mapped[str | None] = mapped_column(String(60))
     model: Mapped[str | None] = mapped_column(String(60))
     plate: Mapped[str | None] = mapped_column(String(16))
+    # CUS-6: added in migration 0008 so GET /v1/me/vehicles can order newest-first.
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Job(Base):

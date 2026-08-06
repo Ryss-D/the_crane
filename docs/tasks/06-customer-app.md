@@ -27,3 +27,16 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   CRUD for customer vehicles (type, make, model, plate) to speed repeat requests.
   Design: «Vehículos guardados» (`docs/design/screen-references.md`)
   *AC: saved vehicle preselects type in CUS-2.*
+  Backend built (not in the original backlog line item, added ahead of the Flutter
+  screen so it has real data to bind to): reuses the `customer_vehicles` table JOB-1
+  already created for `POST /v1/jobs`' optional `customer_vehicle_id` -- it just never
+  had its own CRUD until now. `type` is the existing `VehicleType` enum
+  (`app/models/job.py` -- moto/car/suv), no new enum. Endpoints, all scoped to the
+  caller (404 if a vehicle exists but isn't theirs):
+  - `GET /v1/me/vehicles` -> `list[VehicleRead]`, most-recently-created first.
+  - `POST /v1/me/vehicles` body `{type, make?, model?, plate}` -> 201 `VehicleRead`.
+  - `PATCH /v1/me/vehicles/{id}` body any subset of `{type, make, model, plate}` -> 200 `VehicleRead`.
+  - `DELETE /v1/me/vehicles/{id}` -> 204.
+
+  `VehicleRead`: `{"id": "uuid", "type": "moto"|"car"|"suv", "make": str|null, "model": str|null, "plate": str|null, "created_at": "ISO8601 datetime"}`.
+  Migration 0008 added `customer_vehicles.created_at` (the table didn't have it before -- nothing needed it until this ordering requirement). 9 new tests in `tests/test_vehicles_api.py`.

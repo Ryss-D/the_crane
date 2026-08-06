@@ -68,7 +68,11 @@ def test_upgrade_head_on_sqlite(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
         }
         assert fk_targets == {"fleets"}
 
+        # 0008: customer_vehicles gains created_at (CUS-6's newest-first ordering).
+        vehicle_columns = {row[1] for row in conn.execute("PRAGMA table_info(customer_vehicles)")}
+        assert "created_at" in vehicle_columns
+
         head = conn.execute("SELECT version_num FROM alembic_version").fetchone()
-        assert head == ("0007",)
+        assert head == ("0008",)
     finally:
         conn.close()
