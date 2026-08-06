@@ -22,9 +22,10 @@ from app.core.database import get_session
 from app.core.security import CurrentUser
 from app.models.driver import Truck
 from app.models.fleet import Fleet
-from app.models.user import UserRole
+from app.models.user import User, UserRole
 from app.schemas.driver import TruckRead
-from app.schemas.fleet import FleetCreate, FleetRead
+from app.schemas.fleet import FleetBalanceRead, FleetCreate, FleetMemberBalance, FleetRead
+from app.services.ledger import fleet_member_balances
 
 router = APIRouter(prefix="/fleets", tags=["fleets"])
 
@@ -113,3 +114,21 @@ async def remove_truck_from_fleet(
     truck.fleet_id = None
     await session.commit()
     return await _serialize_fleet(session, fleet)
+
+
+@router.get("/me/balance", response_model=FleetBalanceRead)
+async def get_my_fleet_balance(user: CurrentUser, session: SessionDep) -> FleetBalanceRead:
+    """FLT-2: consolidated owed balance across every driver in the caller's fleet,
+    plus the per-driver breakdown it's built from (app/services/ledger.py)."""
+    fleet = await _get_fleet_or_404(session, user.id)
+    balances = await fleet_member_balances(session, fleet.id)
+    names = (
+        {u.id: u.name for u in (await session.scalars(select(User).where(User.id.in_(balances))))}
+        if balances
+        else {}
+    )
+    members = [
+        FleetMemberBalance(driver_id=driver_id, name=names.get(driver_id), owed_balance=owed)
+        for driver_id, owed in balances.items()
+    ]
+    return FleetBalanceRead(fleet_id=fleet.id, owed_balance=sum(balances.values()), members=members)

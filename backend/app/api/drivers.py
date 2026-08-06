@@ -26,7 +26,7 @@ from app.schemas.driver import (
 )
 from app.services import dispatch
 from app.services.config import RedisLike, get_config
-from app.services.ledger import driver_owed_balance
+from app.services.ledger import driver_owed_balance, fleet_owed_balance
 
 router = APIRouter(prefix="/drivers", tags=["drivers"])
 
@@ -154,7 +154,15 @@ async def update_driver_status(
         settlement_config = await get_config(session, redis, "settlement") or {}
         balance_cap = settlement_config.get("balance_cap")
         if balance_cap is not None:
-            owed = await driver_owed_balance(session, user.id)
+            # FLT-2: a driver riding a fleet's truck is gated on the fleet's
+            # consolidated balance, not just their own — one fleet settlement
+            # (POST /v1/admin/fleets/{id}/settle) is what unblocks every capped
+            # member together, matching the fleet's own settle-once story.
+            owed = (
+                await fleet_owed_balance(session, truck.fleet_id)
+                if truck.fleet_id is not None
+                else await driver_owed_balance(session, user.id)
+            )
             if owed >= balance_cap:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
