@@ -137,14 +137,14 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String jobId)?  subscribed,TResult Function( String jobId)?  unsubscribed,TResult Function( String jobId,  String status)?  jobEvent,TResult Function( String jobId,  double lat,  double lng)?  driverLocation,TResult Function( String jobId,  String offerId,  VehicleType vehicleType,  LatLng pickup,  LatLng dropoff,  int? quotedPrice,  int expiresInSeconds)?  jobOffer,TResult Function( String detail)?  error,TResult Function()?  ping,TResult Function( Map<String, dynamic> raw)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String jobId)?  subscribed,TResult Function( String jobId)?  unsubscribed,TResult Function( String jobId,  String status)?  jobEvent,TResult Function( String jobId,  double lat,  double lng)?  driverLocation,TResult Function( String jobId,  String offerId,  VehicleType vehicleType,  LatLng pickup,  LatLng dropoff,  int? quotedPrice,  int expiresInSeconds,  double? pickupDistanceKm,  int? commissionAmount)?  jobOffer,TResult Function( String detail)?  error,TResult Function()?  ping,TResult Function( Map<String, dynamic> raw)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ServerMessageSubscribed() when subscribed != null:
 return subscribed(_that.jobId);case ServerMessageUnsubscribed() when unsubscribed != null:
 return unsubscribed(_that.jobId);case ServerMessageJobEvent() when jobEvent != null:
 return jobEvent(_that.jobId,_that.status);case ServerMessageDriverLocation() when driverLocation != null:
 return driverLocation(_that.jobId,_that.lat,_that.lng);case ServerMessageJobOffer() when jobOffer != null:
-return jobOffer(_that.jobId,_that.offerId,_that.vehicleType,_that.pickup,_that.dropoff,_that.quotedPrice,_that.expiresInSeconds);case ServerMessageError() when error != null:
+return jobOffer(_that.jobId,_that.offerId,_that.vehicleType,_that.pickup,_that.dropoff,_that.quotedPrice,_that.expiresInSeconds,_that.pickupDistanceKm,_that.commissionAmount);case ServerMessageError() when error != null:
 return error(_that.detail);case ServerMessagePing() when ping != null:
 return ping();case ServerMessageUnknown() when unknown != null:
 return unknown(_that.raw);case _:
@@ -165,14 +165,14 @@ return unknown(_that.raw);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String jobId)  subscribed,required TResult Function( String jobId)  unsubscribed,required TResult Function( String jobId,  String status)  jobEvent,required TResult Function( String jobId,  double lat,  double lng)  driverLocation,required TResult Function( String jobId,  String offerId,  VehicleType vehicleType,  LatLng pickup,  LatLng dropoff,  int? quotedPrice,  int expiresInSeconds)  jobOffer,required TResult Function( String detail)  error,required TResult Function()  ping,required TResult Function( Map<String, dynamic> raw)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String jobId)  subscribed,required TResult Function( String jobId)  unsubscribed,required TResult Function( String jobId,  String status)  jobEvent,required TResult Function( String jobId,  double lat,  double lng)  driverLocation,required TResult Function( String jobId,  String offerId,  VehicleType vehicleType,  LatLng pickup,  LatLng dropoff,  int? quotedPrice,  int expiresInSeconds,  double? pickupDistanceKm,  int? commissionAmount)  jobOffer,required TResult Function( String detail)  error,required TResult Function()  ping,required TResult Function( Map<String, dynamic> raw)  unknown,}) {final _that = this;
 switch (_that) {
 case ServerMessageSubscribed():
 return subscribed(_that.jobId);case ServerMessageUnsubscribed():
 return unsubscribed(_that.jobId);case ServerMessageJobEvent():
 return jobEvent(_that.jobId,_that.status);case ServerMessageDriverLocation():
 return driverLocation(_that.jobId,_that.lat,_that.lng);case ServerMessageJobOffer():
-return jobOffer(_that.jobId,_that.offerId,_that.vehicleType,_that.pickup,_that.dropoff,_that.quotedPrice,_that.expiresInSeconds);case ServerMessageError():
+return jobOffer(_that.jobId,_that.offerId,_that.vehicleType,_that.pickup,_that.dropoff,_that.quotedPrice,_that.expiresInSeconds,_that.pickupDistanceKm,_that.commissionAmount);case ServerMessageError():
 return error(_that.detail);case ServerMessagePing():
 return ping();case ServerMessageUnknown():
 return unknown(_that.raw);}
@@ -189,14 +189,14 @@ return unknown(_that.raw);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String jobId)?  subscribed,TResult? Function( String jobId)?  unsubscribed,TResult? Function( String jobId,  String status)?  jobEvent,TResult? Function( String jobId,  double lat,  double lng)?  driverLocation,TResult? Function( String jobId,  String offerId,  VehicleType vehicleType,  LatLng pickup,  LatLng dropoff,  int? quotedPrice,  int expiresInSeconds)?  jobOffer,TResult? Function( String detail)?  error,TResult? Function()?  ping,TResult? Function( Map<String, dynamic> raw)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String jobId)?  subscribed,TResult? Function( String jobId)?  unsubscribed,TResult? Function( String jobId,  String status)?  jobEvent,TResult? Function( String jobId,  double lat,  double lng)?  driverLocation,TResult? Function( String jobId,  String offerId,  VehicleType vehicleType,  LatLng pickup,  LatLng dropoff,  int? quotedPrice,  int expiresInSeconds,  double? pickupDistanceKm,  int? commissionAmount)?  jobOffer,TResult? Function( String detail)?  error,TResult? Function()?  ping,TResult? Function( Map<String, dynamic> raw)?  unknown,}) {final _that = this;
 switch (_that) {
 case ServerMessageSubscribed() when subscribed != null:
 return subscribed(_that.jobId);case ServerMessageUnsubscribed() when unsubscribed != null:
 return unsubscribed(_that.jobId);case ServerMessageJobEvent() when jobEvent != null:
 return jobEvent(_that.jobId,_that.status);case ServerMessageDriverLocation() when driverLocation != null:
 return driverLocation(_that.jobId,_that.lat,_that.lng);case ServerMessageJobOffer() when jobOffer != null:
-return jobOffer(_that.jobId,_that.offerId,_that.vehicleType,_that.pickup,_that.dropoff,_that.quotedPrice,_that.expiresInSeconds);case ServerMessageError() when error != null:
+return jobOffer(_that.jobId,_that.offerId,_that.vehicleType,_that.pickup,_that.dropoff,_that.quotedPrice,_that.expiresInSeconds,_that.pickupDistanceKm,_that.commissionAmount);case ServerMessageError() when error != null:
 return error(_that.detail);case ServerMessagePing() when ping != null:
 return ping();case ServerMessageUnknown() when unknown != null:
 return unknown(_that.raw);case _:
@@ -481,7 +481,7 @@ as double,
 
 
 class ServerMessageJobOffer implements ServerMessage {
-  const ServerMessageJobOffer({required this.jobId, required this.offerId, required this.vehicleType, required this.pickup, required this.dropoff, this.quotedPrice, required this.expiresInSeconds});
+  const ServerMessageJobOffer({required this.jobId, required this.offerId, required this.vehicleType, required this.pickup, required this.dropoff, this.quotedPrice, required this.expiresInSeconds, this.pickupDistanceKm, this.commissionAmount});
   
 
  final  String jobId;
@@ -491,6 +491,8 @@ class ServerMessageJobOffer implements ServerMessage {
  final  LatLng dropoff;
  final  int? quotedPrice;
  final  int expiresInSeconds;
+ final  double? pickupDistanceKm;
+ final  int? commissionAmount;
 
 /// Create a copy of ServerMessage
 /// with the given fields replaced by the non-null parameter values.
@@ -502,16 +504,16 @@ $ServerMessageJobOfferCopyWith<ServerMessageJobOffer> get copyWith => _$ServerMe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ServerMessageJobOffer&&(identical(other.jobId, jobId) || other.jobId == jobId)&&(identical(other.offerId, offerId) || other.offerId == offerId)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.expiresInSeconds, expiresInSeconds) || other.expiresInSeconds == expiresInSeconds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ServerMessageJobOffer&&(identical(other.jobId, jobId) || other.jobId == jobId)&&(identical(other.offerId, offerId) || other.offerId == offerId)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.expiresInSeconds, expiresInSeconds) || other.expiresInSeconds == expiresInSeconds)&&(identical(other.pickupDistanceKm, pickupDistanceKm) || other.pickupDistanceKm == pickupDistanceKm)&&(identical(other.commissionAmount, commissionAmount) || other.commissionAmount == commissionAmount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,jobId,offerId,vehicleType,pickup,dropoff,quotedPrice,expiresInSeconds);
+int get hashCode => Object.hash(runtimeType,jobId,offerId,vehicleType,pickup,dropoff,quotedPrice,expiresInSeconds,pickupDistanceKm,commissionAmount);
 
 @override
 String toString() {
-  return 'ServerMessage.jobOffer(jobId: $jobId, offerId: $offerId, vehicleType: $vehicleType, pickup: $pickup, dropoff: $dropoff, quotedPrice: $quotedPrice, expiresInSeconds: $expiresInSeconds)';
+  return 'ServerMessage.jobOffer(jobId: $jobId, offerId: $offerId, vehicleType: $vehicleType, pickup: $pickup, dropoff: $dropoff, quotedPrice: $quotedPrice, expiresInSeconds: $expiresInSeconds, pickupDistanceKm: $pickupDistanceKm, commissionAmount: $commissionAmount)';
 }
 
 
@@ -522,7 +524,7 @@ abstract mixin class $ServerMessageJobOfferCopyWith<$Res> implements $ServerMess
   factory $ServerMessageJobOfferCopyWith(ServerMessageJobOffer value, $Res Function(ServerMessageJobOffer) _then) = _$ServerMessageJobOfferCopyWithImpl;
 @useResult
 $Res call({
- String jobId, String offerId, VehicleType vehicleType, LatLng pickup, LatLng dropoff, int? quotedPrice, int expiresInSeconds
+ String jobId, String offerId, VehicleType vehicleType, LatLng pickup, LatLng dropoff, int? quotedPrice, int expiresInSeconds, double? pickupDistanceKm, int? commissionAmount
 });
 
 
@@ -539,7 +541,7 @@ class _$ServerMessageJobOfferCopyWithImpl<$Res>
 
 /// Create a copy of ServerMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? jobId = null,Object? offerId = null,Object? vehicleType = null,Object? pickup = null,Object? dropoff = null,Object? quotedPrice = freezed,Object? expiresInSeconds = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? jobId = null,Object? offerId = null,Object? vehicleType = null,Object? pickup = null,Object? dropoff = null,Object? quotedPrice = freezed,Object? expiresInSeconds = null,Object? pickupDistanceKm = freezed,Object? commissionAmount = freezed,}) {
   return _then(ServerMessageJobOffer(
 jobId: null == jobId ? _self.jobId : jobId // ignore: cast_nullable_to_non_nullable
 as String,offerId: null == offerId ? _self.offerId : offerId // ignore: cast_nullable_to_non_nullable
@@ -548,7 +550,9 @@ as VehicleType,pickup: null == pickup ? _self.pickup : pickup // ignore: cast_nu
 as LatLng,dropoff: null == dropoff ? _self.dropoff : dropoff // ignore: cast_nullable_to_non_nullable
 as LatLng,quotedPrice: freezed == quotedPrice ? _self.quotedPrice : quotedPrice // ignore: cast_nullable_to_non_nullable
 as int?,expiresInSeconds: null == expiresInSeconds ? _self.expiresInSeconds : expiresInSeconds // ignore: cast_nullable_to_non_nullable
-as int,
+as int,pickupDistanceKm: freezed == pickupDistanceKm ? _self.pickupDistanceKm : pickupDistanceKm // ignore: cast_nullable_to_non_nullable
+as double?,commissionAmount: freezed == commissionAmount ? _self.commissionAmount : commissionAmount // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

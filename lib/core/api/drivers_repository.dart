@@ -121,25 +121,26 @@ class ApiDriversRepository implements DriversRepository {
         .asyncMap(_toJobOffer);
   }
 
-  /// `JobOfferEvent` (see `backend/app/schemas/job.py`) only carries
-  /// `vehicle_type`/`pickup`/`dropoff`/`quoted_price`/`expires_in_seconds` —
-  /// no addresses, so the offer sheet (which shows `job.pickupAddress`)
-  /// needs a real `Job`. Fetches it the same way `ApiJobsRepository.getJob`
-  /// does rather than depending on that repository directly.
+  /// `JobOfferEvent` (see `backend/app/schemas/job.py`) doesn't carry
+  /// addresses, so the offer sheet (which shows `job.pickupAddress`) needs a
+  /// real `Job`. Fetches it the same way `ApiJobsRepository.getJob` does
+  /// rather than depending on that repository directly.
   Future<JobOffer> _toJobOffer(ServerMessageJobOffer event) async {
     final job = await _fetchJob(event.jobId);
     return JobOffer(
       offerId: event.offerId,
       job: job,
-      // TODO(TRK-4/DSP-2): the WS `job_offer` push doesn't include the
-      // driver's distance to pickup (needs TRK-5's live position) or the
-      // exact commission preview yet. Approximate commission the same way
-      // the dev fake does (`FakeDriversRepository._commissionRate`, 15%)
-      // until the backend enriches the payload or exposes a config lookup.
-      pickupDistanceKm: 0,
-      commissionAmount: event.quotedPrice == null
-          ? 0
-          : ((event.quotedPrice! * 0.15) / 100).round() * 100,
+      // The backend computes both from the offered driver's live Redis geo
+      // position and the job's real commission config (see
+      // `notify_driver_offer` in `backend/app/services/realtime.py`) — but
+      // both are best-effort there (no geo entry, or no quoted_price yet)
+      // and fall back to the same flat-15%-of-quoted-price approximation
+      // `FakeDriversRepository` uses when the real value is missing.
+      pickupDistanceKm: event.pickupDistanceKm ?? 0,
+      commissionAmount: event.commissionAmount ??
+          (event.quotedPrice == null
+              ? 0
+              : ((event.quotedPrice! * 0.15) / 100).round() * 100),
       ttlSeconds: event.expiresInSeconds,
       offeredAt: DateTime.now(),
     );

@@ -36,9 +36,12 @@ sealed class ServerMessage with _$ServerMessage {
   }) = ServerMessageDriverLocation;
 
   /// TRK-3, pushed straight to the offered driver's live connections.
-  /// `quotedPrice`/`expiresInSeconds` mirror `JobOfferEvent`; the payload has
-  /// no pickup distance or commission preview yet (see
-  /// `ApiDriversRepository._toJobOffer` for how those are approximated).
+  /// `quotedPrice`/`expiresInSeconds` mirror `JobOfferEvent`.
+  /// `pickupDistanceKm`/`commissionAmount` are best-effort on the backend
+  /// (`app/services/realtime.py::notify_driver_offer`) — null if the
+  /// offered driver somehow has no live Redis geo position (distance) or
+  /// `quotedPrice` is unset (commission); see `ApiDriversRepository._toJobOffer`
+  /// for the fallback approximation used when either is missing.
   const factory ServerMessage.jobOffer({
     required String jobId,
     required String offerId,
@@ -47,6 +50,8 @@ sealed class ServerMessage with _$ServerMessage {
     required LatLng dropoff,
     int? quotedPrice,
     required int expiresInSeconds,
+    double? pickupDistanceKm,
+    int? commissionAmount,
   }) = ServerMessageJobOffer;
 
   /// Rejected client message. The server field is `detail` (see
@@ -111,6 +116,8 @@ sealed class ServerMessage with _$ServerMessage {
             dropoff: LatLng.fromJson(dropoff),
             quotedPrice: (json['quoted_price'] as num?)?.toInt(),
             expiresInSeconds: expiresIn.toInt(),
+            pickupDistanceKm: (json['pickup_distance_km'] as num?)?.toDouble(),
+            commissionAmount: (json['commission_amount'] as num?)?.toInt(),
           );
         }
       case 'error':
