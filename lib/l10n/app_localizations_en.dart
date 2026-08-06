@@ -367,4 +367,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get becomeDriverSubmitError =>
       'We could not complete registration. Please try again.';
+
+  @override
+  String get cashPaymentPendingBody =>
+      'Confirm you received the cash payment to finish the job.';
+
+  @override
+  String get cashConfirmButton => 'Paid in cash';
+
+  @override
+  String get cashPaymentConfirmError =>
+      'We could not confirm the payment. Please try again.';
+
+  @override
+  String get waitingCashConfirmationBody =>
+      'Waiting for the customer to confirm the cash payment.';
 }

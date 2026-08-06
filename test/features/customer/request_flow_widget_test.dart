@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
+import 'package:the_crane/core/api/jobs_repository.dart';
+import 'package:the_crane/core/models/job.dart';
 import 'package:the_crane/features/customer/request/matching_screen.dart';
 import 'package:the_crane/features/customer/request/request_screen.dart';
 import 'package:the_crane/main.dart';
@@ -88,5 +90,41 @@ void main() {
     expect(find.text('Buscando tu grúa'), findsWidgets);
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('¡Grúa asignada!'), findsOneWidget);
+  });
+
+  testWidgets(
+      'CUS-5: delivered shows the fare and a cash-confirm button that '
+      'completes the job', (tester) async {
+    final jobs = fastFakeJobs();
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+    expect(find.byType(MatchingScreen), findsOneWidget);
+
+    // Drive the driver-owned side of the machine up to `delivered` directly
+    // through the repository, same as the real driver app would. `runAsync`
+    // escapes the test's fake-async zone so these real `Future.delayed`
+    // -backed fake calls actually resolve.
+    await tester.runAsync(() async {
+      final page = await jobs.listHistory(role: JobHistoryRole.customer);
+      var job = page.items.single;
+      while (job.status != JobStatus.delivered) {
+        job = await jobs.updateJobStatus(job.id, job.status.nextDriverStatus!);
+      }
+    });
+    await tester.pump(const Duration(milliseconds: 10)); // watch stream
+
+    expect(find.byKey(const Key('confirmCashPaymentButton')), findsOneWidget);
+    expect(find.text('Entregada'), findsNothing); // no status chip here
+
+    await tester.tap(find.byKey(const Key('confirmCashPaymentButton')));
+    await tester.pump(const Duration(milliseconds: 10)); // confirmDelivery
+
+    expect(find.byKey(const Key('confirmCashPaymentButton')), findsNothing);
+    expect(find.byKey(const Key('rateTripButton')), findsOneWidget);
   });
 }

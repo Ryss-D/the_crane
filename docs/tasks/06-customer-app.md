@@ -22,6 +22,21 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   On `delivered`: fare summary, "paid in cash" confirmation → job `completed` → rating prompt.
   Design: «Entrega y pago en efectivo» (`docs/design/screen-references.md`)
   *AC: completion writes the ledger entry (driver commission) exactly once.*
+  Built: `JobStatus.nextDriverStatus` no longer maps `delivered → completed` — the
+  backend already firmly restricts `confirm-delivery` to the job's customer
+  (`backend/app/services/jobs.py`), so the driver's cycle now stops at
+  `delivered`. `MatchingScreen`'s assigned-driver card shows the fare
+  (`finalPrice ?? quotedPrice`) and a "pagado en efectivo" button once
+  `delivered`, dispatching a new `RequestDeliveryConfirmed` event that calls
+  the new `JobsRepository.confirmDelivery` (real dio `POST
+  /v1/jobs/{id}/confirm-delivery` + fake, both added). The existing
+  `watchJob` subscription then carries the job to `completed` live, and the
+  pre-existing rating-button UI (RAT-2) picks it up unchanged. Also updated
+  `ActiveJobCubit`/`ActiveJobScreen` (DRV-4 side) so the driver app stays
+  consistent with the new state machine — see `07-driver-app.md`. Verified
+  against the fakes (60 tests). Not yet verified: that the backend's
+  `confirm-delivery` actually writes the ledger entry exactly once end to
+  end (LED-1 lands the ledger itself; this task only wires the client call).
 
 - [ ] **CUS-6 — Saved vehicles** *(deps: AUTH-2)*
   CRUD for customer vehicles (type, make, model, plate) to speed repeat requests.

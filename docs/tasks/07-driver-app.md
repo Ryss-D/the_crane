@@ -21,6 +21,16 @@ Flutter driver shell: go available, receive offers, execute the job.
   On delivered: fare + "collected in cash" confirmation; shows commission accrued for this job and new running balance.
   Design: «Cobro en efectivo» (`docs/design/screen-references.md`)
   *AC: balance shown matches ledger after completion.*
+  Built (partial, as part of CUS-5's JobStatus fix): the driver has no
+  "collected in cash" button at all now — only the customer can complete a
+  job (CUS-5's `confirm-delivery`), so `ActiveJobScreen` shows an
+  informational "Esperando que el cliente confirme el pago en efectivo"
+  message once `delivered` instead. `ActiveJobCubit` now subscribes to
+  `JobsRepository.watchJob` (mirrors `RequestBloc._watch`), so the screen
+  flips to the existing "done" UI live once the customer confirms, with no
+  driver action needed. Not yet built: showing the commission accrued for
+  this job and the new running balance in that "done" state — deferred
+  until DRV-5's `DriversRepository.balance()` lands, then wired in.
 
 - [ ] **DRV-5 — Earnings & balance screen** *(deps: LED-1)*
   Completed jobs list, cash totals per day/week, commission balance owed, settlement instructions (static text until PAY-* lands).

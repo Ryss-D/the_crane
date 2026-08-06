@@ -72,6 +72,11 @@ final class RequestJobUpdated extends RequestEvent {
   final Job job;
 }
 
+/// CUS-5: the customer confirms cash payment on a `delivered` job.
+final class RequestDeliveryConfirmed extends RequestEvent {
+  const RequestDeliveryConfirmed();
+}
+
 /// Drives the CUS-1/2/3 flow: inputs → quote → confirm → matching →
 /// assigned / no-drivers. Pure bloc, fully testable without widgets.
 class RequestBloc extends Bloc<RequestEvent, RequestState> {
@@ -107,6 +112,7 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
     on<RequestJobUpdated>((event, emit) {
       emit(state.copyWith(activeJob: event.job));
     });
+    on<RequestDeliveryConfirmed>((event, emit) => _confirmDelivery(emit));
   }
 
   final JobsRepository _repo;
@@ -149,6 +155,25 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
       _watch(job.id);
     } catch (_) {
       emit(state.copyWith(isCreatingJob: false, createJobFailed: true));
+    }
+  }
+
+  Future<void> _confirmDelivery(Emitter<RequestState> emit) async {
+    final job = state.activeJob;
+    if (job == null ||
+        job.status != JobStatus.delivered ||
+        state.isConfirmingDelivery) {
+      return;
+    }
+    emit(state.copyWith(isConfirmingDelivery: true, confirmDeliveryFailed: false));
+    try {
+      final updated = await _repo.confirmDelivery(job.id);
+      // The `watchJob` subscription above will likely deliver the same
+      // snapshot too (fake broadcast / WS push) — emitting it here as well
+      // means the UI doesn't wait on that round trip to see `completed`.
+      emit(state.copyWith(activeJob: updated, isConfirmingDelivery: false));
+    } catch (_) {
+      emit(state.copyWith(isConfirmingDelivery: false, confirmDeliveryFailed: true));
     }
   }
 

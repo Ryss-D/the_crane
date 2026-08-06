@@ -123,6 +123,18 @@ class ActiveJobScreen extends StatelessWidget {
                   key: const Key('advanceStatusButton'),
                   onPressed: cubit.advance,
                   child: Text(next.advanceActionLabel(l10n)),
+                )
+              else if (job.status == JobStatus.delivered)
+                // CUS-5/DRV-4: completion is the customer's cash-payment
+                // confirmation (`confirm-delivery`) — the driver has no
+                // action here; `ActiveJobCubit`'s `watchJob` subscription
+                // flips this screen to the `done` state above live, once
+                // the customer confirms.
+                Text(
+                  l10n.waitingCashConfirmationBody,
+                  key: const Key('waitingCashConfirmationText'),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyLarge,
                 ),
             ],
           ),

@@ -775,6 +775,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No pudimos completar el registro. Intenta de nuevo.'**
   String get becomeDriverSubmitError;
+
+  /// CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation
+  ///
+  /// In es, this message translates to:
+  /// **'Confirma que recibiste el pago en efectivo para finalizar el servicio.'**
+  String get cashPaymentPendingBody;
+
+  /// CUS-5: confirms cash payment was received, completing the job
+  ///
+  /// In es, this message translates to:
+  /// **'Pagado en efectivo'**
+  String get cashConfirmButton;
+
+  /// CUS-5: shown when confirm-delivery fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos confirmar el pago. Intenta de nuevo.'**
+  String get cashPaymentConfirmError;
+
+  /// DRV-4: shown to the driver once a job is delivered, since only the customer can complete it
+  ///
+  /// In es, this message translates to:
+  /// **'Esperando que el cliente confirme el pago en efectivo.'**
+  String get waitingCashConfirmationBody;
 }
 
 class _AppLocalizationsDelegate

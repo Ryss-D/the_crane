@@ -61,6 +61,12 @@ abstract interface class JobsRepository {
   /// machine (JOB-6).
   Future<Job> updateJobStatus(String id, JobStatus status);
 
+  /// `POST /v1/jobs/{id}/confirm-delivery` (CUS-5/LED-1) — the job's
+  /// customer confirms cash payment on a `delivered` job, completing it and
+  /// (server-side) writing the driver's commission ledger entry. Only the
+  /// job's customer may call this (`backend/app/services/jobs.py`).
+  Future<Job> confirmDelivery(String id);
+
   /// `POST /v1/jobs/{id}/rating` (RAT-1) — rate the other side of a
   /// completed job. `stars` is 1-5; each side may rate once per job.
   Future<void> submitRating(String jobId, {required int stars, String? comment});
@@ -222,6 +228,13 @@ class ApiJobsRepository implements JobsRepository {
       '/v1/jobs/$id/status',
       data: {'status': status.wire},
     );
+    return Job.fromJson(res.data!);
+  }
+
+  @override
+  Future<Job> confirmDelivery(String id) async {
+    final res =
+        await _dio.post<Map<String, dynamic>>('/v1/jobs/$id/confirm-delivery');
     return Job.fromJson(res.data!);
   }
 

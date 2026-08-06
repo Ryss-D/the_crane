@@ -16,6 +16,12 @@ import '../../../core/ws/crane_socket.dart';
 /// one of the backend's "active driver" statuses (mirrors
 /// `ACTIVE_DRIVER_STATUSES` in `backend/app/api/ws.py`), this also pushes a
 /// location fix over the WebSocket every [locationInterval] (TRK-2/TRK-4).
+///
+/// DRV-4: also subscribes to `JobsRepository.watchJob` (same pattern as
+/// `RequestBloc._watch`) so a `delivered` job flipping to `completed` once
+/// the *customer* confirms cash payment (CUS-5's `confirmDelivery` — the
+/// driver has no equivalent action) is reflected here live, not just after
+/// the driver's own `advance()` calls.
 class ActiveJobCubit extends Cubit<Job?> {
   ActiveJobCubit({
     required JobsRepository jobsRepository,
@@ -38,6 +44,7 @@ class ActiveJobCubit extends Cubit<Job?> {
   Timer? _locationTimer;
   StreamSubscription<LatLng>? _positionSub;
   LatLng? _lastFix;
+  StreamSubscription<Job>? _jobSub;
 
   /// Statuses in which the backend accepts a driver's WS `location` message
   /// (mirrors `ACTIVE_DRIVER_STATUSES` server-side).
@@ -53,6 +60,20 @@ class ActiveJobCubit extends Cubit<Job?> {
   void start(Job job) {
     emit(job);
     _syncLocationTimer(job);
+    _watch(job.id);
+  }
+
+  /// Mirrors `RequestBloc._watch`: (re)subscribes to the live job stream so
+  /// this cubit reflects changes the driver didn't cause itself — chiefly
+  /// the customer's CUS-5 `confirmDelivery` flipping `delivered` →
+  /// `completed`.
+  void _watch(String jobId) {
+    _jobSub?.cancel();
+    _jobSub = _repo.watchJob(jobId).listen((job) {
+      if (isClosed) return;
+      emit(job);
+      _syncLocationTimer(job);
+    });
   }
 
   /// Advances to the next driver status; no-op when the job is terminal.
@@ -107,11 +128,14 @@ class ActiveJobCubit extends Cubit<Job?> {
   void clear() {
     emit(null);
     _stopLocationTracking();
+    _jobSub?.cancel();
+    _jobSub = null;
   }
 
   @override
   Future<void> close() {
     _stopLocationTracking();
+    _jobSub?.cancel();
     return super.close();
   }
 }

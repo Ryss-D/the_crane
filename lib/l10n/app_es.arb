@@ -481,5 +481,21 @@
   "becomeDriverSubmitError": "No pudimos completar el registro. Intenta de nuevo.",
   "@becomeDriverSubmitError": {
     "description": "Shown when driver registration fails"
+  },
+  "cashPaymentPendingBody": "Confirma que recibiste el pago en efectivo para finalizar el servicio.",
+  "@cashPaymentPendingBody": {
+    "description": "CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation"
+  },
+  "cashConfirmButton": "Pagado en efectivo",
+  "@cashConfirmButton": {
+    "description": "CUS-5: confirms cash payment was received, completing the job"
+  },
+  "cashPaymentConfirmError": "No pudimos confirmar el pago. Intenta de nuevo.",
+  "@cashPaymentConfirmError": {
+    "description": "CUS-5: shown when confirm-delivery fails"
+  },
+  "waitingCashConfirmationBody": "Esperando que el cliente confirme el pago en efectivo.",
+  "@waitingCashConfirmationBody": {
+    "description": "DRV-4: shown to the driver once a job is delivered, since only the customer can complete it"
   }
 }

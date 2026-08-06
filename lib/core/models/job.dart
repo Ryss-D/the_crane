@@ -44,17 +44,18 @@ extension JobStatusX on JobStatus {
   /// The next state the assigned driver advances to from this one, or null
   /// when the driver has no forward action.
   ///
-  /// `delivered → completed` is included so the DRV-3 skeleton can cycle the
-  /// whole machine locally.
-  /// TODO(CUS-5): completion becomes the customer's cash confirmation once
-  /// the ledger lands; remove it from the driver cycle then.
+  /// `delivered` has no next value here (CUS-5/LED-1): the backend firmly
+  /// restricts `delivered → completed` to the job's customer alone
+  /// (`confirm-delivery`, cash-payment confirmation) — the driver's last
+  /// self-service action is reaching `delivered`, after which the UI shows
+  /// an informational "waiting for the customer to confirm" state instead
+  /// of an advance button (see `ActiveJobScreen`).
   JobStatus? get nextDriverStatus => switch (this) {
         JobStatus.assigned => JobStatus.enRoutePickup,
         JobStatus.enRoutePickup => JobStatus.arrivedPickup,
         JobStatus.arrivedPickup => JobStatus.loading,
         JobStatus.loading => JobStatus.inTransit,
         JobStatus.inTransit => JobStatus.delivered,
-        JobStatus.delivered => JobStatus.completed,
         _ => null,
       };
 }

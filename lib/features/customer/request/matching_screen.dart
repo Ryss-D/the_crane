@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../shared/labels.dart';
 import '../../shared/rating/rating_dialog.dart';
 import 'request_bloc.dart';
+import 'request_state.dart';
 
 /// CUS-3 skeleton — matching outcome states: searching, assigned driver
 /// card, no-drivers with retry.
@@ -142,12 +143,52 @@ class _AssignedView extends StatelessWidget {
           ),
         const SizedBox(height: 8),
         Text(
-          formatCop(job.quotedPrice),
+          formatCop(job.finalPrice ?? job.quotedPrice),
           style: theme.textTheme.titleLarge
               ?.copyWith(fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
+        if (job.status == JobStatus.delivered) ...[
+          // CUS-5: only the customer can complete a delivered job (cash
+          // confirmation writes the driver's commission ledger entry
+          // server-side) — the driver has no equivalent button.
+          Text(l10n.cashPaymentPendingBody, textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          BlocBuilder<RequestBloc, RequestState>(
+            buildWhen: (previous, current) =>
+                previous.isConfirmingDelivery != current.isConfirmingDelivery ||
+                previous.confirmDeliveryFailed != current.confirmDeliveryFailed,
+            builder: (context, state) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (state.confirmDeliveryFailed) ...[
+                  Text(
+                    l10n.cashPaymentConfirmError,
+                    style: TextStyle(color: theme.colorScheme.error),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                FilledButton(
+                  key: const Key('confirmCashPaymentButton'),
+                  onPressed: state.isConfirmingDelivery
+                      ? null
+                      : () => context
+                          .read<RequestBloc>()
+                          .add(const RequestDeliveryConfirmed()),
+                  child: state.isConfirmingDelivery
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.cashConfirmButton),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         if (job.status == JobStatus.completed) ...[
           // RAT-2: skippable — tapping "back to home" directly leaves the
           // trip unrated.
