@@ -62,6 +62,10 @@ export const strings = {
     etaLabel: 'ETA',
     publicNote: 'Vista pública de solo lectura — sin iniciar sesión.',
     pollNote: 'Se actualiza automáticamente cada 10 segundos.',
+    deliveredTitle: 'Tu grúa llegó a su destino',
+    confirmCash: 'Pagado en efectivo',
+    confirming: 'Confirmando…',
+    confirmError: 'No pudimos confirmar el pago. Intenta de nuevo.',
   },
 
   rating: {

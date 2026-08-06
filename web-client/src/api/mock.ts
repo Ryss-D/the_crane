@@ -41,7 +41,8 @@ const MOCK_DRIVER: Driver = {
 interface MockJobRecord {
   job: Job;
   createdAtMs: number;
-  /** When set, the job never progresses (used for the seeded demo job). */
+  /** When set, the job never progresses past this (used for the seeded demo
+   * jobs, and by confirmDelivery() to freeze a real job at `completed`). */
   frozenStatus?: JobStatus;
 }
 
@@ -85,6 +86,20 @@ export class MockApi implements CraneApi {
       createdAtMs: Date.now(),
       frozenStatus: 'en_route_pickup',
     });
+
+    // Second fixed demo job, frozen at `delivered` so the cash-confirmation
+    // flow (WEB-3/CUS-5) is reachable without waiting on real elapsed time.
+    const deliveredJob: Job = {
+      ...job,
+      id: 'demo-delivered',
+      status: 'delivered',
+      share_token: 'demo-delivered-token',
+    };
+    this.jobs.set(deliveredJob.id, {
+      job: deliveredJob,
+      createdAtMs: Date.now(),
+      frozenStatus: 'delivered',
+    });
   }
 
   private computeStatus(rec: MockJobRecord): JobStatus {
@@ -94,7 +109,9 @@ export class MockApi implements CraneApi {
     for (const [s, at] of PROGRESSION) {
       if (elapsedS >= at) status = s;
     }
-    return status;
+    // Time alone never reaches `completed` — only confirmDelivery() does
+    // (mirrors the backend restricting completion to the customer).
+    return status === 'completed' ? 'delivered' : status;
   }
 
   private materialize(rec: MockJobRecord): Job {
@@ -151,6 +168,17 @@ export class MockApi implements CraneApi {
     await this.delay();
     const rec = this.jobs.get(id);
     if (!rec) throw new ApiError(404, `job ${id} not found`);
+    return this.materialize(rec);
+  }
+
+  async confirmDelivery(id: string): Promise<Job> {
+    await this.delay();
+    const rec = this.jobs.get(id);
+    if (!rec) throw new ApiError(404, `job ${id} not found`);
+    if (this.computeStatus(rec) !== 'delivered') {
+      throw new ApiError(409, 'Delivery can only be confirmed once the job is delivered');
+    }
+    rec.frozenStatus = 'completed';
     return this.materialize(rec);
   }
 

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api';
 import { formatCOP } from '../../i18n/format';
 import { strings } from '../../i18n/strings';
 import { useActiveJobStore } from '../../store/activeJob';
-import { Card } from '../../ui';
+import { Button, Card } from '../../ui';
 import { POLL_INTERVAL_MS, useJobSocket } from '../../ws/useJobSocket';
 import { RatingStub } from '../rating/RatingStub';
 import { DriverCard } from './DriverCard';
@@ -15,6 +15,7 @@ export function TrackingPage() {
   const { id = '' } = useParams<'id'>();
   const updateStatus = useActiveJobStore((s) => s.updateStatus);
   const [copied, setCopied] = useState(false);
+  const queryClient = useQueryClient();
 
   // TODO(WEB-3/TRK-1): live WS updates; polling below is the permanent fallback.
   useJobSocket(id);
@@ -24,6 +25,11 @@ export function TrackingPage() {
     queryFn: () => api.getJob(id),
     refetchInterval: POLL_INTERVAL_MS,
     enabled: id.length > 0,
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: () => api.confirmDelivery(id),
+    onSuccess: (updated) => queryClient.setQueryData(['job', id], updated),
   });
 
   const job = jobQuery.data;
@@ -98,6 +104,26 @@ export function TrackingPage() {
         <StatusTimeline status={job.status} />
         <p className="text-xs text-slate-600">{strings.tracking.pollNote}</p>
       </Card>
+
+      {job.status === 'delivered' && (
+        <Card className="flex flex-col gap-3 text-center">
+          <h2 className="text-base font-bold text-slate-100">{strings.tracking.deliveredTitle}</h2>
+          <p className="text-sm text-slate-300">
+            {strings.tracking.priceLabel}:{' '}
+            <span className="font-bold text-amber-400">
+              {formatCOP(job.final_price ?? job.quoted_price)}
+            </span>
+          </p>
+          <Button onClick={() => confirmMutation.mutate()} disabled={confirmMutation.isPending}>
+            {confirmMutation.isPending ? strings.tracking.confirming : strings.tracking.confirmCash}
+          </Button>
+          {confirmMutation.isError && (
+            <p role="alert" className="text-sm text-rose-400">
+              {strings.tracking.confirmError}
+            </p>
+          )}
+        </Card>
+      )}
 
       {job.status === 'completed' && <RatingStub />}
     </div>

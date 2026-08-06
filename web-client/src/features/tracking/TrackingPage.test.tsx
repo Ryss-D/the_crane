@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { AppRoutes, AppShell } from '../../App';
@@ -38,6 +39,23 @@ describe('tracking page (WEB-3 skeleton)', () => {
 
     // Driver is assigned → driver card shows.
     expect(await screen.findByTestId('driver-card')).toHaveTextContent('Carlos Restrepo');
+  });
+
+  it('WEB-3/CUS-5: delivered shows the fare and a cash-confirm button that completes the job', async () => {
+    const user = userEvent.setup();
+    renderAt('/jobs/demo-delivered');
+
+    expect(
+      await screen.findByRole('heading', { name: strings.tracking.deliveredTitle }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: strings.tracking.confirmCash }));
+
+    // Completing surfaces the rating prompt and drops the confirm button.
+    await screen.findByRole('heading', { name: strings.rating.title });
+    expect(
+      screen.queryByRole('button', { name: strings.tracking.confirmCash }),
+    ).not.toBeInTheDocument();
   });
 
   it('renders the public share-track page from a token, without auth', async () => {

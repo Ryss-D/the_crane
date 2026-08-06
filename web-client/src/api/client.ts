@@ -9,6 +9,9 @@ export interface CraneApi {
   quote(req: QuoteRequest): Promise<Quote>;
   createJob(req: CreateJobRequest): Promise<Job>;
   getJob(id: string): Promise<Job>;
+  /** POST /v1/jobs/{id}/confirm-delivery (CUS-5/LED-1) — customer confirms
+   * cash payment; only valid from `delivered`, moves the job to `completed`. */
+  confirmDelivery(id: string): Promise<Job>;
   /** Public share-track endpoint — no auth. */
   getTrack(token: string): Promise<TrackInfo>;
 }
@@ -63,6 +66,10 @@ export class HttpApi implements CraneApi {
 
   getJob(id: string): Promise<Job> {
     return this.request('GET', `/v1/jobs/${encodeURIComponent(id)}`);
+  }
+
+  confirmDelivery(id: string): Promise<Job> {
+    return this.request('POST', `/v1/jobs/${encodeURIComponent(id)}/confirm-delivery`);
   }
 
   getTrack(token: string): Promise<TrackInfo> {
