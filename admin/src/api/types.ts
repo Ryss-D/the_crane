@@ -238,3 +238,59 @@ export interface SettleRequest {
 /** POST /v1/admin/ledger/{id}/settle returns the created entry directly —
  * no wrapper, no fresh balance (refetch ['ledger'] for that). */
 export type SettleResponse = LedgerEntry;
+
+// ---------------------------------------------------------------------------
+// Fleets & owners (ADM-7) — matches app/schemas/fleet.py exactly
+// ---------------------------------------------------------------------------
+
+/** GET /v1/admin/fleets row — matches AdminFleetListItem exactly. Amounts are
+ * COP, integer pesos, same convention as LedgerEntry/DriverLedgerSummary. */
+export interface AdminFleetListItem {
+  id: string;
+  owner_user_id: string;
+  owner_name: string | null;
+  name: string;
+  truck_count: number;
+  owed_balance: number;
+  created_at: string;
+}
+
+/** One member driver's contribution to a fleet's consolidated balance —
+ * matches FleetMemberBalance exactly. */
+export interface FleetMemberBalance {
+  driver_id: string;
+  name: string | null;
+  owed_balance: number;
+}
+
+/** GET /v1/admin/fleets/{id}/balance — matches FleetBalanceRead exactly.
+ * `owed_balance` is the consolidated total; always equals the sum of
+ * `members[].owed_balance` (ADM-7 AC). */
+export interface FleetBalanceRead {
+  fleet_id: string;
+  owed_balance: number;
+  members: FleetMemberBalance[];
+}
+
+export interface FleetSettleRequest {
+  /** COP amount being recorded as settled for the whole fleet, apportioned
+   * across member drivers proportional to their current owed balance. */
+  amount: number;
+  note?: string;
+}
+
+/** One driver's apportioned share of a fleet settlement — matches
+ * FleetSettlementEntry exactly. */
+export interface FleetSettlementEntry {
+  driver_id: string;
+  ledger_entry_id: string;
+  amount: number;
+}
+
+/** POST /v1/admin/fleets/{id}/settle response — matches FleetSettleResponse
+ * exactly: the total plus the apportionment breakdown, shown as confirmation. */
+export interface FleetSettleResponse {
+  fleet_id: string;
+  total_amount: number;
+  entries: FleetSettlementEntry[];
+}

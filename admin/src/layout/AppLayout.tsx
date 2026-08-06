@@ -8,6 +8,7 @@ const navItems = [
   { to: '/drivers', label: strings.nav.drivers, end: false },
   { to: '/operations', label: strings.nav.operations, end: false },
   { to: '/ledger', label: strings.nav.ledger, end: false },
+  { to: '/fleets', label: strings.nav.fleets, end: false },
 ] as const;
 
 function Sidebar() {

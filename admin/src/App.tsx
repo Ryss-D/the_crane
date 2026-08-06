@@ -5,6 +5,7 @@ import { LoginPage } from './features/auth/LoginPage';
 import { ConfigPage } from './features/config/ConfigPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { DriversPage } from './features/drivers/DriversPage';
+import { FleetsPage } from './features/fleets/FleetsPage';
 import { JobDetailPage } from './features/operations/JobDetailPage';
 import { OperationsPage } from './features/operations/OperationsPage';
 import { LedgerPage } from './features/ledger/LedgerPage';
@@ -29,6 +30,7 @@ export function AppRoutes() {
         <Route path="/operations" element={<OperationsPage />} />
         <Route path="/operations/:id" element={<JobDetailPage />} />
         <Route path="/ledger" element={<LedgerPage />} />
+        <Route path="/fleets" element={<FleetsPage />} />
       </Route>
     </Routes>
   );

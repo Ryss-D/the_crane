@@ -1,9 +1,13 @@
 import type {
+  AdminFleetListItem,
   ConfigKey,
   ConfigResponse,
   Driver,
   DriverFilters,
   DriverLedgerSummary,
+  FleetBalanceRead,
+  FleetSettleRequest,
+  FleetSettleResponse,
   Job,
   JobDetail,
   JobFilters,
@@ -53,6 +57,12 @@ export interface CraneAdminApi {
   getLedger(): Promise<DriverLedgerSummary[]>;
   getLedgerEntries(driverId: string): Promise<LedgerEntry[]>;
   settleLedger(driverId: string, body: SettleRequest): Promise<SettleResponse>;
+
+  /** GET /v1/admin/fleets — a plain list, no pagination envelope (unlike
+   * drivers/jobs/ledger): fleets are expected to stay few for MVP scale. */
+  getFleets(): Promise<AdminFleetListItem[]>;
+  getFleetBalance(fleetId: string): Promise<FleetBalanceRead>;
+  settleFleet(fleetId: string, body: FleetSettleRequest): Promise<FleetSettleResponse>;
 }
 
 export class ApiError extends Error {
@@ -163,6 +173,20 @@ export class HttpApi implements CraneAdminApi {
 
   settleLedger(driverId: string, body: SettleRequest): Promise<SettleResponse> {
     return this.request('POST', `/v1/admin/ledger/${encodeURIComponent(driverId)}/settle`, {
+      body,
+    });
+  }
+
+  getFleets(): Promise<AdminFleetListItem[]> {
+    return this.request('GET', '/v1/admin/fleets');
+  }
+
+  getFleetBalance(fleetId: string): Promise<FleetBalanceRead> {
+    return this.request('GET', `/v1/admin/fleets/${encodeURIComponent(fleetId)}/balance`);
+  }
+
+  settleFleet(fleetId: string, body: FleetSettleRequest): Promise<FleetSettleResponse> {
+    return this.request('POST', `/v1/admin/fleets/${encodeURIComponent(fleetId)}/settle`, {
       body,
     });
   }

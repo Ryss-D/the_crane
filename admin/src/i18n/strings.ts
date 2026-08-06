@@ -22,6 +22,7 @@ export const strings = {
     drivers: 'Conductores',
     operations: 'Operaciones',
     ledger: 'Ledger',
+    fleets: 'Flotas',
   },
 
   dashboard: {
@@ -156,6 +157,36 @@ export const strings = {
       payout: 'Liquidación',
       adjustment: 'Ajuste',
     },
+  },
+
+  fleets: {
+    title: 'Flotas y dueños de grúas',
+    columns: {
+      owner: 'Dueño',
+      fleet: 'Flota',
+      trucks: 'Grúas',
+      balance: 'Saldo',
+      actions: 'Acciones',
+    },
+    noFleets: 'No hay flotas registradas.',
+    membersTitle: 'Conductores de la flota',
+    memberColumns: {
+      driver: 'Conductor',
+      balance: 'Saldo',
+    },
+    settle: 'Liquidar flota',
+    settleTitle: 'Liquidar flota',
+    amountLabel: 'Monto (COP)',
+    noteLabel: 'Nota (opcional)',
+    confirm: 'Confirmar',
+    cancel: 'Cancelar',
+    settleError: 'No se pudo registrar la liquidación de la flota.',
+    settleResultTitle: 'Liquidación registrada',
+    settleResultTotal: 'Total liquidado',
+    settleResultBreakdown: 'Distribución por conductor',
+    // Not "Cerrar" — the Modal's own X button already has that aria-label,
+    // and both would resolve to the same accessible name/role otherwise.
+    close: 'Entendido',
   },
 
   vehicleTypes: {

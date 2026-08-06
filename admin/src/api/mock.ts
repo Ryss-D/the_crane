@@ -1,12 +1,18 @@
 import type { CraneAdminApi } from './client';
 import { ApiError } from './client';
 import type {
+  AdminFleetListItem,
   ConfigAuditEntry,
   ConfigKey,
   ConfigResponse,
   Driver,
   DriverFilters,
   DriverLedgerSummary,
+  FleetBalanceRead,
+  FleetMemberBalance,
+  FleetSettleRequest,
+  FleetSettleResponse,
+  FleetSettlementEntry,
   Job,
   JobDetail,
   JobFilters,
@@ -46,8 +52,14 @@ const DEFAULT_CONFIG: PlatformConfig = {
 };
 
 /** One `Truck` per driver — matches AdminDriverRead's nested shape. */
-function truck(id: string, plate: string, type: Truck['type'], capacity: TruckCapacity): Truck {
-  return { id, plate, type, capacity, driver_id: id, fleet_id: null };
+function truck(
+  id: string,
+  plate: string,
+  type: Truck['type'],
+  capacity: TruckCapacity,
+  fleetId: string | null = null,
+): Truck {
+  return { id, plate, type, capacity, driver_id: id, fleet_id: fleetId };
 }
 
 /** Seed drivers — ~8, spanning verification/status/blocked/balance states.
@@ -63,7 +75,7 @@ function seedDrivers(): Driver[] {
       email: 'carlos.restrepo@example.com',
       status: 'available',
       verified: true,
-      truck: truck('truck_1', 'TKX-482', 'flatbed', 'both'),
+      truck: truck('truck_1', 'TKX-482', 'flatbed', 'both', 'fleet_1'),
       rating_avg: 4.8,
       owed_balance: 45000,
       license_url: '#',
@@ -76,7 +88,7 @@ function seedDrivers(): Driver[] {
       email: 'andrea.munoz@example.com',
       status: 'on_job',
       verified: true,
-      truck: truck('truck_2', 'WQP-119', 'standard', 'car'),
+      truck: truck('truck_2', 'WQP-119', 'standard', 'car', 'fleet_2'),
       rating_avg: 4.6,
       owed_balance: 82000,
       license_url: '#',
@@ -89,7 +101,7 @@ function seedDrivers(): Driver[] {
       email: 'jorge.salazar@example.com',
       status: 'offline',
       verified: true,
-      truck: truck('truck_3', 'MTX-733', 'moto_only', 'moto'),
+      truck: truck('truck_3', 'MTX-733', 'moto_only', 'moto', 'fleet_1'),
       rating_avg: 4.4,
       owed_balance: 165000,
       license_url: '#',
@@ -141,7 +153,7 @@ function seedDrivers(): Driver[] {
       email: 'esteban.cardona@example.com',
       status: 'available',
       verified: true,
-      truck: truck('truck_7', 'NCV-220', 'moto_only', 'moto'),
+      truck: truck('truck_7', 'NCV-220', 'moto_only', 'moto', 'fleet_1'),
       rating_avg: 4.9,
       owed_balance: 12000,
       license_url: '#',
@@ -154,7 +166,7 @@ function seedDrivers(): Driver[] {
       email: 'natalia.zapata@example.com',
       status: 'on_job',
       verified: true,
-      truck: truck('truck_8', 'SLR-884', 'standard', 'car'),
+      truck: truck('truck_8', 'SLR-884', 'standard', 'car', 'fleet_2'),
       rating_avg: 4.7,
       owed_balance: 95000,
       license_url: '#',
@@ -616,6 +628,68 @@ function seedConfigHistory(config: PlatformConfig): ConfigAuditEntry[] {
   ];
 }
 
+/** Mock-only fleet record — not part of the wire contract (AdminFleetListItem
+ * is derived from this plus live driver/ledger state, same as the backend
+ * derives it from `fleets` + `trucks` + ledger rows). */
+interface FleetSeed {
+  id: string;
+  owner_user_id: string;
+  owner_name: string | null;
+  name: string;
+  created_at: string;
+}
+
+/** Seed fleets — 2 fleets, member drivers linked via their truck's fleet_id
+ * (set on the seed drivers above): fleet_1 has 3 members (drv_1, drv_3,
+ * drv_7), fleet_2 has 2 (drv_2, drv_8). Owners are distinct users from their
+ * driver members, matching FLT-1's model (a fleet_owner role, not a driver). */
+function seedFleets(): FleetSeed[] {
+  return [
+    {
+      id: 'fleet_1',
+      owner_user_id: 'owner_1',
+      owner_name: 'Ricardo Restrepo Holdings',
+      name: 'Flota Restrepo',
+      created_at: daysAgo(60),
+    },
+    {
+      id: 'fleet_2',
+      owner_user_id: 'owner_2',
+      owner_name: 'Grúas del Valle S.A.S.',
+      name: 'Flota del Valle',
+      created_at: daysAgo(35),
+    },
+  ];
+}
+
+/** Largest-remainder apportionment, mirroring the backend's
+ * `app/services/ledger.py::apportion` exactly: shares proportional to each
+ * driver's current owed balance, rounded so they always sum to `total`. If
+ * every balance is zero, split as evenly as possible instead of by-zero. */
+function apportion(total: number, weights: number[]): number[] {
+  const sumWeights = weights.reduce((s, w) => s + w, 0);
+  if (sumWeights <= 0) {
+    const base = Math.floor(total / weights.length);
+    const shares = weights.map(() => base);
+    let remainder = total - base * weights.length;
+    for (let i = 0; remainder > 0; i++, remainder--) {
+      const idx = i % shares.length;
+      shares[idx] = (shares[idx] ?? 0) + 1;
+    }
+    return shares;
+  }
+  const raw = weights.map((w) => (total * w) / sumWeights);
+  const floors = raw.map(Math.floor);
+  const remainder = total - floors.reduce((s, f) => s + f, 0);
+  const order = raw.map((v, i) => ({ i, frac: v - Math.floor(v) })).sort((a, b) => b.frac - a.frac);
+  const shares = [...floors];
+  for (let k = 0; k < remainder; k++) {
+    const idx = order[k]?.i;
+    if (idx !== undefined) shares[idx] = (shares[idx] ?? 0) + 1;
+  }
+  return shares;
+}
+
 /**
  * In-memory fake of the `/v1/admin/*` router (ADM-2, built concurrently — see
  * src/api/client.ts header comment). Seeded with realistic drivers/jobs/ledger
@@ -627,6 +701,7 @@ export class MockApi implements CraneAdminApi {
   private readonly drivers = new Map<string, Driver>(seedDrivers().map((d) => [d.user_id, d]));
   private readonly jobs = new Map<string, JobDetail>(seedJobs().map((j) => [j.id, j]));
   private ledger: LedgerEntry[] = seedLedgerEntries();
+  private readonly fleets = new Map<string, FleetSeed>(seedFleets().map((f) => [f.id, f]));
 
   constructor(private readonly latencyMs: number = 350) {}
 
@@ -787,5 +862,75 @@ export class MockApi implements CraneAdminApi {
     );
     this.ledger = [entry, ...this.ledger];
     return clone(entry);
+  }
+
+  // -- Fleets & owners (ADM-7) -------------------------------------------------
+
+  private requireFleet(id: string): FleetSeed {
+    const fleet = this.fleets.get(id);
+    if (!fleet) throw new ApiError(404, `fleet ${id} not found`);
+    return fleet;
+  }
+
+  /** Member drivers of a fleet — found via their truck's fleet_id, same
+   * "no stored column" approach FLT-2's backend uses. */
+  private fleetMembers(fleetId: string): Driver[] {
+    return [...this.drivers.values()].filter((d) => d.truck?.fleet_id === fleetId);
+  }
+
+  async getFleets(): Promise<AdminFleetListItem[]> {
+    await this.delay();
+    return clone(
+      [...this.fleets.values()].map((f) => {
+        const members = this.fleetMembers(f.id);
+        return {
+          id: f.id,
+          owner_user_id: f.owner_user_id,
+          owner_name: f.owner_name,
+          name: f.name,
+          truck_count: members.length,
+          owed_balance: members.reduce((sum, d) => sum + this.driverBalance(d.user_id), 0),
+          created_at: f.created_at,
+        };
+      }),
+    );
+  }
+
+  async getFleetBalance(fleetId: string): Promise<FleetBalanceRead> {
+    await this.delay();
+    const fleet = this.requireFleet(fleetId);
+    const members = this.fleetMembers(fleet.id);
+    const memberBalances: FleetMemberBalance[] = members.map((d) => ({
+      driver_id: d.user_id,
+      name: d.name,
+      owed_balance: this.driverBalance(d.user_id),
+    }));
+    return clone({
+      fleet_id: fleet.id,
+      owed_balance: memberBalances.reduce((sum, m) => sum + m.owed_balance, 0),
+      members: memberBalances,
+    });
+  }
+
+  async settleFleet(fleetId: string, body: FleetSettleRequest): Promise<FleetSettleResponse> {
+    await this.delay();
+    const fleet = this.requireFleet(fleetId);
+    if (body.amount <= 0) throw new ApiError(422, 'amount must be positive');
+    const members = this.fleetMembers(fleet.id);
+    if (members.length === 0) {
+      throw new ApiError(409, `fleet ${fleetId} has no drivers to settle`);
+    }
+    const balances = members.map((d) => this.driverBalance(d.user_id));
+    const shares = apportion(body.amount, balances);
+    const entries: FleetSettlementEntry[] = [];
+    const newLedgerRows: LedgerEntry[] = [];
+    members.forEach((driver, i) => {
+      const share = shares[i] ?? 0;
+      const row = ledgerEntry(driver.user_id, 'payout', share, 0, null, body.note ?? null);
+      newLedgerRows.push(row);
+      entries.push({ driver_id: driver.user_id, ledger_entry_id: row.id, amount: share });
+    });
+    this.ledger = [...newLedgerRows, ...this.ledger];
+    return clone({ fleet_id: fleet.id, total_amount: body.amount, entries });
   }
 }
