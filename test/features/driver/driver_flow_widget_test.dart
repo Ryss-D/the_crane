@@ -113,6 +113,11 @@ void main() {
     expect(find.text('Completada'), findsOneWidget);
     expect(find.text('Servicio finalizado. ¡Buen trabajo!'), findsOneWidget);
 
+    // DRV-4 AC: commission for this job + the fresh running balance.
+    expect(find.byKey(const Key('jobCommissionAmount')), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 30)); // balance() fetch
+    expect(find.byKey(const Key('runningBalanceAmount')), findsOneWidget);
+
     // Back home, ready for the next job.
     await tester.ensureVisible(find.byKey(const Key('backToHomeButton')));
     await tester.tap(find.byKey(const Key('backToHomeButton')));

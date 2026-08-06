@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/api/drivers_repository.dart';
+import '../../../core/models/driver_balance.dart';
 import '../../../core/models/job.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../l10n/app_localizations.dart';
@@ -102,6 +104,11 @@ class ActiveJobScreen extends StatelessWidget {
                   style: theme.textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 12),
+                // DRV-4 AC: shows commission accrued for this job and the
+                // new running balance once the customer's cash-payment
+                // confirmation (CUS-5) completes it.
+                _JobCommissionSection(job: job),
+                const SizedBox(height: 12),
                 // RAT-2: skippable — tapping "back to home" directly, below,
                 // leaves the trip unrated.
                 OutlinedButton(
@@ -140,6 +147,71 @@ class ActiveJobScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// DRV-4 — once a job is `completed`, shows the commission earned on it
+/// plus the driver's fresh running balance (DRV-5's `DriversRepository
+/// .balance`).
+class _JobCommissionSection extends StatefulWidget {
+  const _JobCommissionSection({required this.job});
+
+  final Job job;
+
+  @override
+  State<_JobCommissionSection> createState() => _JobCommissionSectionState();
+}
+
+class _JobCommissionSectionState extends State<_JobCommissionSection> {
+  late final Future<DriverBalance> _future =
+      context.read<DriversRepository>().balance();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final fare = widget.job.finalPrice ?? widget.job.quotedPrice;
+    // TODO(JOB-2/LED-1): this approximates the commission at a flat 15%
+    // until the backend returns the real per-job commission — the same
+    // approximation `ApiDriversRepository`/`FakeDriversRepository` already
+    // use for the DSP-2 offer preview.
+    final commission = (fare * 0.15 / 100).round() * 100;
+    return FutureBuilder<DriverBalance>(
+      future: _future,
+      builder: (context, snapshot) {
+        final balance = snapshot.data;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(l10n.jobCommissionLabel),
+                Text(
+                  formatCop(commission),
+                  key: const Key('jobCommissionAmount'),
+                ),
+              ],
+            ),
+            if (balance != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(l10n.runningBalanceLabel),
+                  Text(
+                    formatCop(balance.owedCents),
+                    key: const Key('runningBalanceAmount'),
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
