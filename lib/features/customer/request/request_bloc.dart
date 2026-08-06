@@ -58,10 +58,8 @@ final class RequestMatchingRetried extends RequestEvent {
   const RequestMatchingRetried();
 }
 
-/// Leave the matching flow and stop tracking the job.
-///
-/// TODO(JOB-5): call `POST /v1/jobs/{id}/cancel` here (free until
-/// `assigned` + grace period per JOB-3) once the endpoint exists.
+/// Leave the matching flow and stop tracking the job, cancelling it
+/// server-side (best-effort — see the handler) if it isn't terminal yet.
 final class RequestMatchingAbandoned extends RequestEvent {
   const RequestMatchingAbandoned();
 }
@@ -104,9 +102,21 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
       if (state.activeJob?.status != JobStatus.noDrivers) return;
       await _confirm(emit);
     });
-    on<RequestMatchingAbandoned>((event, emit) {
+    on<RequestMatchingAbandoned>((event, emit) async {
       _jobSub?.cancel();
       _jobSub = null;
+      final job = state.activeJob;
+      // Best-effort: the customer is leaving regardless of whether the
+      // backend still considers this job cancellable (it 409s past its
+      // grace period, e.g. mid-trip) — nothing to do with that here beyond
+      // not bothering to call it on an already-terminal job.
+      if (job != null && !job.status.isTerminal) {
+        try {
+          await _repo.cancelJob(job.id);
+        } catch (_) {
+          // Ignored — see above.
+        }
+      }
       emit(state.copyWith(activeJob: null));
     });
     on<RequestJobUpdated>((event, emit) {

@@ -164,6 +164,33 @@ class FakeJobsRepository implements JobsRepository {
     return accepted;
   }
 
+  /// Mirrors the backend's `CUSTOMER_CANCELLABLE` (`requested`/`matching`/
+  /// `assigned`) — not a full port of the grace-period rule on `assigned`,
+  /// just enough for `RequestBloc`'s abandon-flow test to exercise both the
+  /// success and the "too late to cancel" path.
+  static const _customerCancellable = {
+    JobStatus.requested,
+    JobStatus.matching,
+    JobStatus.assigned,
+  };
+
+  @override
+  Future<Job> cancelJob(String id) async {
+    await Future<void>.delayed(actionDelay);
+    final job = _jobs[id];
+    if (job == null) throw StateError('Unknown job: $id');
+    if (!_customerCancellable.contains(job.status)) {
+      throw StateError('Customer cannot cancel a job in status ${job.status.wire}');
+    }
+    final cancelled = job.copyWith(
+      status: JobStatus.cancelled,
+      cancelledAt: DateTime.now(),
+      cancelReason: 'customer',
+    );
+    _put(cancelled);
+    return cancelled;
+  }
+
   @override
   Future<Job> updateJobStatus(String id, JobStatus status) async {
     await Future<void>.delayed(actionDelay);

@@ -57,6 +57,14 @@ abstract interface class JobsRepository {
   /// `POST /v1/jobs/{id}/accept` — driver accepts an offer.
   Future<Job> acceptJob(String id);
 
+  /// `POST /v1/jobs/{id}/cancel` (JOB-5) — customer cancels (any non-terminal
+  /// status the backend still allows, e.g. `assigned` within its grace
+  /// period) or the assigned driver cancels (job returns to matching).
+  /// Callers should only attempt this on a non-terminal job — the backend
+  /// 409s otherwise, per `CUSTOMER_CANCELLABLE` in
+  /// `backend/app/services/jobs.py`.
+  Future<Job> cancelJob(String id);
+
   /// `POST /v1/jobs/{id}/status` — assigned driver advances the state
   /// machine (JOB-6).
   Future<Job> updateJobStatus(String id, JobStatus status);
@@ -219,6 +227,12 @@ class ApiJobsRepository implements JobsRepository {
   @override
   Future<Job> acceptJob(String id) async {
     final res = await _dio.post<Map<String, dynamic>>('/v1/jobs/$id/accept');
+    return Job.fromJson(res.data!);
+  }
+
+  @override
+  Future<Job> cancelJob(String id) async {
+    final res = await _dio.post<Map<String, dynamic>>('/v1/jobs/$id/cancel');
     return Job.fromJson(res.data!);
   }
 
