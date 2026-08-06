@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/core/api/fake_drivers_repository.dart';
+import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/api/jobs_repository.dart';
 import 'package:the_crane/core/models/app_user.dart';
 import 'package:the_crane/features/driver/home/driver_home_screen.dart';
@@ -45,6 +47,54 @@ void main() {
           )
           .enabled,
       isFalse,
+    );
+  });
+
+  testWidgets(
+      'DRV-1: a balance-cap rejection on going available shows its own '
+      'banner and leaves the driver offline', (tester) async {
+    final jobs = FakeJobsRepository(actionDelay: const Duration(milliseconds: 10));
+    final drivers = FakeDriversRepository(
+      jobs: jobs,
+      actionDelay: const Duration(milliseconds: 10),
+    )..rejectNextAvailableWithBalanceCap = true;
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(
+        jobs: jobs,
+        drivers: drivers,
+        authRole: UserRole.driver,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    expect(find.byType(DriverHomeScreen), findsOneWidget);
+
+    expect(find.text('Desconectado'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('availabilityToggle')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20)); // actionDelay
+
+    // Rejected: still offline, and the balance-cap banner shows.
+    expect(find.text('Desconectado'), findsOneWidget);
+    expect(
+      find.text(
+        'Tu saldo pendiente superó el límite permitido. Paga tu saldo '
+        'para volver a conectarte.',
+      ),
+      findsOneWidget,
+    );
+
+    // A later toggle (cap lifted) succeeds normally and clears the banner.
+    await tester.tap(find.byKey(const Key('availabilityToggle')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Disponible'), findsOneWidget);
+    expect(
+      find.text(
+        'Tu saldo pendiente superó el límite permitido. Paga tu saldo '
+        'para volver a conectarte.',
+      ),
+      findsNothing,
     );
   });
 

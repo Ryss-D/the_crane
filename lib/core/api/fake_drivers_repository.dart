@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+
 import '../models/driver_balance.dart';
 import '../models/driver_profile.dart';
 import '../models/job.dart';
@@ -79,6 +81,14 @@ class FakeDriversRepository implements DriversRepository {
   double? lastLat;
   double? lastLng;
 
+  /// DRV-1 test hook: when true, the *next* `setStatus(available)` call
+  /// throws a `DioException` shaped exactly like the real backend's
+  /// balance-cap rejection (403, `detail: "Balance owed to the platform
+  /// exceeds the allowed cap"`), then resets to false. Lets fake-mode tests
+  /// trigger `DriverHomeCubit`'s `DriverBlockReason.balanceCap` path
+  /// without replicating the real balance calculation.
+  bool rejectNextAvailableWithBalanceCap = false;
+
   @override
   Future<DriverProfile> setStatus(
     DriverStatus status, {
@@ -88,6 +98,21 @@ class FakeDriversRepository implements DriversRepository {
     await Future<void>.delayed(actionDelay);
     lastLat = lat;
     lastLng = lng;
+    if (status == DriverStatus.available && rejectNextAvailableWithBalanceCap) {
+      rejectNextAvailableWithBalanceCap = false;
+      const path = '/v1/drivers/me/status';
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        response: Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: path),
+          statusCode: 403,
+          data: const {
+            'detail': 'Balance owed to the platform exceeds the allowed cap',
+          },
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
     // Mirrors the real backend refusing to change status while blocked
     // (403) — but, like the unverified case below, this fake stays
     // permissive rather than throwing, so a widget/cubit test can still

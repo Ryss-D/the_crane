@@ -248,6 +248,10 @@
   "@blockedBannerAdmin": {
     "description": "Banner when an admin has put the driver on hold"
   },
+  "blockedBannerBalanceCap": "Tu saldo pendiente superó el límite permitido. Paga tu saldo para volver a conectarte.",
+  "@blockedBannerBalanceCap": {
+    "description": "Banner when going available was rejected for exceeding the settlement balance cap"
+  },
   "devTriggerOfferButton": "Simular oferta (dev)",
   "@devTriggerOfferButton": {
     "description": "Dev-only button that simulates an incoming offer"

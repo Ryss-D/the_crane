@@ -57,6 +57,7 @@
   "availableHint": "Waiting for nearby offers…",
   "blockedBannerUnverified": "Your account is pending verification. You will not receive offers yet.",
   "blockedBannerAdmin": "Your account is blocked. Contact support for details.",
+  "blockedBannerBalanceCap": "Your owed balance exceeded the allowed cap. Settle your balance to go available again.",
   "devTriggerOfferButton": "Simulate offer (dev)",
   "offerTitle": "New job offer",
   "offerPickupDistance": "{km} km away from you",

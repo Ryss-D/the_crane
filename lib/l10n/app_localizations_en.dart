@@ -194,6 +194,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account is blocked. Contact support for details.';
 
   @override
+  String get blockedBannerBalanceCap =>
+      'Your owed balance exceeded the allowed cap. Settle your balance to go available again.';
+
+  @override
   String get devTriggerOfferButton => 'Simulate offer (dev)';
 
   @override

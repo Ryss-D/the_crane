@@ -117,10 +117,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  state.blockReason ==
-                                          DriverBlockReason.adminBlocked
-                                      ? l10n.blockedBannerAdmin
-                                      : l10n.blockedBannerUnverified,
+                                  switch (state.blockReason) {
+                                    DriverBlockReason.adminBlocked =>
+                                      l10n.blockedBannerAdmin,
+                                    DriverBlockReason.balanceCap =>
+                                      l10n.blockedBannerBalanceCap,
+                                    DriverBlockReason.unverified ||
+                                    DriverBlockReason.none =>
+                                      l10n.blockedBannerUnverified,
+                                  },
                                   style: TextStyle(
                                     color: theme.colorScheme.onErrorContainer,
                                   ),

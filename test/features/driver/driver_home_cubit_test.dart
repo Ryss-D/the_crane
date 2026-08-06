@@ -93,6 +93,41 @@ void main() {
       },
     );
 
+    blocTest<DriverHomeCubit, DriverHomeState>(
+      'DRV-1: a balance-cap rejection on going available surfaces its own '
+      'distinct reason, captured from the DioException detail',
+      build: () {
+        final drivers = instantFakeDrivers()
+          ..rejectNextAvailableWithBalanceCap = true;
+        return DriverHomeCubit(driversRepository: drivers);
+      },
+      act: (cubit) => cubit.toggleAvailability(),
+      verify: (cubit) {
+        expect(cubit.state.isBlocked, isTrue);
+        expect(cubit.state.blockReason, DriverBlockReason.balanceCap);
+        // The rejected attempt didn't actually flip status.
+        expect(cubit.state.status, DriverStatus.offline);
+      },
+    );
+
+    blocTest<DriverHomeCubit, DriverHomeState>(
+      'DRV-1: a later successful toggle clears the balance-cap reason',
+      build: () {
+        final drivers = instantFakeDrivers()
+          ..rejectNextAvailableWithBalanceCap = true;
+        return DriverHomeCubit(driversRepository: drivers);
+      },
+      act: (cubit) async {
+        await cubit.toggleAvailability(); // rejected
+        await cubit.toggleAvailability(); // succeeds this time
+      },
+      verify: (cubit) {
+        expect(cubit.state.isBlocked, isFalse);
+        expect(cubit.state.blockReason, DriverBlockReason.none);
+        expect(cubit.state.status, DriverStatus.available);
+      },
+    );
+
     test(
       'going available sends a real fix, so the real backend '
       "won't 422 for missing lat/lng",

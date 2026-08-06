@@ -440,6 +440,12 @@ abstract class AppLocalizations {
   /// **'Tu cuenta está bloqueada. Contacta a soporte para más información.'**
   String get blockedBannerAdmin;
 
+  /// Banner when going available was rejected for exceeding the settlement balance cap
+  ///
+  /// In es, this message translates to:
+  /// **'Tu saldo pendiente superó el límite permitido. Paga tu saldo para volver a conectarte.'**
+  String get blockedBannerBalanceCap;
+
   /// Dev-only button that simulates an incoming offer
   ///
   /// In es, this message translates to:

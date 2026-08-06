@@ -194,6 +194,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu cuenta está bloqueada. Contacta a soporte para más información.';
 
   @override
+  String get blockedBannerBalanceCap =>
+      'Tu saldo pendiente superó el límite permitido. Paga tu saldo para volver a conectarte.';
+
+  @override
   String get devTriggerOfferButton => 'Simular oferta (dev)';
 
   @override
