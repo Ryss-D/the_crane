@@ -72,9 +72,21 @@ class FakeDriversRepository implements DriversRepository {
     ),
   ];
 
+  /// Test hook: the `lat`/`lng` the caller most recently passed to
+  /// [setStatus] — lets tests assert `DriverHomeCubit` actually sends a
+  /// fix when going available, without a real backend to 422 on it.
+  double? lastLat;
+  double? lastLng;
+
   @override
-  Future<DriverProfile> setStatus(DriverStatus status) async {
+  Future<DriverProfile> setStatus(
+    DriverStatus status, {
+    double? lat,
+    double? lng,
+  }) async {
     await Future<void>.delayed(actionDelay);
+    lastLat = lat;
+    lastLng = lng;
     _profile = _profile.copyWith(status: status);
     return _profile;
   }

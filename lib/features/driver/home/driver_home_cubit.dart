@@ -40,20 +40,30 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
   /// Flips available/offline via `PATCH /v1/drivers/me/status`.
   ///
   /// Requests location permission up front when going available (TRK-5) —
-  /// better to ask now than mid-job. The actual position stream only starts
-  /// once a job is active (`ActiveJobCubit`), since the backend only accepts
-  /// a driver's `location` message while one is assigned.
+  /// better to ask now than mid-job — and takes one fix to send as `lat`/
+  /// `lng`, which the backend requires to seed the Redis geo entry (422
+  /// without them). The ongoing position *stream* only starts once a job is
+  /// active (`ActiveJobCubit`), since the backend only accepts a driver's
+  /// `location` message while one is assigned; this is just the one-shot
+  /// fix availability itself needs.
   Future<void> toggleAvailability() async {
     if (state.isUpdating) return;
     final target = state.status == DriverStatus.available
         ? DriverStatus.offline
         : DriverStatus.available;
     emit(state.copyWith(isUpdating: true));
+    double? lat;
+    double? lng;
     if (target == DriverStatus.available) {
-      await _locationSource?.requestPermission();
+      final source = _locationSource;
+      if (source != null && await source.requestPermission()) {
+        final fix = await source.getCurrentPosition();
+        lat = fix.lat;
+        lng = fix.lng;
+      }
     }
     try {
-      final profile = await _repo.setStatus(target);
+      final profile = await _repo.setStatus(target, lat: lat, lng: lng);
       emit(state.copyWith(
         status: profile.status,
         profile: profile,

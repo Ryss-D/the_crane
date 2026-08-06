@@ -17,6 +17,11 @@ abstract class LocationSource {
   /// Live position fixes. Callers should have called [requestPermission]
   /// first; an unauthorized stream simply never emits.
   Stream<LatLng> watchPosition();
+
+  /// A single current fix — used where only one reading is needed (DRV-1's
+  /// "going available" call, which must include `lat`/`lng`). Callers
+  /// should have called [requestPermission] first.
+  Future<LatLng> getCurrentPosition();
 }
 
 class GeolocatorLocationSource implements LocationSource {
@@ -39,5 +44,11 @@ class GeolocatorLocationSource implements LocationSource {
     );
     return Geolocator.getPositionStream(locationSettings: settings)
         .map((p) => LatLng(lat: p.latitude, lng: p.longitude));
+  }
+
+  @override
+  Future<LatLng> getCurrentPosition() async {
+    final position = await Geolocator.getCurrentPosition();
+    return LatLng(lat: position.latitude, lng: position.longitude);
   }
 }

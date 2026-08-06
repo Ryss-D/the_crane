@@ -27,8 +27,11 @@ abstract interface class DriversRepository {
     String? truckPhotoUrl,
   });
 
-  /// `PATCH /v1/drivers/me/status` — go available/offline.
-  Future<DriverProfile> setStatus(DriverStatus status);
+  /// `PATCH /v1/drivers/me/status` — go available/offline. The backend
+  /// requires [lat]/[lng] when [status] is `available` (422 otherwise,
+  /// since that's what seeds the Redis geo entry) and ignores them for
+  /// `offline`.
+  Future<DriverProfile> setStatus(DriverStatus status, {double? lat, double? lng});
 
   /// Stream of dispatch offers for this driver.
   ///
@@ -75,10 +78,20 @@ class ApiDriversRepository implements DriversRepository {
   }
 
   @override
-  Future<DriverProfile> setStatus(DriverStatus status) async {
+  Future<DriverProfile> setStatus(
+    DriverStatus status, {
+    double? lat,
+    double? lng,
+  }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/v1/drivers/me/status',
-      data: {'status': status.wire},
+      data: {
+        'status': status.wire,
+        // ignore: use_null_aware_elements
+        if (lat != null) 'lat': lat,
+        // ignore: use_null_aware_elements
+        if (lng != null) 'lng': lng,
+      },
     );
     return DriverProfile.fromJson(res.data!);
   }

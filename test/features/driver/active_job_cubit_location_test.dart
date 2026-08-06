@@ -21,6 +21,10 @@ class _FakeLocationSource implements LocationSource {
   @override
   Stream<LatLng> watchPosition() => _controller.stream;
 
+  @override
+  Future<LatLng> getCurrentPosition() =>
+      throw UnimplementedError('not needed by this test');
+
   void emit(LatLng fix) => _controller.add(fix);
 }
 
