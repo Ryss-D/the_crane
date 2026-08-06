@@ -1,10 +1,12 @@
-"""Request/response schemas for the fleets API (FLT-1 CRUD, FLT-2 ledger rollup)."""
+"""Request/response schemas for the fleets API (FLT-1 CRUD, FLT-2 ledger rollup,
+FLT-4 driver invites)."""
 
 import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.models.driver import TruckCapacity, TruckType
 from app.schemas.driver import TruckRead
 
 
@@ -60,6 +62,35 @@ class FleetSettleResponse(BaseModel):
     fleet_id: uuid.UUID
     total_amount: int
     entries: list[FleetSettlementEntry]
+
+
+# ---- FLT-4: phone invite -> signup lands pre-linked ---------------------------
+
+
+class InviteCreate(BaseModel):
+    """POST /v1/fleets/me/invites body.
+
+    Mirrors DriverRegisterRequest's truck fields exactly (same types, reused from
+    app/schemas/driver.py) -- this pre-provisions the same Truck row AUTH-5's own
+    registration would otherwise create, just with no driver_id yet.
+    """
+
+    phone: str
+    plate: str
+    truck_type: TruckType
+    capacity: TruckCapacity
+
+
+class InviteRead(BaseModel):
+    """Returned by POST /v1/fleets/me/invites and GET /v1/fleets/me/invites.
+
+    `invite_token` is what the invited driver passes as `invite_token` on
+    POST /v1/drivers/me/register to redeem it.
+    """
+
+    invite_token: uuid.UUID
+    truck_id: uuid.UUID
+    phone: str
 
 
 class AdminFleetListItem(BaseModel):

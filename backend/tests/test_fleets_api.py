@@ -1,5 +1,11 @@
-"""FLT-1 tests: fleet CRUD (create own fleet, view it, attach/detach trucks)."""
+"""FLT-1 tests: fleet CRUD (create own fleet, view it, attach/detach trucks).
 
+FLT-4's invite tests live at the bottom (create invite + the fleet-owner side of
+409s); the driver-side redemption tests (POST /v1/drivers/me/register with an
+invite_token) live in tests/test_drivers_api.py, next to the rest of registration.
+"""
+
+import uuid
 from typing import Any
 
 from httpx import AsyncClient
@@ -7,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models.driver import Truck, TruckCapacity, TruckType
+from app.models.fleet import DriverInvite, InviteStatus
 from app.models.user import User, UserRole
 from tests.conftest import FakeRedis, _create_user, make_available_driver
 
@@ -216,3 +223,106 @@ async def test_find_truck_by_plate(
 
     missing = await client.get("/v1/fleets/trucks/by-plate/NOPE999", headers=AUTH_CUSTOMER)
     assert missing.status_code == 404
+
+
+# ---- FLT-4: POST /v1/fleets/me/invites -----------------------------------------
+
+
+def _invite_body(**overrides: Any) -> dict[str, Any]:
+    body: dict[str, Any] = {
+        "phone": "+573009998877",
+        "plate": "INV0001",
+        "truck_type": "car",
+        "capacity": "car",
+    }
+    body.update(overrides)
+    return body
+
+
+async def test_create_invite_pre_provisions_truck(
+    client: AsyncClient,
+    verified_tokens: dict[str, dict[str, Any]],
+    customer_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
+    verified_tokens["customer-token"] = {"uid": customer_user.firebase_uid}
+    create_fleet = await client.post(
+        "/v1/fleets/me", headers=AUTH_CUSTOMER, json={"name": "Grúas del Poblado"}
+    )
+    assert create_fleet.status_code == 201
+    fleet_id = create_fleet.json()["id"]
+
+    response = await client.post(
+        "/v1/fleets/me/invites", headers=AUTH_CUSTOMER, json=_invite_body()
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["phone"] == "+573009998877"
+    assert "invite_token" in body
+    assert "truck_id" in body
+
+    async with session_maker() as session:
+        truck = await session.get(Truck, uuid.UUID(body["truck_id"]))
+        assert truck is not None
+        assert truck.plate == "INV0001"
+        assert truck.type is TruckType.car
+        assert truck.capacity is TruckCapacity.car
+        assert truck.driver_id is None
+        assert str(truck.fleet_id) == fleet_id
+
+        invite = await session.scalar(
+            select(DriverInvite).where(DriverInvite.token == uuid.UUID(body["invite_token"]))
+        )
+        assert invite is not None
+        assert invite.status is InviteStatus.pending
+        assert str(invite.truck_id) == body["truck_id"]
+
+    listed = await client.get("/v1/fleets/me/invites", headers=AUTH_CUSTOMER)
+    assert listed.status_code == 200
+    assert [i["invite_token"] for i in listed.json()] == [body["invite_token"]]
+
+
+async def test_create_invite_duplicate_pending_phone_is_409(
+    client: AsyncClient, verified_tokens: dict[str, dict[str, Any]], customer_user: User
+) -> None:
+    verified_tokens["customer-token"] = {"uid": customer_user.firebase_uid}
+    await client.post("/v1/fleets/me", headers=AUTH_CUSTOMER, json={"name": "Fleet A"})
+
+    first = await client.post(
+        "/v1/fleets/me/invites", headers=AUTH_CUSTOMER, json=_invite_body(plate="INV0002")
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        "/v1/fleets/me/invites", headers=AUTH_CUSTOMER, json=_invite_body(plate="INV0003")
+    )
+    assert second.status_code == 409
+
+
+async def test_create_invite_duplicate_plate_is_409(
+    client: AsyncClient,
+    verified_tokens: dict[str, dict[str, Any]],
+    customer_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
+    verified_tokens["customer-token"] = {"uid": customer_user.firebase_uid}
+    await client.post("/v1/fleets/me", headers=AUTH_CUSTOMER, json={"name": "Fleet A"})
+
+    await _register_driver_truck(session_maker, firebase_uid="unused", plate="INV0004")
+
+    response = await client.post(
+        "/v1/fleets/me/invites",
+        headers=AUTH_CUSTOMER,
+        json=_invite_body(phone="+573001112222", plate="INV0004"),
+    )
+    assert response.status_code == 409
+
+
+async def test_create_invite_without_fleet_is_404(
+    client: AsyncClient, verified_tokens: dict[str, dict[str, Any]], customer_user: User
+) -> None:
+    verified_tokens["customer-token"] = {"uid": customer_user.firebase_uid}
+    response = await client.post(
+        "/v1/fleets/me/invites", headers=AUTH_CUSTOMER, json=_invite_body()
+    )
+    assert response.status_code == 404

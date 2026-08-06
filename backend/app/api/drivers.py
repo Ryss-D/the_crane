@@ -6,6 +6,7 @@ the "actor may act on this job" permission patterns and the job_offers/dispatch
 service wiring. This router stays driver-profile-centric (registration, own status).
 """
 
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -15,8 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.redis import get_redis
-from app.core.security import CurrentUser
+from app.core.security import CurrentUser, VerifiedClaims
 from app.models.driver import DriverProfile, DriverStatus, Truck
+from app.models.fleet import DriverInvite, InviteStatus
 from app.models.ledger import DriverLedgerEntry, LedgerEntryType
 from app.models.user import UserRole
 from app.schemas.driver import (
@@ -71,9 +73,18 @@ async def _serialize_profile(session: AsyncSession, profile: DriverProfile) -> D
 async def register_driver(
     body: DriverRegisterRequest,
     user: CurrentUser,
+    claims: VerifiedClaims,
     session: SessionDep,
 ) -> DriverProfileRead:
     """AUTH-5: create driver_profiles (unverified, offline) + trucks, flip role -> driver.
+
+    Two mutually exclusive shapes (see DriverRegisterRequest's docstring): bring your
+    own truck (`plate`/`truck_type`/`capacity`), or redeem a fleet owner's invite
+    (`invite_token`, FLT-4) which already pre-provisioned the truck — mixing the two
+    is 422. Redeeming an invite additionally requires the caller's verified Firebase
+    phone claim to match the phone the invite was created for (403 otherwise), and
+    marks the invite consumed so it can't be redeemed twice (409 if it already was,
+    404 if the token doesn't exist).
 
     409 if the caller is already a driver. Document upload is out of scope (see the
     schema docstring); license_url/truck_photo_url are accepted as-is.
@@ -84,6 +95,55 @@ async def register_driver(
             status_code=status.HTTP_409_CONFLICT, detail="Already registered as a driver"
         )
 
+    has_truck_fields = (
+        body.plate is not None or body.truck_type is not None or body.capacity is not None
+    )
+
+    if body.invite_token is not None:
+        if has_truck_fields:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="invite_token and plate/truck_type/capacity are mutually exclusive",
+            )
+        invite = await session.scalar(
+            select(DriverInvite).where(DriverInvite.token == body.invite_token)
+        )
+        if invite is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invite not found")
+        if invite.status is not InviteStatus.pending:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invite already used")
+        if invite.phone != claims.get("phone_number"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invite phone does not match the caller's verified phone number",
+            )
+        truck = await session.get(Truck, invite.truck_id)
+        if truck is None or truck.driver_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Invited truck is no longer available"
+            )
+        truck.driver_id = user.id
+        invite.status = InviteStatus.consumed
+        invite.consumed_at = datetime.now(UTC)
+    else:
+        if (
+            not has_truck_fields
+            or body.plate is None
+            or body.truck_type is None
+            or body.capacity is None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="plate, truck_type, and capacity are required without an invite_token",
+            )
+        truck = Truck(
+            plate=body.plate,
+            type=body.truck_type,
+            capacity=body.capacity,
+            driver_id=user.id,
+        )
+        session.add(truck)
+
     profile = DriverProfile(
         user_id=user.id,
         status=DriverStatus.offline,
@@ -91,14 +151,8 @@ async def register_driver(
         license_url=body.license_url,
         truck_photo_url=body.truck_photo_url,
     )
-    truck = Truck(
-        plate=body.plate,
-        type=body.truck_type,
-        capacity=body.capacity,
-        driver_id=user.id,
-    )
     user.role = UserRole.driver
-    session.add_all([profile, truck])
+    session.add(profile)
     try:
         await session.commit()
     except IntegrityError as exc:

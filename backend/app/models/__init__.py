@@ -2,7 +2,7 @@
 
 from app.models.base import Base
 from app.models.driver import DriverProfile, DriverStatus, Truck, TruckCapacity, TruckType
-from app.models.fleet import Fleet
+from app.models.fleet import DriverInvite, Fleet, InviteStatus
 from app.models.job import (
     CustomerVehicle,
     DriverLocationSnapshot,
@@ -32,9 +32,11 @@ __all__ = [
     "CustomerVehicle",
     "DriverLedgerEntry",
     "DriverLocationSnapshot",
+    "DriverInvite",
     "DriverProfile",
     "DriverStatus",
     "Fleet",
+    "InviteStatus",
     "Job",
     "JobOffer",
     "JobStatus",

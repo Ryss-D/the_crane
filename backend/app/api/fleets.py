@@ -4,11 +4,13 @@ trucks. Mirrors AUTH-5's "acting on your own resources" pattern in app/api/drive
 by fleet id, and creating a fleet flips the caller's role the same way registering as
 a driver does.
 
-Consent: FLT-4 (a later, Flutter-facing task) is where a fleet owner invites/assigns a
-specific driver to a truck with that driver's consent. That flow doesn't exist yet, so
-for now a fleet owner may attach any truck that isn't already claimed by another fleet
-(`fleet_id is None`) — the same "unclaimed resource" gate AUTH-5's plate-uniqueness
-check uses, just on `fleet_id` instead. This is a deliberate judgment call pending FLT-4.
+Consent: for a truck that already exists unclaimed (`fleet_id is None`), a fleet owner
+may attach it directly (`POST /me/trucks/{truck_id}` below) with no consent step — the
+same "unclaimed resource" gate AUTH-5's plate-uniqueness check uses, just on `fleet_id`
+instead. FLT-4 adds the other half: inviting a driver who has no truck (or no account)
+yet, via `POST /me/invites` below + `POST /v1/drivers/me/register`'s `invite_token` --
+that flow *is* consent-shaped, since nothing links to the fleet until the invited
+driver themselves redeems the token.
 """
 
 import uuid
@@ -16,15 +18,23 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.core.security import CurrentUser
 from app.models.driver import DriverProfile, Truck
-from app.models.fleet import Fleet
+from app.models.fleet import DriverInvite, Fleet, InviteStatus
 from app.models.user import User, UserRole
 from app.schemas.driver import TruckRead
-from app.schemas.fleet import FleetBalanceRead, FleetCreate, FleetMemberBalance, FleetRead
+from app.schemas.fleet import (
+    FleetBalanceRead,
+    FleetCreate,
+    FleetMemberBalance,
+    FleetRead,
+    InviteCreate,
+    InviteRead,
+)
 from app.services.ledger import fleet_member_balances
 
 router = APIRouter(prefix="/fleets", tags=["fleets"])
@@ -179,3 +189,61 @@ async def get_my_fleet_balance(user: CurrentUser, session: SessionDep) -> FleetB
         for driver_id, owed in balances.items()
     ]
     return FleetBalanceRead(fleet_id=fleet.id, owed_balance=sum(balances.values()), members=members)
+
+
+# ---- FLT-4: phone invite -> signup lands pre-linked ---------------------------
+
+
+@router.post("/me/invites", response_model=InviteRead, status_code=status.HTTP_201_CREATED)
+async def create_invite(body: InviteCreate, user: CurrentUser, session: SessionDep) -> InviteRead:
+    """FLT-4: invite a driver who doesn't have a truck (or an account) yet.
+
+    Pre-provisions the Truck row up front (unclaimed by a driver, `fleet_id` = the
+    caller's fleet) and hands back a token; the invited driver redeems it via
+    `invite_token` on POST /v1/drivers/me/register, which links them onto this exact
+    truck instead of creating a new one.
+
+    409 if `phone` already has a pending invite (redeem or let it be superseded
+    first), or if `plate` is already taken — mirrors AUTH-5's plate-uniqueness
+    IntegrityError handling in app/api/drivers.py's register_driver.
+    """
+    fleet = await _get_fleet_or_404(session, user.id)
+
+    existing = await session.scalar(
+        select(DriverInvite).where(
+            DriverInvite.phone == body.phone, DriverInvite.status == InviteStatus.pending
+        )
+    )
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Phone already has a pending invite"
+        )
+
+    truck = Truck(plate=body.plate, type=body.truck_type, capacity=body.capacity, fleet_id=fleet.id)
+    session.add(truck)
+    try:
+        await session.flush()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Plate already registered"
+        ) from exc
+
+    invite = DriverInvite(fleet_id=fleet.id, truck_id=truck.id, phone=body.phone)
+    session.add(invite)
+    await session.commit()
+    return InviteRead(invite_token=invite.token, truck_id=truck.id, phone=invite.phone)
+
+
+@router.get("/me/invites", response_model=list[InviteRead])
+async def list_my_invites(user: CurrentUser, session: SessionDep) -> list[InviteRead]:
+    """Pending invites the caller's fleet has outstanding (not yet redeemed)."""
+    fleet = await _get_fleet_or_404(session, user.id)
+    invites = (
+        await session.scalars(
+            select(DriverInvite).where(
+                DriverInvite.fleet_id == fleet.id, DriverInvite.status == InviteStatus.pending
+            )
+        )
+    ).all()
+    return [InviteRead(invite_token=i.token, truck_id=i.truck_id, phone=i.phone) for i in invites]
