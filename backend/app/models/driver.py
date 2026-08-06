@@ -60,5 +60,5 @@ class Truck(Base):
         Enum(TruckCapacity, name="truck_capacity", native_enum=False, length=20)
     )
     driver_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
-    # No FK yet on purpose: the fleets table arrives in Phase 6 (FLT-1), which adds the FK.
-    fleet_id: Mapped[uuid.UUID | None] = mapped_column()
+    # FLT-1: FK + index added in migration 0007 once app/models/fleet.py's Fleet exists.
+    fleet_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("fleets.id"), index=True)
