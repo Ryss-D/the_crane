@@ -482,6 +482,50 @@
   "@becomeDriverSubmitError": {
     "description": "Shown when driver registration fails"
   },
+  "becomeFleetOwnerMenuItem": "Crear mi flota",
+  "@becomeFleetOwnerMenuItem": {
+    "description": "Settings menu item leading to the FLT-1 fleet creation screen"
+  },
+  "becomeFleetOwnerTitle": "Crea tu flota",
+  "@becomeFleetOwnerTitle": {
+    "description": "Become-a-fleet-owner screen app bar title"
+  },
+  "becomeFleetOwnerIntro": "Dale un nombre a tu flota para empezar a administrar tus grúas y conductores.",
+  "@becomeFleetOwnerIntro": {
+    "description": "Become-a-fleet-owner screen intro copy"
+  },
+  "fleetNameFieldLabel": "Nombre de la flota",
+  "@fleetNameFieldLabel": {
+    "description": "Fleet name field label"
+  },
+  "fleetNameFieldHint": "Grúas del Valle",
+  "@fleetNameFieldHint": {
+    "description": "Fleet name field placeholder"
+  },
+  "becomeFleetOwnerSubmitButton": "Crear flota",
+  "@becomeFleetOwnerSubmitButton": {
+    "description": "Submits the become-a-fleet-owner form"
+  },
+  "becomeFleetOwnerSubmitError": "No pudimos crear tu flota. Intenta de nuevo.",
+  "@becomeFleetOwnerSubmitError": {
+    "description": "Shown when fleet creation fails"
+  },
+  "fleetHomeTitle": "Mi flota",
+  "@fleetHomeTitle": {
+    "description": "FLT-3: fleet-owner home ('Mi flota') screen app bar title"
+  },
+  "fleetLoadError": "No pudimos cargar tu flota. Intenta de nuevo.",
+  "@fleetLoadError": {
+    "description": "FLT-3: shown when loading the fleet fails"
+  },
+  "fleetEmptyBody": "Tu flota aún no tiene grúas. Agrega una con su placa.",
+  "@fleetEmptyBody": {
+    "description": "FLT-3: shown when the fleet has no trucks yet"
+  },
+  "fleetTruckStatusUnassigned": "Sin conductor",
+  "@fleetTruckStatusUnassigned": {
+    "description": "FLT-3: per-truck status label when the truck has no driver assigned yet"
+  },
   "cashPaymentPendingBody": "Confirma que recibiste el pago en efectivo para finalizar el servicio.",
   "@cashPaymentPendingBody": {
     "description": "CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation"

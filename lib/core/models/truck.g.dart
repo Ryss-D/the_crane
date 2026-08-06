@@ -15,6 +15,11 @@ _Truck _$TruckFromJson(Map<String, dynamic> json) => _Truck(
   capacity: $enumDecode(_$TruckCapacityEnumMap, json['capacity']),
   make: json['make'] as String?,
   model: json['model'] as String?,
+  driverStatus: $enumDecodeNullable(
+    _$DriverStatusEnumMap,
+    json['driver_status'],
+  ),
+  driverName: json['driver_name'] as String?,
 );
 
 Map<String, dynamic> _$TruckToJson(_Truck instance) => <String, dynamic>{
@@ -26,6 +31,8 @@ Map<String, dynamic> _$TruckToJson(_Truck instance) => <String, dynamic>{
   'capacity': _$TruckCapacityEnumMap[instance.capacity]!,
   'make': instance.make,
   'model': instance.model,
+  'driver_status': _$DriverStatusEnumMap[instance.driverStatus],
+  'driver_name': instance.driverName,
 };
 
 const _$TruckTypeEnumMap = {
@@ -38,4 +45,10 @@ const _$TruckCapacityEnumMap = {
   TruckCapacity.moto: 'moto',
   TruckCapacity.car: 'car',
   TruckCapacity.both: 'both',
+};
+
+const _$DriverStatusEnumMap = {
+  DriverStatus.offline: 'offline',
+  DriverStatus.available: 'available',
+  DriverStatus.onJob: 'on_job',
 };

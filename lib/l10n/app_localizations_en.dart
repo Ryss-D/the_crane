@@ -369,6 +369,43 @@ class AppLocalizationsEn extends AppLocalizations {
       'We could not complete registration. Please try again.';
 
   @override
+  String get becomeFleetOwnerMenuItem => 'Create my fleet';
+
+  @override
+  String get becomeFleetOwnerTitle => 'Create your fleet';
+
+  @override
+  String get becomeFleetOwnerIntro =>
+      'Give your fleet a name to start managing your trucks and drivers.';
+
+  @override
+  String get fleetNameFieldLabel => 'Fleet name';
+
+  @override
+  String get fleetNameFieldHint => 'Valley Tow Trucks';
+
+  @override
+  String get becomeFleetOwnerSubmitButton => 'Create fleet';
+
+  @override
+  String get becomeFleetOwnerSubmitError =>
+      'We could not create your fleet. Please try again.';
+
+  @override
+  String get fleetHomeTitle => 'My fleet';
+
+  @override
+  String get fleetLoadError =>
+      'We could not load your fleet. Please try again.';
+
+  @override
+  String get fleetEmptyBody =>
+      'Your fleet has no trucks yet. Add one with its plate.';
+
+  @override
+  String get fleetTruckStatusUnassigned => 'No driver';
+
+  @override
   String get cashPaymentPendingBody =>
       'Confirm you received the cash payment to finish the job.';
 

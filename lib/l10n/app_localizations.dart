@@ -776,6 +776,72 @@ abstract class AppLocalizations {
   /// **'No pudimos completar el registro. Intenta de nuevo.'**
   String get becomeDriverSubmitError;
 
+  /// Settings menu item leading to the FLT-1 fleet creation screen
+  ///
+  /// In es, this message translates to:
+  /// **'Crear mi flota'**
+  String get becomeFleetOwnerMenuItem;
+
+  /// Become-a-fleet-owner screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Crea tu flota'**
+  String get becomeFleetOwnerTitle;
+
+  /// Become-a-fleet-owner screen intro copy
+  ///
+  /// In es, this message translates to:
+  /// **'Dale un nombre a tu flota para empezar a administrar tus grúas y conductores.'**
+  String get becomeFleetOwnerIntro;
+
+  /// Fleet name field label
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre de la flota'**
+  String get fleetNameFieldLabel;
+
+  /// Fleet name field placeholder
+  ///
+  /// In es, this message translates to:
+  /// **'Grúas del Valle'**
+  String get fleetNameFieldHint;
+
+  /// Submits the become-a-fleet-owner form
+  ///
+  /// In es, this message translates to:
+  /// **'Crear flota'**
+  String get becomeFleetOwnerSubmitButton;
+
+  /// Shown when fleet creation fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos crear tu flota. Intenta de nuevo.'**
+  String get becomeFleetOwnerSubmitError;
+
+  /// FLT-3: fleet-owner home ('Mi flota') screen app bar title
+  ///
+  /// In es, this message translates to:
+  /// **'Mi flota'**
+  String get fleetHomeTitle;
+
+  /// FLT-3: shown when loading the fleet fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar tu flota. Intenta de nuevo.'**
+  String get fleetLoadError;
+
+  /// FLT-3: shown when the fleet has no trucks yet
+  ///
+  /// In es, this message translates to:
+  /// **'Tu flota aún no tiene grúas. Agrega una con su placa.'**
+  String get fleetEmptyBody;
+
+  /// FLT-3: per-truck status label when the truck has no driver assigned yet
+  ///
+  /// In es, this message translates to:
+  /// **'Sin conductor'**
+  String get fleetTruckStatusUnassigned;
+
   /// CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation
   ///
   /// In es, this message translates to:

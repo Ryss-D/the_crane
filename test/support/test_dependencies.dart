@@ -4,6 +4,7 @@ import 'package:the_crane/app/di.dart';
 import 'package:the_crane/core/api/api_client.dart';
 import 'package:the_crane/core/api/fake_auth_repository.dart';
 import 'package:the_crane/core/api/fake_drivers_repository.dart';
+import 'package:the_crane/core/api/fake_fleet_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/api/fake_vehicles_repository.dart';
 import 'package:the_crane/core/auth/fake_phone_auth_gateway.dart';
@@ -37,6 +38,7 @@ AppDependencies testDependencies({
   FakeJobsRepository? jobs,
   FakeDriversRepository? drivers,
   FakeVehiclesRepository? vehicles,
+  FakeFleetRepository? fleet,
   UserRole authRole = UserRole.customer,
 }) {
   final jobsRepository = jobs ?? fastFakeJobs();
@@ -56,6 +58,18 @@ AppDependencies testDependencies({
         ),
     vehiclesRepository:
         vehicles ?? FakeVehiclesRepository(delay: const Duration(milliseconds: 10)),
+    fleetRepository:
+        fleet ??
+        FakeFleetRepository(
+          auth: authRepository,
+          actionDelay: const Duration(milliseconds: 20),
+          // FLT-3/4/5 screen tests sign in directly as a fleet owner and
+          // need a fleet already there to load; the "become a fleet
+          // owner" flow itself (customer -> fleet_owner) instead wants a
+          // clean slate so `createFleet`'s real double-create guard stays
+          // exercised.
+          seeded: authRole == UserRole.fleetOwner,
+        ),
     authCubit: AuthCubit(
       gateway: FakePhoneAuthGateway(
         sendDelay: const Duration(milliseconds: 10),

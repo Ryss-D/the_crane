@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/api/drivers_repository.dart';
+import '../core/api/fleet_repository.dart';
 import '../core/api/jobs_repository.dart';
 import '../core/api/vehicles_repository.dart';
 import '../core/location/location_source.dart';
@@ -19,6 +20,7 @@ import '../features/customer/request/matching_screen.dart';
 import '../features/customer/request/request_bloc.dart';
 import '../features/customer/request/request_screen.dart';
 import '../features/customer/settings/become_driver_screen.dart';
+import '../features/customer/settings/become_fleet_owner_screen.dart';
 import '../features/customer/settings/saved_vehicles_cubit.dart';
 import '../features/customer/settings/saved_vehicles_screen.dart';
 import '../features/customer/settings/settings_screen.dart';
@@ -31,6 +33,8 @@ import '../features/driver/home/driver_home_screen.dart';
 import '../features/driver/home/offer_cubit.dart';
 import '../features/driver/job/active_job_cubit.dart';
 import '../features/driver/job/active_job_screen.dart';
+import '../features/fleet/home/fleet_cubit.dart';
+import '../features/fleet/home/fleet_home_screen.dart';
 import '../features/shared/history/history_cubit.dart';
 import '../features/shared/history/history_screen.dart';
 
@@ -44,12 +48,22 @@ abstract final class AppRoute {
   static const customerHistory = '/customer/history';
   static const customerSettings = '/customer/settings';
   static const customerBecomeDriver = '/customer/settings/become-driver';
+  static const customerBecomeFleetOwner =
+      '/customer/settings/become-fleet-owner';
   static const customerVehicles = '/customer/settings/vehicles';
   static const driverHome = '/driver';
   static const driverJob = '/driver/job';
   static const driverHistory = '/driver/history';
   static const driverEarnings = '/driver/earnings';
   static const driverServicesPeriod = '/driver/earnings/services';
+  static const fleetHome = '/fleet';
+  static const fleetAddTruck = '/fleet/add-truck';
+  static const fleetBalance = '/fleet/balance';
+
+  /// FLT-3: truck detail is a path-parameterized route (`trucks/:truckId`)
+  /// rather than a fixed constant — this builds the concrete path for a
+  /// given truck to navigate to.
+  static String fleetTruckDetail(String truckId) => '/fleet/trucks/$truckId';
 }
 
 const _authRoutes = {AppRoute.signIn, AppRoute.otp, AppRoute.completeProfile};
@@ -72,18 +86,24 @@ String? routerRedirect(GoRouterState state, AuthCubit authCubit) {
     case AuthPhase.needsProfile:
       return loc == AppRoute.completeProfile ? null : AppRoute.completeProfile;
     case AuthPhase.authenticated:
-      final isDriver = authState.user?.role == UserRole.driver;
-      final home = isDriver ? AppRoute.driverHome : AppRoute.customerHome;
+      final home = switch (authState.user?.role) {
+        UserRole.driver => AppRoute.driverHome,
+        UserRole.fleetOwner => AppRoute.fleetHome,
+        _ => AppRoute.customerHome,
+      };
       if (_authRoutes.contains(loc)) return home;
-      // AUTH-5: becoming a driver flips the role while the app is still
-      // sitting inside the customer shell (e.g. on the become-driver
-      // screen itself) — bounce out of whichever shell no longer matches
-      // the current role once `AuthCubit.refreshUser` picks that up. A
-      // customer can never be inside `/driver/...` in the first place, so
-      // this is one-directional in practice, but is written symmetrically.
-      final inWrongShell = isDriver
-          ? loc.startsWith(AppRoute.customerHome)
-          : loc.startsWith(AppRoute.driverHome);
+      // AUTH-5/FLT-1: becoming a driver or a fleet owner flips the role
+      // while the app is still sitting inside the customer shell (e.g. on
+      // the become-driver/become-fleet-owner screen itself) — bounce out
+      // of whichever shell no longer matches the current role once
+      // `AuthCubit.refreshUser` picks that up. A customer can never be
+      // inside `/driver/...` or `/fleet/...` in the first place, so this
+      // is one-directional in practice, but is written symmetrically over
+      // all three shells.
+      final inWrongShell = !loc.startsWith(home) &&
+          (loc.startsWith(AppRoute.customerHome) ||
+              loc.startsWith(AppRoute.driverHome) ||
+              loc.startsWith(AppRoute.fleetHome));
       return inWrongShell ? home : null;
   }
 }
@@ -161,6 +181,11 @@ GoRouter createRouter(AuthCubit authCubit) {
                   GoRoute(
                     path: 'become-driver',
                     builder: (context, state) => const BecomeDriverScreen(),
+                  ),
+                  GoRoute(
+                    path: 'become-fleet-owner',
+                    builder: (context, state) =>
+                        const BecomeFleetOwnerScreen(),
                   ),
                   GoRoute(
                     path: 'vehicles',
@@ -242,6 +267,20 @@ GoRouter createRouter(AuthCubit authCubit) {
                 ],
               ),
             ],
+          ),
+        ],
+      ),
+      ShellRoute(
+        builder: (context, state, child) => BlocProvider(
+          create: (context) => FleetCubit(
+            fleetRepository: context.read<FleetRepository>(),
+          )..load(),
+          child: child,
+        ),
+        routes: [
+          GoRoute(
+            path: AppRoute.fleetHome,
+            builder: (context, state) => const FleetHomeScreen(),
           ),
         ],
       ),

@@ -23,6 +23,19 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   Tested (`test_fleet_trucks_show_live_driver_status_and_name`), full suite green
   (217 passed).
 
+  Flutter half in progress: `Truck` gained the same `driverStatus`/`driverName`
+  fields, plus `Fleet`/`FleetBalance` models and a `FleetRepository` (interface +
+  `ApiFleetRepository` + `FakeFleetRepository`, same seam every other repository
+  uses). The onboarding half also landed -- a "Crear mi flota" entry in
+  `SettingsScreen` -> `BecomeFleetOwnerScreen` (fleet name only) ->
+  `FleetRepository.createFleet` -> `AuthCubit.refreshUser()`, and `routerRedirect`
+  now sends `fleet_owner` to a new `/fleet` `ShellRoute` (`FleetCubit` +
+  `FleetHomeScreen`) instead of the customer/driver shells. `FleetHomeScreen`
+  lists every truck with its plate, driver name, and status at a glance
+  (available/on job/offline/unassigned -- `TruckFleetStatusLabel` in
+  `labels.dart`). Not yet checking this off: tap-through to a truck detail
+  screen (this AC's own bullet) isn't built yet -- next commit.
+
 - [ ] **FLT-4 — Assign driver to truck** *(deps: FLT-3)*
   Link a verified driver to an unassigned truck, or invite a new driver (phone invite → signup lands pre-linked); unassign flow.
   Design: «Asignar conductor a una grúa» (`docs/design/screen-references.md`)

@@ -369,6 +369,42 @@ class AppLocalizationsEs extends AppLocalizations {
       'No pudimos completar el registro. Intenta de nuevo.';
 
   @override
+  String get becomeFleetOwnerMenuItem => 'Crear mi flota';
+
+  @override
+  String get becomeFleetOwnerTitle => 'Crea tu flota';
+
+  @override
+  String get becomeFleetOwnerIntro =>
+      'Dale un nombre a tu flota para empezar a administrar tus grúas y conductores.';
+
+  @override
+  String get fleetNameFieldLabel => 'Nombre de la flota';
+
+  @override
+  String get fleetNameFieldHint => 'Grúas del Valle';
+
+  @override
+  String get becomeFleetOwnerSubmitButton => 'Crear flota';
+
+  @override
+  String get becomeFleetOwnerSubmitError =>
+      'No pudimos crear tu flota. Intenta de nuevo.';
+
+  @override
+  String get fleetHomeTitle => 'Mi flota';
+
+  @override
+  String get fleetLoadError => 'No pudimos cargar tu flota. Intenta de nuevo.';
+
+  @override
+  String get fleetEmptyBody =>
+      'Tu flota aún no tiene grúas. Agrega una con su placa.';
+
+  @override
+  String get fleetTruckStatusUnassigned => 'Sin conductor';
+
+  @override
   String get cashPaymentPendingBody =>
       'Confirma que recibiste el pago en efectivo para finalizar el servicio.';
 
