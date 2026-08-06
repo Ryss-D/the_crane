@@ -204,7 +204,13 @@ class FakeJobsRepository implements JobsRepository {
     final job = _jobs[id];
     if (job == null) throw StateError('Unknown job: $id');
     if (job.status.nextDriverStatus != status) {
-      throw StateError('Illegal transition ${job.status.wire} → ${status.wire}');
+      // Mirrors the real backend's 409 shape (`update_job_status` in
+      // `backend/app/api/jobs.py`) so DRV-3 tests can trigger the same
+      // `JobStatusRejectedException` `ActiveJobCubit` catches against the
+      // real dio-backed repository.
+      throw JobStatusRejectedException(
+        'Drivers cannot set status ${status.wire}',
+      );
     }
     final now = DateTime.now();
     final updated = job.copyWith(

@@ -1,12 +1,27 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../core/api/jobs_repository.dart';
 import '../../../core/location/location_source.dart';
 import '../../../core/models/job.dart';
 import '../../../core/models/lat_lng.dart';
 import '../../../core/ws/crane_socket.dart';
+
+part 'active_job_cubit.freezed.dart';
+
+/// DRV-3 state: the driver's active job plus the last backend rejection
+/// message from `advance()`, if any (409/403 — see
+/// `JobStatusRejectedException`). [errorMessage] is transient: it's cleared
+/// the moment another `advance()` attempt starts.
+@freezed
+abstract class ActiveJobState with _$ActiveJobState {
+  const factory ActiveJobState({
+    Job? job,
+    String? errorMessage,
+  }) = _ActiveJobState;
+}
 
 /// DRV-3 skeleton — holds the driver's active job and advances the JOB-3
 /// state machine via `POST /v1/jobs/{id}/status`.
@@ -22,7 +37,7 @@ import '../../../core/ws/crane_socket.dart';
 /// the *customer* confirms cash payment (CUS-5's `confirmDelivery` — the
 /// driver has no equivalent action) is reflected here live, not just after
 /// the driver's own `advance()` calls.
-class ActiveJobCubit extends Cubit<Job?> {
+class ActiveJobCubit extends Cubit<ActiveJobState> {
   ActiveJobCubit({
     required JobsRepository jobsRepository,
     CraneSocket? socket,
@@ -31,7 +46,7 @@ class ActiveJobCubit extends Cubit<Job?> {
   })  : _repo = jobsRepository,
         _socket = socket,
         _locationSource = locationSource,
-        super(null);
+        super(const ActiveJobState());
 
   final JobsRepository _repo;
   final CraneSocket? _socket;
@@ -58,7 +73,7 @@ class ActiveJobCubit extends Cubit<Job?> {
 
   /// Set right after an accepted offer (see `OfferCubit.accept`).
   void start(Job job) {
-    emit(job);
+    emit(ActiveJobState(job: job));
     _syncLocationTimer(job);
     _watch(job.id);
   }
@@ -71,23 +86,32 @@ class ActiveJobCubit extends Cubit<Job?> {
     _jobSub?.cancel();
     _jobSub = _repo.watchJob(jobId).listen((job) {
       if (isClosed) return;
-      emit(job);
+      emit(state.copyWith(job: job));
       _syncLocationTimer(job);
     });
   }
 
   /// Advances to the next driver status; no-op when the job is terminal.
+  ///
+  /// DRV-3: a rejected transition (409/403 —
+  /// [JobStatusRejectedException], thrown by both `JobsRepository`
+  /// implementations) surfaces its message via [ActiveJobState.errorMessage]
+  /// instead of failing silently; any other error is still swallowed, same
+  /// as before.
   Future<void> advance() async {
-    final job = state;
+    final job = state.job;
     final next = job?.status.nextDriverStatus;
     if (job == null || next == null || _advancing) return;
     _advancing = true;
+    emit(state.copyWith(errorMessage: null));
     try {
       final updated = await _repo.updateJobStatus(job.id, next);
-      emit(updated);
+      emit(state.copyWith(job: updated));
       _syncLocationTimer(updated);
+    } on JobStatusRejectedException catch (e) {
+      emit(state.copyWith(errorMessage: e.message));
     } catch (_) {
-      // TODO(DRV-3): surface backend rejections (409/403) in the UI.
+      // Non-rejection failure (e.g. network) — nothing to surface yet.
     } finally {
       _advancing = false;
     }
@@ -106,7 +130,7 @@ class ActiveJobCubit extends Cubit<Job?> {
       _lastFix = fix;
     });
     _locationTimer ??= Timer.periodic(locationInterval, (_) {
-      final current = state;
+      final current = state.job;
       if (current == null) return;
       // Prefer the live GPS fix; fall back to the job's pickup point when no
       // LocationSource was wired (fakes, or tests that don't care about
@@ -126,7 +150,7 @@ class ActiveJobCubit extends Cubit<Job?> {
 
   /// Clears the finished job when the driver returns home.
   void clear() {
-    emit(null);
+    emit(const ActiveJobState());
     _stopLocationTracking();
     _jobSub?.cancel();
     _jobSub = null;

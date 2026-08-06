@@ -22,6 +22,22 @@ enum JobHistoryRole {
   final String wire;
 }
 
+/// Thrown by [JobsRepository.updateJobStatus] when the backend rejects the
+/// transition rather than applying it — mirrors `backend/app/api/jobs.py`'s
+/// `update_job_status`: 403 ("Only the assigned driver may update job
+/// status", "Completion is confirmed by the customer (confirm-delivery)")
+/// or 409 (`JobTransitionError`, e.g. an out-of-order transition). Carries
+/// the backend's `detail` string verbatim so `ActiveJobCubit` (DRV-3) can
+/// surface it as-is. Both implementations throw this exact type.
+class JobStatusRejectedException implements Exception {
+  JobStatusRejectedException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// Job-domain operations used by both the customer and driver flows.
 ///
 /// Implementations: [ApiJobsRepository] (dio → FastAPI) and
@@ -238,11 +254,21 @@ class ApiJobsRepository implements JobsRepository {
 
   @override
   Future<Job> updateJobStatus(String id, JobStatus status) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/v1/jobs/$id/status',
-      data: {'status': status.wire},
-    );
-    return Job.fromJson(res.data!);
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/v1/jobs/$id/status',
+        data: {'status': status.wire},
+      );
+      return Job.fromJson(res.data!);
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 403 || code == 409) {
+        final data = e.response?.data;
+        final detail = data is Map ? data['detail']?.toString() : null;
+        throw JobStatusRejectedException(detail ?? 'Status update rejected');
+      }
+      rethrow;
+    }
   }
 
   @override
