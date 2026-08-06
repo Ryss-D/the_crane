@@ -538,6 +538,54 @@
   "@fleetTruckStatusLabel": {
     "description": "FLT-3: label above the status-at-a-glance value on the truck detail screen"
   },
+  "addTruckTitle": "Agregar camión",
+  "@addTruckTitle": {
+    "description": "FLT-4: add-truck screen app bar title, and the fleet home FAB tooltip"
+  },
+  "addTruckIntro": "Busca una grúa por su placa para agregarla a tu flota.",
+  "@addTruckIntro": {
+    "description": "FLT-4: add-truck screen intro copy"
+  },
+  "addTruckSearchButton": "Buscar",
+  "@addTruckSearchButton": {
+    "description": "FLT-4: searches for a truck by plate"
+  },
+  "addTruckNotFoundBody": "No encontramos ninguna grúa con esa placa.",
+  "@addTruckNotFoundBody": {
+    "description": "FLT-4: shown when no truck matches the searched plate"
+  },
+  "addTruckSearchError": "No pudimos buscar la grúa. Intenta de nuevo.",
+  "@addTruckSearchError": {
+    "description": "FLT-4: shown when the plate lookup fails for a reason other than not-found"
+  },
+  "addTruckAlreadyClaimedBody": "Esta grúa ya pertenece a otra flota y no se puede agregar.",
+  "@addTruckAlreadyClaimedBody": {
+    "description": "FLT-4: shown when the found truck already belongs to a fleet"
+  },
+  "addTruckAttachButton": "Agregar a mi flota",
+  "@addTruckAttachButton": {
+    "description": "FLT-4: confirms attaching the found, unclaimed truck to the caller's fleet"
+  },
+  "addTruckAttachError": "No pudimos agregar la grúa. Intenta de nuevo.",
+  "@addTruckAttachError": {
+    "description": "FLT-4: shown when attaching the truck fails"
+  },
+  "detachTruckConfirmTitle": "¿Quitar grúa de la flota?",
+  "@detachTruckConfirmTitle": {
+    "description": "FLT-4: detach-truck confirmation dialog title"
+  },
+  "detachTruckConfirmBody": "El conductor asignado ya no pertenecerá a esta flota.",
+  "@detachTruckConfirmBody": {
+    "description": "FLT-4: detach-truck confirmation dialog body"
+  },
+  "detachTruckButton": "Quitar de la flota",
+  "@detachTruckButton": {
+    "description": "FLT-4: detaches a truck from the caller's fleet"
+  },
+  "detachTruckError": "No pudimos quitar la grúa. Intenta de nuevo.",
+  "@detachTruckError": {
+    "description": "FLT-4: shown when detaching the truck fails"
+  },
   "cashPaymentPendingBody": "Confirma que recibiste el pago en efectivo para finalizar el servicio.",
   "@cashPaymentPendingBody": {
     "description": "CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation"

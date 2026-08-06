@@ -52,6 +52,22 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   backend invite/token mechanism that doesn't exist -- out of scope until someone
   builds it.
 
+  Built (the buildable half): a new "agregar camión" flow (`AddTruckScreen`,
+  reachable from "Mi flota"'s FAB) -- a fleet owner types a plate,
+  `FleetRepository.findTruckByPlate` looks it up, and if it's unclaimed
+  (`fleetId == null`) a confirm button calls `attachTruck`; if it's already
+  claimed by another fleet, that's shown as a clear, distinct message instead of
+  a generic error, and there's no attach button to tap. An unknown plate (404,
+  `TruckNotFoundException`) gets its own message too. `FleetTruckDetailScreen`
+  gained a detach action (confirm dialog -> `detachTruck` -> pops back to "Mi
+  flota", which refreshes via `FleetCubit.refresh()`). Not checking this off --
+  the AC talks about "a verified driver" and dispatch capacity implications that
+  assume the invite/consent flow this task originally specified; that half
+  genuinely cannot be built without new backend work (no invite/token
+  mechanism exists -- see the backend note above). What's built is the full
+  extent of what's buildable today. 4 new widget tests (attach, already
+  -claimed, not-found, detach), full suite green (112 passed).
+
 - [ ] **FLT-5 — Fleet earnings screen** *(deps: FLT-2)*
   Commission accrued per truck, consolidated balance owed, settlement action (cash instructions; Wompi via PAY-3 pattern later).
   Design: «Ganancias de la flota» (`docs/design/screen-references.md`)

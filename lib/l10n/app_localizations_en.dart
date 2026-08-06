@@ -415,6 +415,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fleetTruckStatusLabel => 'Status';
 
   @override
+  String get addTruckTitle => 'Add truck';
+
+  @override
+  String get addTruckIntro =>
+      'Look up a truck by its plate to add it to your fleet.';
+
+  @override
+  String get addTruckSearchButton => 'Search';
+
+  @override
+  String get addTruckNotFoundBody =>
+      'We could not find a truck with that plate.';
+
+  @override
+  String get addTruckSearchError =>
+      'We could not look up the truck. Please try again.';
+
+  @override
+  String get addTruckAlreadyClaimedBody =>
+      'This truck already belongs to another fleet and cannot be added.';
+
+  @override
+  String get addTruckAttachButton => 'Add to my fleet';
+
+  @override
+  String get addTruckAttachError =>
+      'We could not add the truck. Please try again.';
+
+  @override
+  String get detachTruckConfirmTitle => 'Remove truck from the fleet?';
+
+  @override
+  String get detachTruckConfirmBody =>
+      'Its assigned driver will no longer belong to this fleet.';
+
+  @override
+  String get detachTruckButton => 'Remove from fleet';
+
+  @override
+  String get detachTruckError =>
+      'We could not remove the truck. Please try again.';
+
+  @override
   String get cashPaymentPendingBody =>
       'Confirm you received the cash payment to finish the job.';
 

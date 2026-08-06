@@ -860,6 +860,78 @@ abstract class AppLocalizations {
   /// **'Estado'**
   String get fleetTruckStatusLabel;
 
+  /// FLT-4: add-truck screen app bar title, and the fleet home FAB tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar camión'**
+  String get addTruckTitle;
+
+  /// FLT-4: add-truck screen intro copy
+  ///
+  /// In es, this message translates to:
+  /// **'Busca una grúa por su placa para agregarla a tu flota.'**
+  String get addTruckIntro;
+
+  /// FLT-4: searches for a truck by plate
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar'**
+  String get addTruckSearchButton;
+
+  /// FLT-4: shown when no truck matches the searched plate
+  ///
+  /// In es, this message translates to:
+  /// **'No encontramos ninguna grúa con esa placa.'**
+  String get addTruckNotFoundBody;
+
+  /// FLT-4: shown when the plate lookup fails for a reason other than not-found
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos buscar la grúa. Intenta de nuevo.'**
+  String get addTruckSearchError;
+
+  /// FLT-4: shown when the found truck already belongs to a fleet
+  ///
+  /// In es, this message translates to:
+  /// **'Esta grúa ya pertenece a otra flota y no se puede agregar.'**
+  String get addTruckAlreadyClaimedBody;
+
+  /// FLT-4: confirms attaching the found, unclaimed truck to the caller's fleet
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar a mi flota'**
+  String get addTruckAttachButton;
+
+  /// FLT-4: shown when attaching the truck fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos agregar la grúa. Intenta de nuevo.'**
+  String get addTruckAttachError;
+
+  /// FLT-4: detach-truck confirmation dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'¿Quitar grúa de la flota?'**
+  String get detachTruckConfirmTitle;
+
+  /// FLT-4: detach-truck confirmation dialog body
+  ///
+  /// In es, this message translates to:
+  /// **'El conductor asignado ya no pertenecerá a esta flota.'**
+  String get detachTruckConfirmBody;
+
+  /// FLT-4: detaches a truck from the caller's fleet
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar de la flota'**
+  String get detachTruckButton;
+
+  /// FLT-4: shown when detaching the truck fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos quitar la grúa. Intenta de nuevo.'**
+  String get detachTruckError;
+
   /// CUS-5: shown on the assigned-driver card once the job is delivered, prompting cash-payment confirmation
   ///
   /// In es, this message translates to:

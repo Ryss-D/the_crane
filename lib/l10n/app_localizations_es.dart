@@ -414,6 +414,48 @@ class AppLocalizationsEs extends AppLocalizations {
   String get fleetTruckStatusLabel => 'Estado';
 
   @override
+  String get addTruckTitle => 'Agregar camión';
+
+  @override
+  String get addTruckIntro =>
+      'Busca una grúa por su placa para agregarla a tu flota.';
+
+  @override
+  String get addTruckSearchButton => 'Buscar';
+
+  @override
+  String get addTruckNotFoundBody =>
+      'No encontramos ninguna grúa con esa placa.';
+
+  @override
+  String get addTruckSearchError =>
+      'No pudimos buscar la grúa. Intenta de nuevo.';
+
+  @override
+  String get addTruckAlreadyClaimedBody =>
+      'Esta grúa ya pertenece a otra flota y no se puede agregar.';
+
+  @override
+  String get addTruckAttachButton => 'Agregar a mi flota';
+
+  @override
+  String get addTruckAttachError =>
+      'No pudimos agregar la grúa. Intenta de nuevo.';
+
+  @override
+  String get detachTruckConfirmTitle => '¿Quitar grúa de la flota?';
+
+  @override
+  String get detachTruckConfirmBody =>
+      'El conductor asignado ya no pertenecerá a esta flota.';
+
+  @override
+  String get detachTruckButton => 'Quitar de la flota';
+
+  @override
+  String get detachTruckError => 'No pudimos quitar la grúa. Intenta de nuevo.';
+
+  @override
   String get cashPaymentPendingBody =>
       'Confirma que recibiste el pago en efectivo para finalizar el servicio.';
 

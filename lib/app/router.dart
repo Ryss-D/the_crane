@@ -33,6 +33,7 @@ import '../features/driver/home/driver_home_screen.dart';
 import '../features/driver/home/offer_cubit.dart';
 import '../features/driver/job/active_job_cubit.dart';
 import '../features/driver/job/active_job_screen.dart';
+import '../features/fleet/add_truck/add_truck_screen.dart';
 import '../features/fleet/home/fleet_cubit.dart';
 import '../features/fleet/home/fleet_home_screen.dart';
 import '../features/fleet/truck_detail/fleet_truck_detail_screen.dart';
@@ -288,6 +289,10 @@ GoRouter createRouter(AuthCubit authCubit) {
                 builder: (context, state) => FleetTruckDetailScreen(
                   truckId: state.pathParameters['truckId']!,
                 ),
+              ),
+              GoRoute(
+                path: 'add-truck',
+                builder: (context, state) => const AddTruckScreen(),
               ),
             ],
           ),

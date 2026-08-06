@@ -55,6 +55,12 @@ class FleetHomeScreen extends StatelessWidget {
           },
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        key: const Key('addTruckButton'),
+        tooltip: l10n.addTruckTitle,
+        onPressed: () => context.push(AppRoute.fleetAddTruck),
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
