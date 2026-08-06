@@ -43,3 +43,24 @@ Runtime control of pricing, commission, settlement, and dispatch — plus driver
   Fleet owners list with their trucks, per-truck driver assignment, and consolidated fleet balance.
   Design: «Flotas y dueños de grúas» (`docs/design/screen-references.md`)
   *AC: consolidated balance equals the sum of the fleet's driver ledger balances.*
+  Built: `FleetsPage` (`admin/src/features/fleets/`) — table of every fleet
+  (owner, name, truck count, consolidated owed balance) via `GET
+  /v1/admin/fleets`; clicking a row drills into its member-balance breakdown
+  (`GET /v1/admin/fleets/{id}/balance`); a "Liquidar flota" action posts to
+  `POST /v1/admin/fleets/{id}/settle` (amount + optional note) and shows the
+  resulting per-driver apportionment as confirmation, then refreshes both the
+  list and the drill-down. Wired into the sidebar nav and router alongside
+  ADM-1..6. `CraneAdminApi` gained `getFleets`/`getFleetBalance`/
+  `settleFleet`; `MockApi` seeds 2 fleets (3 and 2 member drivers, reusing
+  existing seed drivers' ledger balances so the consolidated total is
+  mechanically the sum of its members, satisfying the AC directly — verified
+  by test) plus a largest-remainder `apportion()` mirroring the backend's.
+  3 new tests in `FleetsPage.test.tsx` (list totals, member drill-down,
+  settle-and-refresh), full admin suite green (lint/test/build all clean).
+  Not built: per-truck driver assignment — there is no admin-facing endpoint
+  for it (only `GET /fleets`, `GET /fleets/{id}/balance`, `POST
+  /fleets/{id}/settle` exist in `backend/app/api/admin.py`); assigning a
+  driver to a truck is owner-facing (`POST/DELETE /v1/fleets/me/trucks/
+  {truck_id}` from FLT-1) and slated for FLT-4, not this admin task. Leaving
+  the box unchecked since that part of the original bullet's scope is
+  genuinely not covered yet.
