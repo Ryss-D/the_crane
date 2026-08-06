@@ -57,6 +57,7 @@
   "availableHint": "Waiting for nearby offers…",
   "blockedBannerUnverified": "Your account is pending verification. You will not receive offers yet.",
   "blockedBannerAdmin": "Your account is blocked. Contact support for details.",
+  "blockedBannerBalanceCap": "Your owed balance exceeded the allowed cap. Settle your balance to go available again.",
   "devTriggerOfferButton": "Simulate offer (dev)",
   "offerTitle": "New job offer",
   "offerPickupDistance": "{km} km away from you",
@@ -177,5 +178,8 @@
   "servicesPeriodLoadError": "We could not load your services. Please try again.",
   "servicesCountLabel": "{count} services",
   "servicesEarningsLabel": "Cash collected",
-  "servicesCommissionLabel": "Commission"
+  "servicesCommissionLabel": "Commission",
+  "callDriverButton": "Call driver",
+  "shareTripButton": "Share trip",
+  "shareTripLinkCopied": "Link copied to clipboard"
 }

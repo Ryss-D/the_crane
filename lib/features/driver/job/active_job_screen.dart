@@ -22,9 +22,28 @@ class ActiveJobScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<ActiveJobCubit, ActiveJobState>(
+      listenWhen: (previous, current) =>
+          current.errorMessage != null &&
+          current.errorMessage != previous.errorMessage,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.errorMessage!)),
+        );
+      },
+      child: const _ActiveJobView(),
+    );
+  }
+}
+
+class _ActiveJobView extends StatelessWidget {
+  const _ActiveJobView();
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final job = context.watch<ActiveJobCubit>().state;
+    final job = context.watch<ActiveJobCubit>().state.job;
     final cubit = context.read<ActiveJobCubit>();
 
     if (job == null) {

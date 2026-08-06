@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/core/api/fake_drivers_repository.dart';
+import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/api/jobs_repository.dart';
 import 'package:the_crane/core/models/app_user.dart';
 import 'package:the_crane/features/driver/home/driver_home_screen.dart';
 import 'package:the_crane/features/driver/job/active_job_screen.dart';
 import 'package:the_crane/main.dart';
 
+import '../../support/rejecting_jobs_repository.dart';
 import '../../support/test_dependencies.dart';
 
 void main() {
@@ -44,6 +47,54 @@ void main() {
           )
           .enabled,
       isFalse,
+    );
+  });
+
+  testWidgets(
+      'DRV-1: a balance-cap rejection on going available shows its own '
+      'banner and leaves the driver offline', (tester) async {
+    final jobs = FakeJobsRepository(actionDelay: const Duration(milliseconds: 10));
+    final drivers = FakeDriversRepository(
+      jobs: jobs,
+      actionDelay: const Duration(milliseconds: 10),
+    )..rejectNextAvailableWithBalanceCap = true;
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(
+        jobs: jobs,
+        drivers: drivers,
+        authRole: UserRole.driver,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    expect(find.byType(DriverHomeScreen), findsOneWidget);
+
+    expect(find.text('Desconectado'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('availabilityToggle')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20)); // actionDelay
+
+    // Rejected: still offline, and the balance-cap banner shows.
+    expect(find.text('Desconectado'), findsOneWidget);
+    expect(
+      find.text(
+        'Tu saldo pendiente superó el límite permitido. Paga tu saldo '
+        'para volver a conectarte.',
+      ),
+      findsOneWidget,
+    );
+
+    // A later toggle (cap lifted) succeeds normally and clears the banner.
+    await tester.tap(find.byKey(const Key('availabilityToggle')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('Disponible'), findsOneWidget);
+    expect(
+      find.text(
+        'Tu saldo pendiente superó el límite permitido. Paga tu saldo '
+        'para volver a conectarte.',
+      ),
+      findsNothing,
     );
   });
 
@@ -141,5 +192,48 @@ void main() {
     expect(find.text('Nueva oferta de servicio'), findsNothing);
     expect(find.byType(ActiveJobScreen), findsNothing);
     expect(find.byType(DriverHomeScreen), findsOneWidget);
+  });
+
+  testWidgets(
+      'DRV-3: a rejected advance() shows the backend message and leaves '
+      'the job on its current status', (tester) async {
+    final jobs = RejectingOnceJobsRepository(
+      actionDelay: const Duration(milliseconds: 10),
+    );
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(jobs: jobs, authRole: UserRole.driver),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await goAvailable(tester);
+
+    await tester.tap(find.byKey(const Key('devTriggerOfferButton')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400)); // sheet animation
+
+    await tester.tap(find.byKey(const Key('acceptOfferButton')));
+    await tester.pump(const Duration(milliseconds: 50)); // accept delay
+    await tester.pump(const Duration(milliseconds: 400)); // pop + push
+    expect(find.byType(ActiveJobScreen), findsOneWidget);
+    expect(find.text('Asignada'), findsOneWidget);
+
+    jobs.rejectNext = true;
+    await tester.tap(find.byKey(const Key('advanceStatusButton')));
+    await tester.pump(const Duration(milliseconds: 20)); // actionDelay
+    await tester.pump(); // SnackBar animation
+
+    expect(
+      find.text('Drivers cannot set status en_route_pickup'),
+      findsWidgets,
+    );
+    // The job didn't move — still `assigned`, advance button still shows
+    // the same "En camino" action.
+    expect(find.text('Asignada'), findsOneWidget);
+    expect(find.text('En camino'), findsOneWidget);
+
+    // A later, non-rejected advance still works normally.
+    await tester.tap(find.byKey(const Key('advanceStatusButton')));
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.text('En camino a la recogida'), findsOneWidget);
   });
 }

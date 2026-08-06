@@ -194,6 +194,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account is blocked. Contact support for details.';
 
   @override
+  String get blockedBannerBalanceCap =>
+      'Your owed balance exceeded the allowed cap. Settle your balance to go available again.';
+
+  @override
   String get devTriggerOfferButton => 'Simulate offer (dev)';
 
   @override
@@ -585,4 +589,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get servicesCommissionLabel => 'Commission';
+
+  @override
+  String get callDriverButton => 'Call driver';
+
+  @override
+  String get shareTripButton => 'Share trip';
+
+  @override
+  String get shareTripLinkCopied => 'Link copied to clipboard';
 }

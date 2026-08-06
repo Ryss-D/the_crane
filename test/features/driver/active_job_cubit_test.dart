@@ -4,6 +4,8 @@ import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/models/job.dart';
 import 'package:the_crane/features/driver/job/active_job_cubit.dart';
 
+import '../../support/rejecting_jobs_repository.dart';
+
 void main() {
   test('advance cycles the driver-owned machine up to delivered, no further',
       () async {
@@ -14,12 +16,12 @@ void main() {
 
     final offer = drivers.debugTriggerOffer();
     cubit.start(await jobs.acceptJob(offer.job.id));
-    expect(cubit.state!.status, JobStatus.assigned);
+    expect(cubit.state.job!.status, JobStatus.assigned);
 
     final seen = <JobStatus>[];
-    while (cubit.state!.status.nextDriverStatus != null) {
+    while (cubit.state.job!.status.nextDriverStatus != null) {
       await cubit.advance();
-      seen.add(cubit.state!.status);
+      seen.add(cubit.state.job!.status);
     }
     expect(seen, [
       JobStatus.enRoutePickup,
@@ -28,16 +30,16 @@ void main() {
       JobStatus.inTransit,
       JobStatus.delivered,
     ]);
-    expect(cubit.state!.status, JobStatus.delivered);
-    expect(cubit.state!.completedAt, isNull);
+    expect(cubit.state.job!.status, JobStatus.delivered);
+    expect(cubit.state.job!.completedAt, isNull);
 
     // Delivered is terminal for the driver: advancing further is a no-op —
     // only the customer's confirm-delivery (CUS-5) can complete it now.
     await cubit.advance();
-    expect(cubit.state!.status, JobStatus.delivered);
+    expect(cubit.state.job!.status, JobStatus.delivered);
 
     cubit.clear();
-    expect(cubit.state, isNull);
+    expect(cubit.state.job, isNull);
     await cubit.close();
   });
 
@@ -59,15 +61,43 @@ void main() {
       // The cubit's own watchJob subscription picks these up too; give it a
       // turn before asserting.
       await Future<void>.delayed(Duration.zero);
-      expect(cubit.state!.status, JobStatus.delivered);
+      expect(cubit.state.job!.status, JobStatus.delivered);
 
       // Simulates the customer's `RequestDeliveryConfirmed` — an action the
       // driver side never calls directly.
       await jobs.confirmDelivery(job.id);
       await Future<void>.delayed(Duration.zero);
 
-      expect(cubit.state!.status, JobStatus.completed);
-      expect(cubit.state!.completedAt, isNotNull);
+      expect(cubit.state.job!.status, JobStatus.completed);
+      expect(cubit.state.job!.completedAt, isNotNull);
+
+      cubit.clear();
+      await cubit.close();
+    },
+  );
+
+  test(
+    'DRV-3: a rejected advance() surfaces the backend message and leaves '
+    'the job untouched; a later success clears it',
+    () async {
+      final jobs = RejectingOnceJobsRepository(actionDelay: Duration.zero);
+      final drivers =
+          FakeDriversRepository(jobs: jobs, actionDelay: Duration.zero);
+      final cubit = ActiveJobCubit(jobsRepository: jobs);
+
+      final offer = drivers.debugTriggerOffer();
+      cubit.start(await jobs.acceptJob(offer.job.id));
+      expect(cubit.state.errorMessage, isNull);
+
+      jobs.rejectNext = true;
+      await cubit.advance();
+
+      expect(cubit.state.errorMessage, 'Drivers cannot set status en_route_pickup');
+      expect(cubit.state.job!.status, JobStatus.assigned);
+
+      await cubit.advance();
+      expect(cubit.state.errorMessage, isNull);
+      expect(cubit.state.job!.status, JobStatus.enRoutePickup);
 
       cubit.clear();
       await cubit.close();

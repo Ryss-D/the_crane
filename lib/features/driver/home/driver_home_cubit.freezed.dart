@@ -14,7 +14,13 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DriverHomeState {
 
- DriverStatus get status; bool get isUpdating; DriverProfile? get profile;
+ DriverStatus get status; bool get isUpdating; DriverProfile? get profile;// The balance-cap rejection (`toggleAvailability`'s 403 "Balance owed to
+// the platform exceeds the allowed cap") isn't a stored profile field
+// like `verified`/`status` below — it only shows up as a failed
+// `setStatus(available)` attempt, so it needs its own slot. Cleared the
+// moment a toggle attempt starts, same lifecycle as
+// `ActiveJobState.errorMessage` (DRV-3).
+ DriverBlockReason get lastToggleFailureReason;
 /// Create a copy of DriverHomeState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +31,16 @@ $DriverHomeStateCopyWith<DriverHomeState> get copyWith => _$DriverHomeStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DriverHomeState&&(identical(other.status, status) || other.status == status)&&(identical(other.isUpdating, isUpdating) || other.isUpdating == isUpdating)&&(identical(other.profile, profile) || other.profile == profile));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DriverHomeState&&(identical(other.status, status) || other.status == status)&&(identical(other.isUpdating, isUpdating) || other.isUpdating == isUpdating)&&(identical(other.profile, profile) || other.profile == profile)&&(identical(other.lastToggleFailureReason, lastToggleFailureReason) || other.lastToggleFailureReason == lastToggleFailureReason));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,isUpdating,profile);
+int get hashCode => Object.hash(runtimeType,status,isUpdating,profile,lastToggleFailureReason);
 
 @override
 String toString() {
-  return 'DriverHomeState(status: $status, isUpdating: $isUpdating, profile: $profile)';
+  return 'DriverHomeState(status: $status, isUpdating: $isUpdating, profile: $profile, lastToggleFailureReason: $lastToggleFailureReason)';
 }
 
 
@@ -45,7 +51,7 @@ abstract mixin class $DriverHomeStateCopyWith<$Res>  {
   factory $DriverHomeStateCopyWith(DriverHomeState value, $Res Function(DriverHomeState) _then) = _$DriverHomeStateCopyWithImpl;
 @useResult
 $Res call({
- DriverStatus status, bool isUpdating, DriverProfile? profile
+ DriverStatus status, bool isUpdating, DriverProfile? profile, DriverBlockReason lastToggleFailureReason
 });
 
 
@@ -62,12 +68,13 @@ class _$DriverHomeStateCopyWithImpl<$Res>
 
 /// Create a copy of DriverHomeState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? isUpdating = null,Object? profile = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? isUpdating = null,Object? profile = freezed,Object? lastToggleFailureReason = null,}) {
   return _then(_self.copyWith(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as DriverStatus,isUpdating: null == isUpdating ? _self.isUpdating : isUpdating // ignore: cast_nullable_to_non_nullable
 as bool,profile: freezed == profile ? _self.profile : profile // ignore: cast_nullable_to_non_nullable
-as DriverProfile?,
+as DriverProfile?,lastToggleFailureReason: null == lastToggleFailureReason ? _self.lastToggleFailureReason : lastToggleFailureReason // ignore: cast_nullable_to_non_nullable
+as DriverBlockReason,
   ));
 }
 /// Create a copy of DriverHomeState
@@ -164,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DriverStatus status,  bool isUpdating,  DriverProfile? profile)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DriverStatus status,  bool isUpdating,  DriverProfile? profile,  DriverBlockReason lastToggleFailureReason)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DriverHomeState() when $default != null:
-return $default(_that.status,_that.isUpdating,_that.profile);case _:
+return $default(_that.status,_that.isUpdating,_that.profile,_that.lastToggleFailureReason);case _:
   return orElse();
 
 }
@@ -185,10 +192,10 @@ return $default(_that.status,_that.isUpdating,_that.profile);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DriverStatus status,  bool isUpdating,  DriverProfile? profile)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DriverStatus status,  bool isUpdating,  DriverProfile? profile,  DriverBlockReason lastToggleFailureReason)  $default,) {final _that = this;
 switch (_that) {
 case _DriverHomeState():
-return $default(_that.status,_that.isUpdating,_that.profile);case _:
+return $default(_that.status,_that.isUpdating,_that.profile,_that.lastToggleFailureReason);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +212,10 @@ return $default(_that.status,_that.isUpdating,_that.profile);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DriverStatus status,  bool isUpdating,  DriverProfile? profile)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DriverStatus status,  bool isUpdating,  DriverProfile? profile,  DriverBlockReason lastToggleFailureReason)?  $default,) {final _that = this;
 switch (_that) {
 case _DriverHomeState() when $default != null:
-return $default(_that.status,_that.isUpdating,_that.profile);case _:
+return $default(_that.status,_that.isUpdating,_that.profile,_that.lastToggleFailureReason);case _:
   return null;
 
 }
@@ -220,12 +227,19 @@ return $default(_that.status,_that.isUpdating,_that.profile);case _:
 
 
 class _DriverHomeState extends DriverHomeState {
-  const _DriverHomeState({this.status = DriverStatus.offline, this.isUpdating = false, this.profile}): super._();
+  const _DriverHomeState({this.status = DriverStatus.offline, this.isUpdating = false, this.profile, this.lastToggleFailureReason = DriverBlockReason.none}): super._();
   
 
 @override@JsonKey() final  DriverStatus status;
 @override@JsonKey() final  bool isUpdating;
 @override final  DriverProfile? profile;
+// The balance-cap rejection (`toggleAvailability`'s 403 "Balance owed to
+// the platform exceeds the allowed cap") isn't a stored profile field
+// like `verified`/`status` below — it only shows up as a failed
+// `setStatus(available)` attempt, so it needs its own slot. Cleared the
+// moment a toggle attempt starts, same lifecycle as
+// `ActiveJobState.errorMessage` (DRV-3).
+@override@JsonKey() final  DriverBlockReason lastToggleFailureReason;
 
 /// Create a copy of DriverHomeState
 /// with the given fields replaced by the non-null parameter values.
@@ -237,16 +251,16 @@ _$DriverHomeStateCopyWith<_DriverHomeState> get copyWith => __$DriverHomeStateCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DriverHomeState&&(identical(other.status, status) || other.status == status)&&(identical(other.isUpdating, isUpdating) || other.isUpdating == isUpdating)&&(identical(other.profile, profile) || other.profile == profile));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DriverHomeState&&(identical(other.status, status) || other.status == status)&&(identical(other.isUpdating, isUpdating) || other.isUpdating == isUpdating)&&(identical(other.profile, profile) || other.profile == profile)&&(identical(other.lastToggleFailureReason, lastToggleFailureReason) || other.lastToggleFailureReason == lastToggleFailureReason));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,status,isUpdating,profile);
+int get hashCode => Object.hash(runtimeType,status,isUpdating,profile,lastToggleFailureReason);
 
 @override
 String toString() {
-  return 'DriverHomeState(status: $status, isUpdating: $isUpdating, profile: $profile)';
+  return 'DriverHomeState(status: $status, isUpdating: $isUpdating, profile: $profile, lastToggleFailureReason: $lastToggleFailureReason)';
 }
 
 
@@ -257,7 +271,7 @@ abstract mixin class _$DriverHomeStateCopyWith<$Res> implements $DriverHomeState
   factory _$DriverHomeStateCopyWith(_DriverHomeState value, $Res Function(_DriverHomeState) _then) = __$DriverHomeStateCopyWithImpl;
 @override @useResult
 $Res call({
- DriverStatus status, bool isUpdating, DriverProfile? profile
+ DriverStatus status, bool isUpdating, DriverProfile? profile, DriverBlockReason lastToggleFailureReason
 });
 
 
@@ -274,12 +288,13 @@ class __$DriverHomeStateCopyWithImpl<$Res>
 
 /// Create a copy of DriverHomeState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? isUpdating = null,Object? profile = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? isUpdating = null,Object? profile = freezed,Object? lastToggleFailureReason = null,}) {
   return _then(_DriverHomeState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as DriverStatus,isUpdating: null == isUpdating ? _self.isUpdating : isUpdating // ignore: cast_nullable_to_non_nullable
 as bool,profile: freezed == profile ? _self.profile : profile // ignore: cast_nullable_to_non_nullable
-as DriverProfile?,
+as DriverProfile?,lastToggleFailureReason: null == lastToggleFailureReason ? _self.lastToggleFailureReason : lastToggleFailureReason // ignore: cast_nullable_to_non_nullable
+as DriverBlockReason,
   ));
 }
 

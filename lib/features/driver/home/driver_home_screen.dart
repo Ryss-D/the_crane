@@ -6,7 +6,6 @@ import '../../../app/router.dart';
 import '../../../core/api/drivers_repository.dart';
 import '../../../core/api/fake_drivers_repository.dart';
 import '../../../core/models/driver_profile.dart';
-import '../../../core/models/job.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/labels.dart';
 import '../../shared/widgets/map_placeholder.dart';
@@ -69,9 +68,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               state != null ? _showOfferSheet() : _dismissOfferSheet(),
         ),
         // Accepting an offer seeds the active job → navigate to DRV-3.
-        BlocListener<ActiveJobCubit, Job?>(
+        BlocListener<ActiveJobCubit, ActiveJobState>(
           listenWhen: (previous, current) =>
-              previous == null && current != null,
+              previous.job == null && current.job != null,
           listener: (context, state) => context.push(AppRoute.driverJob),
         ),
       ],
@@ -118,10 +117,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  state.blockReason ==
-                                          DriverBlockReason.adminBlocked
-                                      ? l10n.blockedBannerAdmin
-                                      : l10n.blockedBannerUnverified,
+                                  switch (state.blockReason) {
+                                    DriverBlockReason.adminBlocked =>
+                                      l10n.blockedBannerAdmin,
+                                    DriverBlockReason.balanceCap =>
+                                      l10n.blockedBannerBalanceCap,
+                                    DriverBlockReason.unverified ||
+                                    DriverBlockReason.none =>
+                                      l10n.blockedBannerUnverified,
+                                  },
                                   style: TextStyle(
                                     color: theme.colorScheme.onErrorContainer,
                                   ),

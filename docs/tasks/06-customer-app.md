@@ -44,6 +44,22 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
 - [ ] **CUS-4 — Live tracking screen** *(deps: TRK-4)*
   Driver marker moving live, route polyline, status timeline (assigned → en route → arrived → loading → in transit → delivered), call-driver button, share-trip button (TRK-6 link).
   *AC: marker updates ≤5s; timeline matches backend state after app restart (rehydration).*
+  Built: the non-map parts. `MatchingScreen`'s `_AssignedView` now shows a
+  happy-path status timeline (steps + current-step highlight + done
+  coloring for earlier steps; `cancelled`/`no_drivers` render as a failure
+  banner instead of a step, mirroring `web-client`'s `StatusTimeline.tsx`),
+  a call-driver button (`url_launcher`'s `tel:` scheme, shown once
+  `job.driver?.phone` is set), and a share-trip button that copies
+  `${Env.webBaseUrl}/t/${job.shareToken}` to the clipboard with a SnackBar
+  confirmation (shown once `job.shareToken` is set — both fields were
+  prepped ahead of this task). Verified against the fakes (6 new widget
+  tests). Not built, hard-blocked on FND-6 (no Google Maps yet): the live
+  driver marker and route polyline — `MapPlaceholder` stands in wherever
+  the map would go, same as `ActiveJobScreen`. Also not verified: the
+  AC's "timeline matches backend state after app restart (rehydration)"
+  — no persistence/rehydration story exists yet for an in-progress job on
+  cold start; this task only renders whatever `RequestBloc`'s current
+  `activeJob` already is.
 
 - [ ] **CUS-5 — Delivery confirmation + cash payment** *(deps: CUS-4, LED-1)*
   On `delivered`: fare summary, "paid in cash" confirmation → job `completed` → rating prompt.

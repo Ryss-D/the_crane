@@ -440,6 +440,12 @@ abstract class AppLocalizations {
   /// **'Tu cuenta está bloqueada. Contacta a soporte para más información.'**
   String get blockedBannerAdmin;
 
+  /// Banner when going available was rejected for exceeding the settlement balance cap
+  ///
+  /// In es, this message translates to:
+  /// **'Tu saldo pendiente superó el límite permitido. Paga tu saldo para volver a conectarte.'**
+  String get blockedBannerBalanceCap;
+
   /// Dev-only button that simulates an incoming offer
   ///
   /// In es, this message translates to:
@@ -1165,6 +1171,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Comisión'**
   String get servicesCommissionLabel;
+
+  /// CUS-4: calls the assigned driver's phone number
+  ///
+  /// In es, this message translates to:
+  /// **'Llamar al conductor'**
+  String get callDriverButton;
+
+  /// CUS-4: copies the TRK-6 share-trip link to the clipboard
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir viaje'**
+  String get shareTripButton;
+
+  /// CUS-4: confirmation shown after copying the share-trip link
+  ///
+  /// In es, this message translates to:
+  /// **'Enlace copiado al portapapeles'**
+  String get shareTripLinkCopied;
 }
 
 class _AppLocalizationsDelegate

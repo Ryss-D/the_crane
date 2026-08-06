@@ -25,12 +25,25 @@ Flutter driver shell: go available, receive offers, execute the job.
   resulting non-exhaustive-switch compile errors, and gave the blocked
   banner a `DriverBlockReason` (`unverified`/`adminBlocked`) so it shows the
   right message for each — partial progress on the AC's "blocked states
-  surfaced ... with explanation." Still open: the settlement balance-cap
-  rejection is a third, distinct reason (a 403 on `PATCH
-  /v1/drivers/me/status`, not a stored `DriverStatus` value) —
-  `toggleAvailability` currently discards that error entirely, so capturing
-  it into state is a separate follow-up. That's what's keeping this
-  unchecked.
+  surfaced ... with explanation."
+
+  Closed the remaining gap this note used to flag: the settlement
+  balance-cap rejection (403 on `PATCH /v1/drivers/me/status`, detail
+  `"Balance owed to the platform exceeds the allowed cap"` —
+  `backend/app/api/drivers.py`) is a third, distinct block reason that
+  only shows up as a failed toggle attempt rather than a stored
+  `DriverProfile` field. `toggleAvailability` now catches `DioException`,
+  matches the detail string, and stores it in a new
+  `DriverHomeState.lastToggleFailureReason` (cleared the moment the next
+  toggle attempt starts) — `blockReason` checks it ahead of the two
+  profile-derived reasons. Added `DriverBlockReason.balanceCap`,
+  `blockedBannerBalanceCap` (both arb files), and a settable
+  `FakeDriversRepository.rejectNextAvailableWithBalanceCap` flag so
+  fake-mode tests can trigger the real 403 shape without replicating the
+  balance calculation. Verified against the fakes (4 new tests: 3 cubit,
+  1 widget). Still unchecked: no live device/backend pass has happened for
+  any of DRV-1, so "toggle drives the Redis geo presence end to end" (the
+  formal AC) remains unverified beyond the fakes.
 
 - [ ] **DRV-2 — Incoming offer sheet** *(deps: DSP-2, TRK-4)*
   Bottom sheet on offer (WS or FCM tap-through): pickup distance, route summary, vehicle type, fare, commission preview, countdown timer from config TTL; accept / reject.
@@ -48,10 +61,25 @@ Flutter driver shell: go available, receive offers, execute the job.
   *AC: full happy path advances through every state; backend rejections surface clearly.*
   Built: the full happy path (`assigned` → … → `delivered`) advances via
   `ActiveJobCubit.advance()`, with `MapPlaceholder` standing in for FND-6.
-  Not built: backend rejections (409/403) are swallowed silently (a
-  `TODO(DRV-3)` marks the exact spot in `active_job_cubit.dart`), no map
-  route or Google Maps navigation deep-link, no call-customer button, no
-  driver-side cancel.
+  Also built: the `TODO(DRV-3)` this note used to flag — backend rejections
+  (403 "only the assigned driver"/"completion is confirmed by the
+  customer", 409 out-of-order transition) no longer get swallowed. Added
+  `JobsRepository.JobStatusRejectedException`, thrown by both
+  `ApiJobsRepository` (catches `DioException` on 403/409, rethrows with the
+  backend's `detail`) and `FakeJobsRepository` (same type, same message
+  shape, for an illegal transition) so `ActiveJobCubit` doesn't care which
+  backs it. `advance()` catches it and surfaces the message via a new
+  `ActiveJobState.errorMessage` field; `ActiveJobScreen` shows it as a
+  SnackBar. This is an API-shape change: `ActiveJobCubit` now extends
+  `Cubit<ActiveJobState>` (a `@freezed` `{job, errorMessage}` wrapper, same
+  pattern as `DriverHomeState`) instead of the bare `Cubit<Job?>` it was
+  before — updated every consumer (`ActiveJobScreen`,
+  `DriverHomeScreen`'s offer-accepted navigation listener). Verified
+  against the fakes (2 new tests: 1 cubit, 1 widget, via a shared
+  `RejectingOnceJobsRepository` test double). Not built: non-rejection
+  errors (e.g. network) are still swallowed silently — only the typed
+  rejection surfaces; no map route or Google Maps navigation deep-link, no
+  call-customer button, no driver-side cancel.
 
 - [ ] **DRV-4 — Cash collection + completion** *(deps: DRV-3, LED-1)*
   On delivered: fare + "collected in cash" confirmation; shows commission accrued for this job and new running balance.
