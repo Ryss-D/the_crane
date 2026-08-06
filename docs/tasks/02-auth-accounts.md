@@ -28,3 +28,4 @@ Phone-OTP identity via Firebase; profiles and roles live in Postgres.
 - [ ] **AUTH-6 — FCM token lifecycle** *(deps: AUTH-3)*
   Register/refresh device token on login and token rotation; clear on logout.
   *AC: backend can push a test notification to a logged-in device.*
+  Built: `PushTokenGateway` (real + fake), wired into `AuthCubit` — registers the token after sign-in/profile completion, re-sends it on OS-level token refresh (only while authenticated), clears it via `PATCH /v1/me` before the Firebase session itself closes on sign-out. Verified against the fake gateway (2 dedicated `AuthCubit` unit tests, 49 total passing). Not yet verified: an actual push notification delivered to a real device via FCM — needs that manual pass before checking this off.
