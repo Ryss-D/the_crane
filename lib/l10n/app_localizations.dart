@@ -931,6 +931,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Nuevo saldo pendiente'**
   String get runningBalanceLabel;
+
+  /// DRV-6: services-per-period screen app bar title, and the nav button tooltip
+  ///
+  /// In es, this message translates to:
+  /// **'Servicios por período'**
+  String get servicesPeriodTitle;
+
+  /// DRV-6: shown when there are no completed jobs yet
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no tienes servicios completados.'**
+  String get servicesPeriodEmptyBody;
+
+  /// DRV-6: shown when loading services-per-period fails
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos cargar tus servicios. Intenta de nuevo.'**
+  String get servicesPeriodLoadError;
+
+  /// DRV-6: count of completed jobs for a given day
+  ///
+  /// In es, this message translates to:
+  /// **'{count} servicios'**
+  String servicesCountLabel(int count);
+
+  /// DRV-6: total cash fare collected for a given day
+  ///
+  /// In es, this message translates to:
+  /// **'Efectivo cobrado'**
+  String get servicesEarningsLabel;
+
+  /// DRV-6: total commission owed for a given day
+  ///
+  /// In es, this message translates to:
+  /// **'Comisión'**
+  String get servicesCommissionLabel;
 }
 
 class _AppLocalizationsDelegate

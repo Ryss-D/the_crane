@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../l10n/app_localizations.dart';
 import 'driver_balance_cubit.dart';
 
 /// DRV-5 — the driver's owed commission balance plus recent settlements.
+/// The app bar's list icon leads to DRV-6's services-per-period breakdown.
 class EarningsScreen extends StatelessWidget {
   const EarningsScreen({super.key});
 
@@ -14,7 +17,17 @@ class EarningsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.earningsTitle)),
+      appBar: AppBar(
+        title: Text(l10n.earningsTitle),
+        actions: [
+          IconButton(
+            key: const Key('servicesPeriodNavButton'),
+            icon: const Icon(Icons.calendar_month_outlined),
+            tooltip: l10n.servicesPeriodTitle,
+            onPressed: () => context.push(AppRoute.driverServicesPeriod),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: BlocBuilder<DriverBalanceCubit, DriverBalanceState>(
           builder: (context, state) {

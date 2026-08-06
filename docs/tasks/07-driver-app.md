@@ -65,3 +65,15 @@ Flutter driver shell: go available, receive offers, execute the job.
   Period selector (Today / Week / Month / Custom range) over completed services: count, chart, and list for the selected range.
   Design: «Servicios por período» (`docs/design/screen-references.md`)
   *AC: range selector updates count, chart, and list together; custom range persists on reopen.*
+  Built (partial): a client-side grouping over the existing
+  `JobsRepository.listHistory` data (no new backend endpoint) — a
+  `ServicesPeriodCubit` pages through the driver's full history, keeps only
+  `completed` jobs, and buckets them by calendar day (local time), summing
+  a count, total cash fare, and total commission (same flat-15%
+  approximation used elsewhere) per day. A new `ServicesPeriodScreen`,
+  reachable from a calendar icon on DRV-5's earnings screen, lists those
+  daily buckets newest-first. Day was picked over week/month/custom-range
+  because grouping by day needs nothing beyond `Job.completedAt`; the full
+  Today/Week/Month/custom-range selector and chart from the AC are NOT
+  built — this is a straight daily breakdown only. Verified against the
+  fake (88 tests).

@@ -585,5 +585,34 @@
   "runningBalanceLabel": "Nuevo saldo pendiente",
   "@runningBalanceLabel": {
     "description": "DRV-4: label for the driver's updated running balance after a job completes"
+  },
+  "servicesPeriodTitle": "Servicios por período",
+  "@servicesPeriodTitle": {
+    "description": "DRV-6: services-per-period screen app bar title, and the nav button tooltip"
+  },
+  "servicesPeriodEmptyBody": "Aún no tienes servicios completados.",
+  "@servicesPeriodEmptyBody": {
+    "description": "DRV-6: shown when there are no completed jobs yet"
+  },
+  "servicesPeriodLoadError": "No pudimos cargar tus servicios. Intenta de nuevo.",
+  "@servicesPeriodLoadError": {
+    "description": "DRV-6: shown when loading services-per-period fails"
+  },
+  "servicesCountLabel": "{count} servicios",
+  "@servicesCountLabel": {
+    "description": "DRV-6: count of completed jobs for a given day",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "servicesEarningsLabel": "Efectivo cobrado",
+  "@servicesEarningsLabel": {
+    "description": "DRV-6: total cash fare collected for a given day"
+  },
+  "servicesCommissionLabel": "Comisión",
+  "@servicesCommissionLabel": {
+    "description": "DRV-6: total commission owed for a given day"
   }
 }

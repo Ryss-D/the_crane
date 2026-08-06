@@ -452,4 +452,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get runningBalanceLabel => 'Nuevo saldo pendiente';
+
+  @override
+  String get servicesPeriodTitle => 'Servicios por período';
+
+  @override
+  String get servicesPeriodEmptyBody => 'Aún no tienes servicios completados.';
+
+  @override
+  String get servicesPeriodLoadError =>
+      'No pudimos cargar tus servicios. Intenta de nuevo.';
+
+  @override
+  String servicesCountLabel(int count) {
+    return '$count servicios';
+  }
+
+  @override
+  String get servicesEarningsLabel => 'Efectivo cobrado';
+
+  @override
+  String get servicesCommissionLabel => 'Comisión';
 }

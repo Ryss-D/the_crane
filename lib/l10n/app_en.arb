@@ -138,5 +138,11 @@
   "earningsNoSettlementsBody": "No settlements yet.",
   "earningsLoadError": "We could not load your earnings. Please try again.",
   "jobCommissionLabel": "Commission for this job",
-  "runningBalanceLabel": "New owed balance"
+  "runningBalanceLabel": "New owed balance",
+  "servicesPeriodTitle": "Services per period",
+  "servicesPeriodEmptyBody": "You have no completed services yet.",
+  "servicesPeriodLoadError": "We could not load your services. Please try again.",
+  "servicesCountLabel": "{count} services",
+  "servicesEarningsLabel": "Cash collected",
+  "servicesCommissionLabel": "Commission"
 }

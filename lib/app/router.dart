@@ -24,6 +24,8 @@ import '../features/customer/settings/saved_vehicles_screen.dart';
 import '../features/customer/settings/settings_screen.dart';
 import '../features/driver/earnings/driver_balance_cubit.dart';
 import '../features/driver/earnings/earnings_screen.dart';
+import '../features/driver/earnings/services_period_cubit.dart';
+import '../features/driver/earnings/services_period_screen.dart';
 import '../features/driver/home/driver_home_cubit.dart';
 import '../features/driver/home/driver_home_screen.dart';
 import '../features/driver/home/offer_cubit.dart';
@@ -47,6 +49,7 @@ abstract final class AppRoute {
   static const driverJob = '/driver/job';
   static const driverHistory = '/driver/history';
   static const driverEarnings = '/driver/earnings';
+  static const driverServicesPeriod = '/driver/earnings/services';
 }
 
 const _authRoutes = {AppRoute.signIn, AppRoute.otp, AppRoute.completeProfile};
@@ -226,6 +229,17 @@ GoRouter createRouter(AuthCubit authCubit) {
                   )..load(),
                   child: const EarningsScreen(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'services',
+                    builder: (context, state) => BlocProvider(
+                      create: (context) => ServicesPeriodCubit(
+                        jobsRepository: context.read<JobsRepository>(),
+                      )..load(),
+                      child: const ServicesPeriodScreen(),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
