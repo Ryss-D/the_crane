@@ -292,6 +292,56 @@ async def test_confirm_delivery_only_from_delivered(
     assert payments == [] and entries == []
 
 
+async def test_driver_commission_null_before_completion(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+    driver_user: User,
+) -> None:
+    """DRV-4: driver_commission stays null until the job is actually completed --
+    there's no ledger earning row to read it from before then."""
+    job = await make_job(
+        session_maker,
+        customer_user,
+        status=JobStatus.delivered,
+        driver=driver_user,
+        config_snapshot=PERCENT_SNAPSHOT,
+    )
+    response = await client.get(f"/v1/jobs/{job.id}", headers=AUTH_DRIVER)
+    assert response.status_code == 200
+    assert response.json()["driver_commission"] is None
+
+
+async def test_driver_commission_matches_ledger_entry_after_completion(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+    driver_user: User,
+) -> None:
+    """DRV-4: driver_commission is the real LED-1 ledger commission (config
+    snapshot's 15% of the 110000 fare = 16500), not a client-side flat guess --
+    and a later GET reads the same persisted ledger row, not a re-derived value."""
+    job = await make_job(
+        session_maker,
+        customer_user,
+        status=JobStatus.delivered,
+        driver=driver_user,
+        config_snapshot=PERCENT_SNAPSHOT,
+    )
+    confirm = await client.post(f"/v1/jobs/{job.id}/confirm-delivery", headers=AUTH_CUSTOMER)
+    assert confirm.status_code == 200
+    assert confirm.json()["driver_commission"] == round(110000 * 0.15)  # 16500
+
+    _, entries = await _accrual_rows(session_maker, job.id)
+    assert entries[0].entry_type is LedgerEntryType.earning
+    assert confirm.json()["driver_commission"] == int(entries[0].commission)
+
+    get_resp = await client.get(f"/v1/jobs/{job.id}", headers=AUTH_DRIVER)
+    assert get_resp.json()["driver_commission"] == int(entries[0].commission)
+
+
 async def test_confirm_delivery_only_by_the_jobs_customer(
     client: AsyncClient,
     tokens: dict,
