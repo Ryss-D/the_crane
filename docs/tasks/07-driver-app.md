@@ -180,7 +180,7 @@ Flutter driver shell: go available, receive offers, execute the job.
   `matching`, local state cleared) and rejection-past-`arrived_pickup`,
   against the fakes.
 
-- [ ] **DRV-4 — Cash collection + completion** *(deps: DRV-3, LED-1)*
+- [x] **DRV-4 — Cash collection + completion** *(deps: DRV-3, LED-1)*
   On delivered: fare + "collected in cash" confirmation; shows commission accrued for this job and new running balance.
   Design: «Cobro en efectivo» (`docs/design/screen-references.md`)
   *AC: balance shown matches ledger after completion.*
@@ -200,24 +200,20 @@ Flutter driver shell: go available, receive offers, execute the job.
   `active_job_screen.dart` calls this out. Verified against the fakes (84
   tests, including a dedicated assertion that both amounts render after a
   live completion).
-  Backend follow-up: `JobRead` (`backend/app/schemas/job.py`) now has a
+  Now done end-to-end: `JobRead` (`backend/app/schemas/job.py`) has a
   `driver_commission: int | None` field — null until the job is `completed`,
   otherwise the real LED-1 `DriverLedgerEntry.commission` for that job
   (populated in `_job_read`, `backend/app/api/jobs.py`, one extra query,
   same skip-if-not-applicable pattern as the existing `driver` field). Every
   job-returning endpoint (including `GET /v1/jobs/{id}` and the
-  confirm-delivery response) now serves it. The client-side flat-15%
-  approximation and its TODO in `active_job_screen.dart` are stale and
-  should be swapped for this real value — not done here (Flutter-side, not
-  this pass).
-
-  Checked again this pass, still open: a parallel backend pass was
-  expected to add a real `driver_commission` field to `JobRead` so this
-  flat-15% approximation could finally be replaced. Checked
-  `backend/app/schemas/job.py` directly (not guessed) — `JobRead` has no
-  `driver_commission` field as of this pass, so this item was skipped
-  rather than inventing a contract; the TODO and the flat-15%
-  approximation in `active_job_screen.dart` are untouched.
+  confirm-delivery response) serves it. `Job` (`lib/core/models/job.dart`)
+  gained `driverCommission`; `active_job_screen.dart` now shows it once a
+  job is completed, falling back to the flat-15% approximation only if the
+  backend value is null (kept as a safety net, not because it's still
+  needed in the real-backend path). `FakeJobsRepository` seeds the same
+  field on completion so the fake-backend demo path renders realistic data
+  too. AC verified against the fakes and against backend tests
+  (`tests/test_job_completion.py`); not verified against a live device.
 
 - [ ] **DRV-5 — Earnings & balance screen** *(deps: LED-1)*
   Completed jobs list, cash totals per day/week, commission balance owed, settlement instructions (static text until PAY-* lands).

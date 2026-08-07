@@ -72,15 +72,16 @@ WebSocket layer for live positions and job events; FCM covers backgrounded apps.
   *suspended* (not terminated), which is the best this data-only payload
   shape can do on iOS.
 
-  This is the client half only. As of this pass, the backend side this
-  depends on has NOT landed yet either — checked directly:
-  `backend/app/services/push.py` doesn't exist, and
-  `backend/app/services/realtime.py`'s `notify_driver_offer` still carries
-  its `TODO(FCM)` comment with no Firebase Admin credentials configured.
-  This pass's Flutter work doesn't depend on that landing first — it
-  assumes the same `type` + `job_id` data-message shape the WS vocabulary
-  already establishes, and is ready for whenever the backend send does
-  land — but until it does, nothing above can fire end to end.
+  Update: the backend half (above) and this Flutter half were built by two
+  parallel agents and landed a few minutes apart — the Flutter worktree was
+  created before the backend merge, so its own note above ("backend hasn't
+  landed yet") was accurate at the time it was written but is now stale.
+  Both halves are merged as of this pass: `backend/app/services/push.py`
+  exists and sends the exact `{"type": ..., "job_id": ...}` shape this
+  Flutter handler expects. Nothing else needed to change on either side —
+  the client work already matched the wire shape it was built against.
+  Still genuinely unverified end-to-end: no live device has received one of
+  these pushes from the real backend yet.
 
 - [x] **TRK-4 — Flutter WS client** *(deps: FND-4)*
   `core/ws/`: connect lifecycle bound to auth state, exponential reconnect, typed event stream (freezed events), rehydrate via `GET /jobs/{id}` on reconnect.
