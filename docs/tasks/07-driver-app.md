@@ -201,6 +201,14 @@ Flutter driver shell: go available, receive offers, execute the job.
   tests, including a dedicated assertion that both amounts render after a
   live completion).
 
+  Checked again this pass, still open: a parallel backend pass was
+  expected to add a real `driver_commission` field to `JobRead` so this
+  flat-15% approximation could finally be replaced. Checked
+  `backend/app/schemas/job.py` directly (not guessed) — `JobRead` has no
+  `driver_commission` field as of this pass, so this item was skipped
+  rather than inventing a contract; the TODO and the flat-15%
+  approximation in `active_job_screen.dart` are untouched.
+
 - [ ] **DRV-5 — Earnings & balance screen** *(deps: LED-1)*
   Completed jobs list, cash totals per day/week, commission balance owed, settlement instructions (static text until PAY-* lands).
   Design: «Ganancias y saldo» (`docs/design/screen-references.md`)
