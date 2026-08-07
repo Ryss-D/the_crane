@@ -668,4 +668,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareTripLinkCopied => 'Enlace copiado al portapapeles';
+
+  @override
+  String get pushJobOfferTitle => 'Nueva oferta de servicio';
+
+  @override
+  String get pushJobOfferBody =>
+      'Tienes una nueva oferta de servicio. Abre la app para verla.';
+
+  @override
+  String get pushJobEventTitle => 'Actualización de tu servicio';
+
+  @override
+  String get pushJobEventBody =>
+      'El estado de tu servicio cambió. Abre la app para ver los detalles.';
+
+  @override
+  String get pushGenericTitle => 'Nueva notificación';
+
+  @override
+  String get pushGenericBody =>
+      'Tienes una notificación nueva. Abre la app para ver los detalles.';
 }

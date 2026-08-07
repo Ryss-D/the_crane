@@ -203,5 +203,11 @@
   "servicesCommissionLabel": "Commission",
   "callDriverButton": "Call driver",
   "shareTripButton": "Share trip",
-  "shareTripLinkCopied": "Link copied to clipboard"
+  "shareTripLinkCopied": "Link copied to clipboard",
+  "pushJobOfferTitle": "New job offer",
+  "pushJobOfferBody": "You have a new job offer. Open the app to see it.",
+  "pushJobEventTitle": "Update on your job",
+  "pushJobEventBody": "Your job's status changed. Open the app for details.",
+  "pushGenericTitle": "New notification",
+  "pushGenericBody": "You have a new notification. Open the app for details."
 }

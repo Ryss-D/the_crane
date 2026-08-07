@@ -669,4 +669,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareTripLinkCopied => 'Link copied to clipboard';
+
+  @override
+  String get pushJobOfferTitle => 'New job offer';
+
+  @override
+  String get pushJobOfferBody =>
+      'You have a new job offer. Open the app to see it.';
+
+  @override
+  String get pushJobEventTitle => 'Update on your job';
+
+  @override
+  String get pushJobEventBody =>
+      'Your job\'s status changed. Open the app for details.';
+
+  @override
+  String get pushGenericTitle => 'New notification';
+
+  @override
+  String get pushGenericBody =>
+      'You have a new notification. Open the app for details.';
 }

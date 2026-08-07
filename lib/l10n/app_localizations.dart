@@ -1321,6 +1321,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Enlace copiado al portapapeles'**
   String get shareTripLinkCopied;
+
+  /// TRK-3: system notification title for a backgrounded/killed-app job_offer FCM push
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva oferta de servicio'**
+  String get pushJobOfferTitle;
+
+  /// TRK-3: system notification body for a backgrounded/killed-app job_offer FCM push
+  ///
+  /// In es, this message translates to:
+  /// **'Tienes una nueva oferta de servicio. Abre la app para verla.'**
+  String get pushJobOfferBody;
+
+  /// TRK-3: system notification title for a backgrounded/killed-app job_event FCM push
+  ///
+  /// In es, this message translates to:
+  /// **'Actualización de tu servicio'**
+  String get pushJobEventTitle;
+
+  /// TRK-3: system notification body for a backgrounded/killed-app job_event FCM push
+  ///
+  /// In es, this message translates to:
+  /// **'El estado de tu servicio cambió. Abre la app para ver los detalles.'**
+  String get pushJobEventBody;
+
+  /// TRK-3: system notification title fallback for an FCM push type not in the WS vocabulary
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva notificación'**
+  String get pushGenericTitle;
+
+  /// TRK-3: system notification body fallback for an FCM push type not in the WS vocabulary
+  ///
+  /// In es, this message translates to:
+  /// **'Tienes una notificación nueva. Abre la app para ver los detalles.'**
+  String get pushGenericBody;
 }
 
 class _AppLocalizationsDelegate
