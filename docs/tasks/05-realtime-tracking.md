@@ -36,6 +36,52 @@ WebSocket layer for live positions and job events; FCM covers backgrounded apps.
   entry's AC as written (which is specifically about the backend triggering
   FCM, not about a device having caught one).
 
+  Flutter half, this pass: as of the previous pass, only a foreground
+  `FirebaseMessaging.onMessage` listener existed (`lib/app/di.dart`), which
+  just nudged the WS socket to reconnect — it showed no system notification
+  at all, and had no killed-app/backgrounded handling whatsoever. Added:
+  `flutter_local_notifications` (`lib/core/notifications
+  /push_notifications.dart`), a top-level
+  `firebaseMessagingBackgroundHandler` registered via
+  `FirebaseMessaging.onBackgroundMessage` in `main()` before `runApp` (per
+  Firebase's own requirement — it runs in its own background isolate on
+  Android), which shows a local notification titled/worded per the data
+  message's `type` field (`job_offer`/`job_event`/generic fallback,
+  mirroring the WS wire vocabulary in `lib/core/ws/server_message.dart`;
+  strings added to `lib/l10n/app_es.arb`/`app_en.arb` as
+  `push*Title`/`push*Body`). Notification permission
+  (`NotificationPermissionRequester`, `lib/core/notifications
+  /notification_permission_requester.dart`) is requested from
+  `DriverHomeCubit.toggleAvailability` the same moment location permission
+  already is — "ask when it's actually needed," not at app launch. Tapping
+  the notification opens/foregrounds the app; a full deep-link straight to
+  the job it was about is out of scope — the router's own
+  authenticated-driver redirect already lands on the driver home screen
+  either way, and the existing offer/job machinery picks up from there once
+  the socket reconnects.
+
+  Genuinely NOT verified — no real device or emulator was used: whether a
+  system notification actually appears, whether it survives the app being
+  fully killed, and whether the tap behaves as described are all unchecked.
+  On iOS specifically there's a real (not just unverified) gap: Apple does
+  not wake a fully terminated app for a silent/data-only push at all — only
+  a push with a visible `notification` block does that, entirely through
+  the OS, with no app code involved. `UIBackgroundModes: [..., 
+  remote-notification]` was added to `ios/Runner/Info.plist` so the
+  background handler has a chance to run while the app is merely
+  *suspended* (not terminated), which is the best this data-only payload
+  shape can do on iOS.
+
+  This is the client half only. As of this pass, the backend side this
+  depends on has NOT landed yet either — checked directly:
+  `backend/app/services/push.py` doesn't exist, and
+  `backend/app/services/realtime.py`'s `notify_driver_offer` still carries
+  its `TODO(FCM)` comment with no Firebase Admin credentials configured.
+  This pass's Flutter work doesn't depend on that landing first — it
+  assumes the same `type` + `job_id` data-message shape the WS vocabulary
+  already establishes, and is ready for whenever the backend send does
+  land — but until it does, nothing above can fire end to end.
+
 - [x] **TRK-4 — Flutter WS client** *(deps: FND-4)*
   `core/ws/`: connect lifecycle bound to auth state, exponential reconnect, typed event stream (freezed events), rehydrate via `GET /jobs/{id}` on reconnect.
   *AC: airplane-mode toggle recovers the stream and reconciles missed events.*

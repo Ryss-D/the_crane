@@ -5,6 +5,7 @@ import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/location/location_source.dart';
 import 'package:the_crane/core/models/driver_profile.dart';
 import 'package:the_crane/core/models/lat_lng.dart';
+import 'package:the_crane/core/notifications/notification_permission_requester.dart';
 import 'package:the_crane/features/driver/home/driver_home_cubit.dart';
 
 FakeDriversRepository instantFakeDrivers({
@@ -36,6 +37,19 @@ class _FixedLocationSource implements LocationSource {
 
   @override
   Future<LatLng> getCurrentPosition() async => fix;
+}
+
+/// TRK-3: records how many times permission was requested, so tests can
+/// assert `DriverHomeCubit` actually asks when going available without
+/// needing real `firebase_messaging`/`flutter_local_notifications` calls.
+class _RecordingNotificationPermissionRequester
+    implements NotificationPermissionRequester {
+  int requestCount = 0;
+
+  @override
+  Future<void> requestPermission() async {
+    requestCount++;
+  }
 }
 
 void main() {
@@ -167,6 +181,26 @@ void main() {
         await cubit.toggleAvailability(); // -> offline
         expect(drivers.lastLat, isNull);
         expect(drivers.lastLng, isNull);
+      },
+    );
+
+    test(
+      'going available requests notification permission (TRK-3) -- '
+      'best-effort, never blocks the toggle even without a requester',
+      () async {
+        final drivers = instantFakeDrivers();
+        final requester = _RecordingNotificationPermissionRequester();
+        final cubit = DriverHomeCubit(
+          driversRepository: drivers,
+          notificationPermissionRequester: requester,
+        );
+
+        await cubit.toggleAvailability(); // -> available
+        expect(requester.requestCount, 1);
+        expect(cubit.state.status, DriverStatus.available);
+
+        await cubit.toggleAvailability(); // -> offline, no re-ask
+        expect(requester.requestCount, 1);
       },
     );
   });

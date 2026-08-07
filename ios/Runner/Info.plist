@@ -46,6 +46,20 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
+		<!-- TRK-3: lets iOS wake the app to run
+		     `firebaseMessagingBackgroundHandler`
+		     (lib/core/notifications/push_notifications.dart) for a data-only
+		     FCM push while backgrounded (needs `content-available: 1` in the
+		     APNs payload, which is the backend's job once it sends real
+		     pushes -- checked `backend/app/services/push.py`/`realtime.py`
+		     directly; not landed as of this pass). NOT verified on a real
+		     device, and this mode does NOT cover a fully killed/terminated
+		     app: Apple does not wake a terminated app for a silent
+		     (data-only, no `alert`) push at all -- only a visible
+		     `notification`-block push does that, and only via the OS's own
+		     notification center, with no app code involved. See the TRK-3
+		     doc note in docs/tasks/05-realtime-tracking.md. -->
+		<string>remote-notification</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

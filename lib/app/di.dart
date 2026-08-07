@@ -19,6 +19,8 @@ import '../core/auth/phone_auth_gateway.dart';
 import '../core/auth/push_token_gateway.dart';
 import '../core/config/env.dart';
 import '../core/location/location_source.dart';
+import '../core/notifications/notification_permission_requester.dart';
+import '../core/notifications/push_notifications.dart';
 import '../core/ws/crane_socket.dart';
 import '../features/auth/auth_cubit.dart';
 
@@ -42,6 +44,7 @@ class AppDependencies {
     required this.authCubit,
     this.socket,
     this.locationSource,
+    this.notificationPermissionRequester,
   });
 
   /// Production wiring for the active flavor.
@@ -100,10 +103,13 @@ class AppDependencies {
     // `backend/app/services/realtime.py`'s `TODO(FCM)` — no Firebase Admin
     // credentials configured server-side), so there is no message shape to
     // key off yet; this only wires the client half for whenever that lands.
-    // Deliberately scoped to foreground/resumed only — a killed-app,
-    // lock-screen notification experience needs `flutter_local_notifications`
-    // plus platform permission flows and a background isolate entry point
-    // (`FirebaseMessaging.onBackgroundMessage`), none of which exist here.
+    // Deliberately scoped to foreground/resumed only — the killed-app/
+    // backgrounded case is handled separately, by
+    // `core/notifications/push_notifications.dart`'s
+    // `firebaseMessagingBackgroundHandler` (registered in `main()`), which
+    // shows a real system notification via `flutter_local_notifications`
+    // instead of just nudging the socket (there's no socket to nudge if the
+    // app isn't running at all).
     FirebaseMessaging.onMessage.listen((_) => socket.reconnectNow());
     return AppDependencies(
       dio: dio,
@@ -113,6 +119,10 @@ class AppDependencies {
       fleetRepository: ApiFleetRepository(dio),
       socket: socket,
       locationSource: GeolocatorLocationSource(),
+      // TRK-3: the same singleton `main()` already called `init()` on
+      // before `runApp` — `DriverHomeCubit.toggleAvailability` is the
+      // on-demand caller of `requestPermission()` (see that class).
+      notificationPermissionRequester: PushNotifications.instance,
       authCubit: AuthCubit(
         gateway: FirebasePhoneAuthGateway(),
         authRepository: ApiAuthRepository(dio),
@@ -133,4 +143,8 @@ class AppDependencies {
 
   /// Null when [Env.useFakeBackend] is true — nothing needs real GPS.
   final LocationSource? locationSource;
+
+  /// Null when [Env.useFakeBackend] is true — nothing there needs a real
+  /// device permission prompt (TRK-3).
+  final NotificationPermissionRequester? notificationPermissionRequester;
 }

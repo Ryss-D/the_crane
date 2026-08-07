@@ -850,5 +850,29 @@
   "shareTripLinkCopied": "Enlace copiado al portapapeles",
   "@shareTripLinkCopied": {
     "description": "CUS-4: confirmation shown after copying the share-trip link"
+  },
+  "pushJobOfferTitle": "Nueva oferta de servicio",
+  "@pushJobOfferTitle": {
+    "description": "TRK-3: system notification title for a backgrounded/killed-app job_offer FCM push"
+  },
+  "pushJobOfferBody": "Tienes una nueva oferta de servicio. Abre la app para verla.",
+  "@pushJobOfferBody": {
+    "description": "TRK-3: system notification body for a backgrounded/killed-app job_offer FCM push"
+  },
+  "pushJobEventTitle": "Actualización de tu servicio",
+  "@pushJobEventTitle": {
+    "description": "TRK-3: system notification title for a backgrounded/killed-app job_event FCM push"
+  },
+  "pushJobEventBody": "El estado de tu servicio cambió. Abre la app para ver los detalles.",
+  "@pushJobEventBody": {
+    "description": "TRK-3: system notification body for a backgrounded/killed-app job_event FCM push"
+  },
+  "pushGenericTitle": "Nueva notificación",
+  "@pushGenericTitle": {
+    "description": "TRK-3: system notification title fallback for an FCM push type not in the WS vocabulary"
+  },
+  "pushGenericBody": "Tienes una notificación nueva. Abre la app para ver los detalles.",
+  "@pushGenericBody": {
+    "description": "TRK-3: system notification body fallback for an FCM push type not in the WS vocabulary"
   }
 }

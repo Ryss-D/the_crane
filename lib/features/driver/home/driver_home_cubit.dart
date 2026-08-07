@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../core/api/drivers_repository.dart';
 import '../../../core/location/location_source.dart';
 import '../../../core/models/driver_profile.dart';
+import '../../../core/notifications/notification_permission_requester.dart';
 
 part 'driver_home_cubit.freezed.dart';
 
@@ -65,12 +66,15 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
   DriverHomeCubit({
     required DriversRepository driversRepository,
     LocationSource? locationSource,
+    NotificationPermissionRequester? notificationPermissionRequester,
   })  : _repo = driversRepository,
         _locationSource = locationSource,
+        _notificationPermissionRequester = notificationPermissionRequester,
         super(const DriverHomeState());
 
   final DriversRepository _repo;
   final LocationSource? _locationSource;
+  final NotificationPermissionRequester? _notificationPermissionRequester;
 
   /// Flips available/offline via `PATCH /v1/drivers/me/status`.
   ///
@@ -81,6 +85,11 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
   /// active (`ActiveJobCubit`), since the backend only accepts a driver's
   /// `location` message while one is assigned; this is just the one-shot
   /// fix availability itself needs.
+  ///
+  /// Also requests notification permission at the same moment (TRK-3) —
+  /// same "ask when it's actually needed" reasoning: a driver who's never
+  /// gone available has no offers to be notified about yet, so there's
+  /// nothing to ask for before this point either.
   Future<void> toggleAvailability() async {
     if (state.isUpdating) return;
     final target = state.status == DriverStatus.available
@@ -99,6 +108,10 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
         lat = fix.lat;
         lng = fix.lng;
       }
+      // TRK-3: best-effort — a denied/unavailable notification permission
+      // doesn't block going available, it only means a killed-app push
+      // won't be able to surface anything later.
+      await _notificationPermissionRequester?.requestPermission();
     }
     try {
       final profile = await _repo.setStatus(target, lat: lat, lng: lng);

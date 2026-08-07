@@ -10,6 +10,7 @@ import '../core/api/jobs_repository.dart';
 import '../core/api/vehicles_repository.dart';
 import '../core/location/location_source.dart';
 import '../core/models/app_user.dart';
+import '../core/notifications/notification_permission_requester.dart';
 import '../core/ws/crane_socket.dart';
 import '../features/auth/auth_cubit.dart';
 import '../features/auth/auth_state.dart';
@@ -215,6 +216,8 @@ GoRouter createRouter(AuthCubit authCubit) {
               create: (context) => DriverHomeCubit(
                 driversRepository: context.read<DriversRepository>(),
                 locationSource: context.read<LocationSource?>(),
+                notificationPermissionRequester:
+                    context.read<NotificationPermissionRequester?>(),
               ),
             ),
             BlocProvider(
