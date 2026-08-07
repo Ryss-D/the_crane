@@ -9,11 +9,14 @@ Job transitions broadcast on two Redis channels via the connection manager:
   - a reduced `job_event` (status + driver first name/plate only — same fields
     GET /v1/track/{token} already exposes) to the job's public share-token viewers,
     so the WS path never leaks more than the poll endpoint does (TRK-6).
+Alongside the WS broadcast, a data-only FCM push (app/services/push.py) goes to the
+customer's and (if assigned) driver's `fcm_token` — the case that covers an
+app-killed/backgrounded client WS can never reach, including a driver learning their
+assigned job was cancelled or reassigned.
 
 Offers push a `job_offer` message straight to the offered driver's live WS
-connections, if any — a backgrounded/disconnected driver simply doesn't get one over
-WS; FCM (not implemented here — no Firebase credentials yet) is the case that covers
-that gap later.
+connections, if any, plus the same FCM push to their `fcm_token` — a
+backgrounded/disconnected driver now gets one over FCM even when WS misses them.
 """
 
 from sqlalchemy import select
@@ -35,8 +38,18 @@ from app.services.connection_manager import ConnectionManager
 from app.services.dispatch import DEFAULT_OFFER_TTL_SECONDS, GeoRedisLike, driver_geo_position
 from app.services.jobs import commission_for_fare
 from app.services.pricing import haversine_km
+from app.services.push import send_push
 
 __all__ = ["broadcast_job_event", "notify_driver_offer", "publish_driver_location"]
+
+
+async def _push_to_user(session: AsyncSession, user_id, data: dict[str, str]) -> None:
+    """Best-effort FCM push to `user_id`'s stored token; a missing user or unset
+    `fcm_token` is a silent no-op (send_push itself no-ops on a falsy token too --
+    this just avoids the extra lookup when there's nothing to look up)."""
+    user = await session.get(User, user_id)
+    if user is not None and user.fcm_token:
+        await send_push(user.fcm_token, data)
 
 
 async def _track_driver_block(session: AsyncSession, job: Job) -> TrackDriver | None:
@@ -79,16 +92,25 @@ async def broadcast_job_event(
     track = JobTrackEvent(job_id=job.id, status=new_status, driver=driver)
     await manager.publish_job_track(redis, job.id, track.model_dump(mode="json"))
 
+    push_data = {"type": "job_event", "job_id": str(job.id), "status": new_status.value}
+    await _push_to_user(session, job.customer_id, push_data)
+    if job.driver_id is not None:
+        await _push_to_user(session, job.driver_id, push_data)
+
 
 async def notify_driver_offer(
+    session: AsyncSession,
     redis: GeoRedisLike,
     manager: ConnectionManager,
     offer: JobOffer,
     job: Job,
 ) -> None:
-    """TRK-3: the real `get_offer_notifier()` override — matches OfferNotifier's
-    `(offer, job) -> Awaitable[None]` shape exactly so it drops straight into
-    dispatch.py's `_offer_next`/`start_dispatch`/`advance_dispatch`/`retry_dispatch`.
+    """TRK-3: the real `get_offer_notifier()` override. `session`/`redis`/`manager`
+    are bound by app/main.py's `_real_offer_notifier` closure, not by the
+    OfferNotifier type itself — that callable still matches dispatch.py's
+    `(offer, job) -> Awaitable[None]` shape exactly, so adding the FCM lookup below
+    doesn't touch dispatch.py's `_offer_next`/`start_dispatch`/`advance_dispatch`/
+    `retry_dispatch` call sites at all.
 
     Uses the fixed default TTL for the informational countdown field rather than a
     live config lookup (would need a session here just for that) — authoritative
@@ -120,8 +142,11 @@ async def notify_driver_offer(
         commission_amount=commission_amount,
     )
     await manager.publish_to_user(redis, offer.driver_id, payload.model_dump(mode="json"))
-    # TODO(FCM): also push via Firebase Cloud Messaging here once credentials exist —
-    # covers the backgrounded/no-live-socket driver case; WS-only misses those.
+    await _push_to_user(
+        session,
+        offer.driver_id,
+        {"type": "job_offer", "job_id": str(job.id), "offer_id": str(offer.id)},
+    )
 
 
 async def publish_driver_location(

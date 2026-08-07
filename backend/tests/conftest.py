@@ -9,6 +9,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from app.core import security
+from app.core.config import get_settings
 from app.core.database import get_session
 from app.core.redis import get_redis
 from app.core.security import get_token_verifier
@@ -191,6 +193,30 @@ def fake_redis() -> FakeRedis:
 def verified_tokens() -> dict[str, dict[str, Any]]:
     """Map of accepted bearer tokens -> fake Firebase claims. Tests add entries."""
     return {}
+
+
+@pytest.fixture
+def fcm_sent(monkeypatch: pytest.MonkeyPatch) -> list[Any]:
+    """TRK-3 push-sending seam: makes Firebase Admin look "configured" (like
+    app/core/security.py, the actual cert file is never touched -- the module's
+    already-initialized-app check is monkeypatched instead) and replaces
+    firebase_admin.messaging.send with a fake that records every message it would
+    have sent, rather than calling the real Firebase API. Yields that list."""
+    import firebase_admin.messaging as messaging
+
+    monkeypatch.setenv("FIREBASE_CREDENTIALS_PATH", "/fake/firebase-creds.json")
+    get_settings.cache_clear()
+    monkeypatch.setattr(security, "_firebase_app", object())
+
+    sent: list[Any] = []
+
+    def fake_send(message: Any, dry_run: bool = False, app: Any = None) -> str:
+        sent.append(message)
+        return "mock-message-id"
+
+    monkeypatch.setattr(messaging, "send", fake_send)
+    yield sent
+    get_settings.cache_clear()
 
 
 @pytest.fixture

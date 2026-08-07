@@ -245,6 +245,160 @@ async def test_dispatch_offer_sends_job_offer_to_driver_ws(
         assert offer["commission_amount"] == round(110000 * 0.15)  # 16500
 
 
+# ---- FCM pushes alongside the WS broadcast (TRK-3 AC: app killed -> FCM arrives) ------
+
+
+async def test_job_transition_sends_fcm_push_to_customer_and_driver(
+    app: FastAPI,
+    client: AsyncClient,
+    tokens: Any,
+    customer_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+    seeded_config: Any,
+    fcm_sent: list[Any],
+) -> None:
+    """A job transition pushes a data-only FCM message to both the customer's and
+    the newly-assigned driver's fcm_token, alongside (not instead of) the WS
+    broadcast the sibling test above already covers."""
+    driver = await make_available_driver(session_maker, fake_redis, firebase_uid="fcm-driver")
+    tokens["fcm-driver-token"] = {"uid": driver.firebase_uid}
+
+    async with session_maker() as session:
+        db_customer = await session.get(User, customer_user.id)
+        assert db_customer is not None
+        db_customer.fcm_token = "customer-fcm-token"
+        db_driver = await session.get(User, driver.id)
+        assert db_driver is not None
+        db_driver.fcm_token = "driver-fcm-token"
+        await session.commit()
+
+    quote = await _get_quote(app, client)
+    create_resp = await client.post(
+        "/v1/jobs", headers=AUTH_CUSTOMER, json=_job_body(quote["quote_id"])
+    )
+    assert create_resp.status_code == 201
+    job_id = create_resp.json()["id"]
+    fcm_sent.clear()  # job creation (-> matching) + the dispatch offer already pushed
+
+    accept_resp = await client.post(
+        f"/v1/jobs/{job_id}/accept", headers={"Authorization": "Bearer fcm-driver-token"}
+    )
+    assert accept_resp.status_code == 200
+
+    assert {message.token for message in fcm_sent} == {"customer-fcm-token", "driver-fcm-token"}
+    for message in fcm_sent:
+        assert message.data == {"type": "job_event", "job_id": job_id, "status": "assigned"}
+        assert message.notification is None  # data-only
+
+
+async def test_job_transition_without_fcm_token_sends_no_push(
+    app: FastAPI,
+    client: AsyncClient,
+    tokens: Any,
+    customer_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+    seeded_config: Any,
+    fcm_sent: list[Any],
+) -> None:
+    """Neither user has an fcm_token set (the fixtures' default) -- no push is
+    attempted for either side, and that's not an error."""
+    driver = await make_available_driver(session_maker, fake_redis, firebase_uid="no-fcm-driver")
+    tokens["no-fcm-driver-token"] = {"uid": driver.firebase_uid}
+
+    quote = await _get_quote(app, client)
+    create_resp = await client.post(
+        "/v1/jobs", headers=AUTH_CUSTOMER, json=_job_body(quote["quote_id"])
+    )
+    assert create_resp.status_code == 201
+    job_id = create_resp.json()["id"]
+
+    accept_resp = await client.post(
+        f"/v1/jobs/{job_id}/accept", headers={"Authorization": "Bearer no-fcm-driver-token"}
+    )
+    assert accept_resp.status_code == 200
+    assert fcm_sent == []
+
+
+async def test_customer_cancel_of_assigned_job_sends_fcm_push_to_driver(
+    app: FastAPI,
+    client: AsyncClient,
+    tokens: Any,
+    customer_user: User,
+    driver_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+    fcm_sent: list[Any],
+) -> None:
+    """AC: a driver whose assigned job gets cancelled by the customer learns about
+    it over FCM too, not just WS -- the case a backgrounded/app-killed driver would
+    otherwise miss entirely."""
+    job = await make_job(
+        session_maker, customer_user, status=JobStatus.assigned, driver=driver_user
+    )
+    async with session_maker() as session:
+        db_driver = await session.get(User, driver_user.id)
+        assert db_driver is not None
+        db_driver.fcm_token = "driver-fcm-token"
+        await session.commit()
+    fcm_sent.clear()
+
+    cancel_resp = await client.post(f"/v1/jobs/{job.id}/cancel", headers=AUTH_CUSTOMER)
+    assert cancel_resp.status_code == 200
+
+    driver_messages = [m for m in fcm_sent if m.token == "driver-fcm-token"]
+    assert len(driver_messages) == 1
+    assert driver_messages[0].data == {
+        "type": "job_event",
+        "job_id": str(job.id),
+        "status": "cancelled",
+    }
+
+
+async def test_dispatch_offer_sends_fcm_push_to_driver(
+    app: FastAPI,
+    client: AsyncClient,
+    tokens: Any,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+    seeded_config: Any,
+    fcm_sent: list[Any],
+) -> None:
+    """DSP-2's offer to a candidate driver pushes an FCM `job_offer` message with
+    enough (job_id, offer_id) for the client to rehydrate the offer, mirroring the
+    WS job_offer push the sibling test above already covers."""
+    from sqlalchemy import select
+
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="fcm-offer-driver", lat=6.25, lng=-75.59
+    )
+    tokens["fcm-offer-driver-token"] = {"uid": driver.firebase_uid}
+    async with session_maker() as session:
+        db_driver = await session.get(User, driver.id)
+        assert db_driver is not None
+        db_driver.fcm_token = "offer-driver-fcm-token"
+        await session.commit()
+
+    quote = await _get_quote(app, client)
+    create_resp = await client.post(
+        "/v1/jobs", headers=AUTH_CUSTOMER, json=_job_body(quote["quote_id"])
+    )
+    assert create_resp.status_code == 201
+    job_id = create_resp.json()["id"]
+
+    async with session_maker() as session:
+        offer = await session.scalar(select(JobOffer).where(JobOffer.job_id == uuid.UUID(job_id)))
+    assert offer is not None
+
+    offer_messages = [m for m in fcm_sent if m.token == "offer-driver-fcm-token"]
+    assert len(offer_messages) == 1
+    assert offer_messages[0].data == {
+        "type": "job_offer",
+        "job_id": job_id,
+        "offer_id": str(offer.id),
+    }
+
+
 async def test_notify_driver_offer_pickup_distance_none_without_geo_entry(
     app: FastAPI,
     tokens: Any,
@@ -271,7 +425,8 @@ async def test_notify_driver_offer_pickup_distance_none_without_geo_entry(
     )
 
     with TestClient(app).websocket_connect("/v1/ws?token=no-geo-driver-token") as driver_ws:
-        await notify_driver_offer(fake_redis, connection_manager, offer, job)
+        async with session_maker() as session:
+            await notify_driver_offer(session, fake_redis, connection_manager, offer, job)
 
         received = driver_ws.receive_json()
         assert received["pickup_distance_km"] is None
@@ -302,7 +457,8 @@ async def test_notify_driver_offer_commission_flat_mode(
     )
 
     with TestClient(app).websocket_connect("/v1/ws?token=driver-token") as driver_ws:
-        await notify_driver_offer(fake_redis, connection_manager, offer, job)
+        async with session_maker() as session:
+            await notify_driver_offer(session, fake_redis, connection_manager, offer, job)
 
         received = driver_ws.receive_json()
         assert received["commission_amount"] == 12000

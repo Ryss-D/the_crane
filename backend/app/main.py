@@ -59,14 +59,17 @@ def _real_job_event_hook(
 
 
 def _real_offer_notifier(
+    session: Annotated[AsyncSession, Depends(get_session)],
     redis: Annotated[RedisLike, Depends(get_redis)],
     manager: Annotated[ConnectionManager, Depends(get_connection_manager)],
 ) -> OfferNotifier:
     """TRK-3: production override for `get_offer_notifier` — pushes a `job_offer` WS
-    message directly to the offered driver's live connections."""
+    message directly to the offered driver's live connections, plus an FCM push to
+    their `fcm_token` (session comes from this same override chain, like
+    `_real_job_event_hook` above)."""
 
     async def notifier(offer: JobOffer, job: Job) -> None:
-        await notify_driver_offer(redis, manager, offer, job)
+        await notify_driver_offer(session, redis, manager, offer, job)
 
     return notifier
 
