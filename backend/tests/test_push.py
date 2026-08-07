@@ -22,9 +22,21 @@ async def test_send_push_noop_when_firebase_not_configured(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """No FIREBASE_CREDENTIALS_PATH -> no push attempt (not an error), mirroring
-    app/core/security.py treating that as a valid "not configured yet" state."""
+    app/core/security.py treating that as a valid "not configured yet" state.
+
+    Patches app.services.push's own `_init_firebase` seam directly rather than
+    relying on the ambient absence of FIREBASE_CREDENTIALS_PATH/a real creds
+    file -- a dev machine with real Firebase credentials configured locally
+    (e.g. for manual end-to-end testing) would otherwise make this test
+    flaky/order-dependent."""
     import firebase_admin.messaging as messaging
 
+    from app.services import push
+
+    def not_configured() -> None:
+        raise RuntimeError("Firebase credentials are not configured")
+
+    monkeypatch.setattr(push, "_init_firebase", not_configured)
     calls: list[Any] = []
     monkeypatch.setattr(messaging, "send", lambda *a, **kw: calls.append((a, kw)))
 
