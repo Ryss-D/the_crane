@@ -66,6 +66,7 @@ _Job _$JobFromJson(Map<String, dynamic> json) => _Job(
       : DateTime.parse(json['cancelled_at'] as String),
   cancelReason: json['cancel_reason'] as String?,
   shareToken: json['share_token'] as String?,
+  driverCommission: (json['driver_commission'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$JobToJson(_Job instance) => <String, dynamic>{
@@ -90,6 +91,7 @@ Map<String, dynamic> _$JobToJson(_Job instance) => <String, dynamic>{
   'cancelled_at': instance.cancelledAt?.toIso8601String(),
   'cancel_reason': instance.cancelReason,
   'share_token': instance.shareToken,
+  'driver_commission': instance.driverCommission,
 };
 
 const _$JobStatusEnumMap = {

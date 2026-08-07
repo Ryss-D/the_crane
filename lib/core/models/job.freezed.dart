@@ -299,7 +299,11 @@ mixin _$Job {
  String get id; String get customerId; String? get driverId; JobStatus get status; VehicleType get vehicleType; LatLng get pickup; String get pickupAddress; LatLng get dropoff; String get dropoffAddress; double get distanceKm; int get quotedPrice; int? get finalPrice; String get paymentMethod; JobDriverSummary? get driver; DateTime get requestedAt; DateTime? get assignedAt; DateTime? get pickedUpAt; DateTime? get completedAt; DateTime? get cancelledAt; String? get cancelReason;// CUS-4: backs the "share trip" button (TRK-6's GET /v1/track/{token}).
 // Optional because the fake job history's older seed data predates this
 // field — real jobs always have one (the backend defaults it at creation).
- String? get shareToken;
+ String? get shareToken;// DRV-4: the real commission accrued at completion (backend's
+// JobRead.driver_commission, LED-1's DriverLedgerEntry) -- null until the
+// job is actually completed. ActiveJobScreen falls back to a client-side
+// flat-15% approximation only when this is null.
+ int? get driverCommission;
 /// Create a copy of Job
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -312,16 +316,16 @@ $JobCopyWith<Job> get copyWith => _$JobCopyWithImpl<Job>(this as Job, _$identity
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Job&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.finalPrice, finalPrice) || other.finalPrice == finalPrice)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.driver, driver) || other.driver == driver)&&(identical(other.requestedAt, requestedAt) || other.requestedAt == requestedAt)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&(identical(other.pickedUpAt, pickedUpAt) || other.pickedUpAt == pickedUpAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.shareToken, shareToken) || other.shareToken == shareToken));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Job&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.finalPrice, finalPrice) || other.finalPrice == finalPrice)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.driver, driver) || other.driver == driver)&&(identical(other.requestedAt, requestedAt) || other.requestedAt == requestedAt)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&(identical(other.pickedUpAt, pickedUpAt) || other.pickedUpAt == pickedUpAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.shareToken, shareToken) || other.shareToken == shareToken)&&(identical(other.driverCommission, driverCommission) || other.driverCommission == driverCommission));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,customerId,driverId,status,vehicleType,pickup,pickupAddress,dropoff,dropoffAddress,distanceKm,quotedPrice,finalPrice,paymentMethod,driver,requestedAt,assignedAt,pickedUpAt,completedAt,cancelledAt,cancelReason,shareToken]);
+int get hashCode => Object.hashAll([runtimeType,id,customerId,driverId,status,vehicleType,pickup,pickupAddress,dropoff,dropoffAddress,distanceKm,quotedPrice,finalPrice,paymentMethod,driver,requestedAt,assignedAt,pickedUpAt,completedAt,cancelledAt,cancelReason,shareToken,driverCommission]);
 
 @override
 String toString() {
-  return 'Job(id: $id, customerId: $customerId, driverId: $driverId, status: $status, vehicleType: $vehicleType, pickup: $pickup, pickupAddress: $pickupAddress, dropoff: $dropoff, dropoffAddress: $dropoffAddress, distanceKm: $distanceKm, quotedPrice: $quotedPrice, finalPrice: $finalPrice, paymentMethod: $paymentMethod, driver: $driver, requestedAt: $requestedAt, assignedAt: $assignedAt, pickedUpAt: $pickedUpAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelReason: $cancelReason, shareToken: $shareToken)';
+  return 'Job(id: $id, customerId: $customerId, driverId: $driverId, status: $status, vehicleType: $vehicleType, pickup: $pickup, pickupAddress: $pickupAddress, dropoff: $dropoff, dropoffAddress: $dropoffAddress, distanceKm: $distanceKm, quotedPrice: $quotedPrice, finalPrice: $finalPrice, paymentMethod: $paymentMethod, driver: $driver, requestedAt: $requestedAt, assignedAt: $assignedAt, pickedUpAt: $pickedUpAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelReason: $cancelReason, shareToken: $shareToken, driverCommission: $driverCommission)';
 }
 
 
@@ -332,7 +336,7 @@ abstract mixin class $JobCopyWith<$Res>  {
   factory $JobCopyWith(Job value, $Res Function(Job) _then) = _$JobCopyWithImpl;
 @useResult
 $Res call({
- String id, String customerId, String? driverId, JobStatus status, VehicleType vehicleType, LatLng pickup, String pickupAddress, LatLng dropoff, String dropoffAddress, double distanceKm, int quotedPrice, int? finalPrice, String paymentMethod, JobDriverSummary? driver, DateTime requestedAt, DateTime? assignedAt, DateTime? pickedUpAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelReason, String? shareToken
+ String id, String customerId, String? driverId, JobStatus status, VehicleType vehicleType, LatLng pickup, String pickupAddress, LatLng dropoff, String dropoffAddress, double distanceKm, int quotedPrice, int? finalPrice, String paymentMethod, JobDriverSummary? driver, DateTime requestedAt, DateTime? assignedAt, DateTime? pickedUpAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelReason, String? shareToken, int? driverCommission
 });
 
 
@@ -349,7 +353,7 @@ class _$JobCopyWithImpl<$Res>
 
 /// Create a copy of Job
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? customerId = null,Object? driverId = freezed,Object? status = null,Object? vehicleType = null,Object? pickup = null,Object? pickupAddress = null,Object? dropoff = null,Object? dropoffAddress = null,Object? distanceKm = null,Object? quotedPrice = null,Object? finalPrice = freezed,Object? paymentMethod = null,Object? driver = freezed,Object? requestedAt = null,Object? assignedAt = freezed,Object? pickedUpAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelReason = freezed,Object? shareToken = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? customerId = null,Object? driverId = freezed,Object? status = null,Object? vehicleType = null,Object? pickup = null,Object? pickupAddress = null,Object? dropoff = null,Object? dropoffAddress = null,Object? distanceKm = null,Object? quotedPrice = null,Object? finalPrice = freezed,Object? paymentMethod = null,Object? driver = freezed,Object? requestedAt = null,Object? assignedAt = freezed,Object? pickedUpAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelReason = freezed,Object? shareToken = freezed,Object? driverCommission = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
@@ -372,7 +376,8 @@ as DateTime?,completedAt: freezed == completedAt ? _self.completedAt : completed
 as DateTime?,cancelledAt: freezed == cancelledAt ? _self.cancelledAt : cancelledAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,cancelReason: freezed == cancelReason ? _self.cancelReason : cancelReason // ignore: cast_nullable_to_non_nullable
 as String?,shareToken: freezed == shareToken ? _self.shareToken : shareToken // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,driverCommission: freezed == driverCommission ? _self.driverCommission : driverCommission // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 /// Create a copy of Job
@@ -487,10 +492,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken,  int? driverCommission)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Job() when $default != null:
-return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken);case _:
+return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken,_that.driverCommission);case _:
   return orElse();
 
 }
@@ -508,10 +513,10 @@ return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken,  int? driverCommission)  $default,) {final _that = this;
 switch (_that) {
 case _Job():
-return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken);case _:
+return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken,_that.driverCommission);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -528,10 +533,10 @@ return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken,  int? driverCommission)?  $default,) {final _that = this;
 switch (_that) {
 case _Job() when $default != null:
-return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken);case _:
+return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken,_that.driverCommission);case _:
   return null;
 
 }
@@ -543,7 +548,7 @@ return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehi
 @JsonSerializable()
 
 class _Job implements Job {
-  const _Job({required this.id, required this.customerId, this.driverId, required this.status, required this.vehicleType, required this.pickup, required this.pickupAddress, required this.dropoff, required this.dropoffAddress, required this.distanceKm, required this.quotedPrice, this.finalPrice, this.paymentMethod = 'cash', this.driver, required this.requestedAt, this.assignedAt, this.pickedUpAt, this.completedAt, this.cancelledAt, this.cancelReason, this.shareToken});
+  const _Job({required this.id, required this.customerId, this.driverId, required this.status, required this.vehicleType, required this.pickup, required this.pickupAddress, required this.dropoff, required this.dropoffAddress, required this.distanceKm, required this.quotedPrice, this.finalPrice, this.paymentMethod = 'cash', this.driver, required this.requestedAt, this.assignedAt, this.pickedUpAt, this.completedAt, this.cancelledAt, this.cancelReason, this.shareToken, this.driverCommission});
   factory _Job.fromJson(Map<String, dynamic> json) => _$JobFromJson(json);
 
 @override final  String id;
@@ -570,6 +575,11 @@ class _Job implements Job {
 // Optional because the fake job history's older seed data predates this
 // field — real jobs always have one (the backend defaults it at creation).
 @override final  String? shareToken;
+// DRV-4: the real commission accrued at completion (backend's
+// JobRead.driver_commission, LED-1's DriverLedgerEntry) -- null until the
+// job is actually completed. ActiveJobScreen falls back to a client-side
+// flat-15% approximation only when this is null.
+@override final  int? driverCommission;
 
 /// Create a copy of Job
 /// with the given fields replaced by the non-null parameter values.
@@ -584,16 +594,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Job&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.finalPrice, finalPrice) || other.finalPrice == finalPrice)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.driver, driver) || other.driver == driver)&&(identical(other.requestedAt, requestedAt) || other.requestedAt == requestedAt)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&(identical(other.pickedUpAt, pickedUpAt) || other.pickedUpAt == pickedUpAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.shareToken, shareToken) || other.shareToken == shareToken));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Job&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.finalPrice, finalPrice) || other.finalPrice == finalPrice)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.driver, driver) || other.driver == driver)&&(identical(other.requestedAt, requestedAt) || other.requestedAt == requestedAt)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&(identical(other.pickedUpAt, pickedUpAt) || other.pickedUpAt == pickedUpAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.shareToken, shareToken) || other.shareToken == shareToken)&&(identical(other.driverCommission, driverCommission) || other.driverCommission == driverCommission));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,customerId,driverId,status,vehicleType,pickup,pickupAddress,dropoff,dropoffAddress,distanceKm,quotedPrice,finalPrice,paymentMethod,driver,requestedAt,assignedAt,pickedUpAt,completedAt,cancelledAt,cancelReason,shareToken]);
+int get hashCode => Object.hashAll([runtimeType,id,customerId,driverId,status,vehicleType,pickup,pickupAddress,dropoff,dropoffAddress,distanceKm,quotedPrice,finalPrice,paymentMethod,driver,requestedAt,assignedAt,pickedUpAt,completedAt,cancelledAt,cancelReason,shareToken,driverCommission]);
 
 @override
 String toString() {
-  return 'Job(id: $id, customerId: $customerId, driverId: $driverId, status: $status, vehicleType: $vehicleType, pickup: $pickup, pickupAddress: $pickupAddress, dropoff: $dropoff, dropoffAddress: $dropoffAddress, distanceKm: $distanceKm, quotedPrice: $quotedPrice, finalPrice: $finalPrice, paymentMethod: $paymentMethod, driver: $driver, requestedAt: $requestedAt, assignedAt: $assignedAt, pickedUpAt: $pickedUpAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelReason: $cancelReason, shareToken: $shareToken)';
+  return 'Job(id: $id, customerId: $customerId, driverId: $driverId, status: $status, vehicleType: $vehicleType, pickup: $pickup, pickupAddress: $pickupAddress, dropoff: $dropoff, dropoffAddress: $dropoffAddress, distanceKm: $distanceKm, quotedPrice: $quotedPrice, finalPrice: $finalPrice, paymentMethod: $paymentMethod, driver: $driver, requestedAt: $requestedAt, assignedAt: $assignedAt, pickedUpAt: $pickedUpAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelReason: $cancelReason, shareToken: $shareToken, driverCommission: $driverCommission)';
 }
 
 
@@ -604,7 +614,7 @@ abstract mixin class _$JobCopyWith<$Res> implements $JobCopyWith<$Res> {
   factory _$JobCopyWith(_Job value, $Res Function(_Job) _then) = __$JobCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String customerId, String? driverId, JobStatus status, VehicleType vehicleType, LatLng pickup, String pickupAddress, LatLng dropoff, String dropoffAddress, double distanceKm, int quotedPrice, int? finalPrice, String paymentMethod, JobDriverSummary? driver, DateTime requestedAt, DateTime? assignedAt, DateTime? pickedUpAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelReason, String? shareToken
+ String id, String customerId, String? driverId, JobStatus status, VehicleType vehicleType, LatLng pickup, String pickupAddress, LatLng dropoff, String dropoffAddress, double distanceKm, int quotedPrice, int? finalPrice, String paymentMethod, JobDriverSummary? driver, DateTime requestedAt, DateTime? assignedAt, DateTime? pickedUpAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelReason, String? shareToken, int? driverCommission
 });
 
 
@@ -621,7 +631,7 @@ class __$JobCopyWithImpl<$Res>
 
 /// Create a copy of Job
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? customerId = null,Object? driverId = freezed,Object? status = null,Object? vehicleType = null,Object? pickup = null,Object? pickupAddress = null,Object? dropoff = null,Object? dropoffAddress = null,Object? distanceKm = null,Object? quotedPrice = null,Object? finalPrice = freezed,Object? paymentMethod = null,Object? driver = freezed,Object? requestedAt = null,Object? assignedAt = freezed,Object? pickedUpAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelReason = freezed,Object? shareToken = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? customerId = null,Object? driverId = freezed,Object? status = null,Object? vehicleType = null,Object? pickup = null,Object? pickupAddress = null,Object? dropoff = null,Object? dropoffAddress = null,Object? distanceKm = null,Object? quotedPrice = null,Object? finalPrice = freezed,Object? paymentMethod = null,Object? driver = freezed,Object? requestedAt = null,Object? assignedAt = freezed,Object? pickedUpAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelReason = freezed,Object? shareToken = freezed,Object? driverCommission = freezed,}) {
   return _then(_Job(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
@@ -644,7 +654,8 @@ as DateTime?,completedAt: freezed == completedAt ? _self.completedAt : completed
 as DateTime?,cancelledAt: freezed == cancelledAt ? _self.cancelledAt : cancelledAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,cancelReason: freezed == cancelReason ? _self.cancelReason : cancelReason // ignore: cast_nullable_to_non_nullable
 as String?,shareToken: freezed == shareToken ? _self.shareToken : shareToken // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,driverCommission: freezed == driverCommission ? _self.driverCommission : driverCommission // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

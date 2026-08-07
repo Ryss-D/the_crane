@@ -281,11 +281,8 @@ class _JobCommissionSectionState extends State<_JobCommissionSection> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final fare = widget.job.finalPrice ?? widget.job.quotedPrice;
-    // TODO(JOB-2/LED-1): this approximates the commission at a flat 15%
-    // until the backend returns the real per-job commission — the same
-    // approximation `ApiDriversRepository`/`FakeDriversRepository` already
-    // use for the DSP-2 offer preview.
-    final commission = (fare * 0.15 / 100).round() * 100;
+    final commission =
+        widget.job.driverCommission ?? (fare * 0.15 / 100).round() * 100;
     return FutureBuilder<DriverBalance>(
       future: _future,
       builder: (context, snapshot) {

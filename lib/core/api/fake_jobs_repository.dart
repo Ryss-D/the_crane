@@ -266,9 +266,14 @@ class FakeJobsRepository implements JobsRepository {
         'Illegal transition ${job.status.wire} → ${JobStatus.completed.wire}',
       );
     }
+    final fare = job.finalPrice ?? job.quotedPrice;
     final completed = job.copyWith(
       status: JobStatus.completed,
       completedAt: DateTime.now(),
+      // Mirrors the real backend's commission_for_fare (flat 15% in dev
+      // config) so DRV-4's commission display has something real-looking
+      // to show against the fake backend too.
+      driverCommission: (fare * 0.15 / 100).round() * 100,
     );
     _put(completed);
     return completed;

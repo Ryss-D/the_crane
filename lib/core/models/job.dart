@@ -119,6 +119,11 @@ abstract class Job with _$Job {
     // Optional because the fake job history's older seed data predates this
     // field — real jobs always have one (the backend defaults it at creation).
     String? shareToken,
+    // DRV-4: the real commission accrued at completion (backend's
+    // JobRead.driver_commission, LED-1's DriverLedgerEntry) -- null until the
+    // job is actually completed. ActiveJobScreen falls back to a client-side
+    // flat-15% approximation only when this is null.
+    int? driverCommission,
   }) = _Job;
 
   factory Job.fromJson(Map<String, dynamic> json) => _$JobFromJson(json);
