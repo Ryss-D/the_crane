@@ -13,6 +13,28 @@ WebSocket layer for live positions and job events; FCM covers backgrounded apps.
 - [x] **TRK-3 — Job event broadcasting** *(deps: TRK-1, JOB-3)*
   Every state transition publishes to the job channel and triggers FCM (customer: status changes; driver: offers/cancellations). FCM payloads are data messages with job id for rehydration.
   *AC: app killed → FCM arrives; app open → WS event arrives; no double-handling.*
+  Correction: this was checked off when only the WS half existed --
+  `app/services/realtime.py` had a `# TODO(FCM)` comment and no
+  `firebase_admin.messaging` call anywhere in the backend, so the FCM half of
+  the AC was never actually true. Fixed: `app/services/push.py` (`send_push`)
+  wraps `firebase_admin.messaging.send` with a data-only `Message` (no
+  `notification` block), reusing the same lazily-initialized Firebase Admin app
+  `app/core/security.py` sets up for auth-token verification -- no-op (never
+  raises) if Firebase isn't configured or the target user has no `fcm_token`.
+  Wired into `broadcast_job_event` (pushes to the job's customer, and its
+  assigned driver too if one is set -- covers a driver learning their assigned
+  job was cancelled while backgrounded) and `notify_driver_offer` (pushes to
+  the offered driver). Payload data mirrors the WS wire vocabulary
+  (`lib/core/ws/server_message.dart`'s `type`/`job_id` fields) so a future
+  Flutter FCM handler dispatches the same way: `{"type": "job_event",
+  "job_id": ..., "status": ...}` and `{"type": "job_offer", "job_id": ...,
+  "offer_id": ...}`. Tested with `firebase_admin.messaging.send` mocked
+  (`tests/test_push.py`, `tests/test_ws.py`) -- never calls the real Firebase
+  API. Still genuinely open: no live device/real Firebase project has ever
+  received one of these pushes, and there's no Flutter-side FCM handler yet
+  (TRK-4 only covers the WS half) -- both are follow-up work, not blocking this
+  entry's AC as written (which is specifically about the backend triggering
+  FCM, not about a device having caught one).
 
 - [x] **TRK-4 — Flutter WS client** *(deps: FND-4)*
   `core/ws/`: connect lifecycle bound to auth state, exponential reconnect, typed event stream (freezed events), rehydrate via `GET /jobs/{id}` on reconnect.

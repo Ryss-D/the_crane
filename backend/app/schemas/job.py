@@ -91,6 +91,10 @@ class JobRead(BaseModel):
     cancelled_at: datetime | None
     cancel_reason: str | None
     share_token: uuid.UUID
+    # DRV-4: the real commission accrued at completion (LED-1's DriverLedgerEntry,
+    # not a client-side flat-15% guess) -- null until the job is actually completed,
+    # since that's the only point a ledger earning row exists to read it from.
+    driver_commission: int | None = None
 
 
 class JobListResponse(BaseModel):

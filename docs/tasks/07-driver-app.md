@@ -200,6 +200,16 @@ Flutter driver shell: go available, receive offers, execute the job.
   `active_job_screen.dart` calls this out. Verified against the fakes (84
   tests, including a dedicated assertion that both amounts render after a
   live completion).
+  Backend follow-up: `JobRead` (`backend/app/schemas/job.py`) now has a
+  `driver_commission: int | None` field — null until the job is `completed`,
+  otherwise the real LED-1 `DriverLedgerEntry.commission` for that job
+  (populated in `_job_read`, `backend/app/api/jobs.py`, one extra query,
+  same skip-if-not-applicable pattern as the existing `driver` field). Every
+  job-returning endpoint (including `GET /v1/jobs/{id}` and the
+  confirm-delivery response) now serves it. The client-side flat-15%
+  approximation and its TODO in `active_job_screen.dart` are stale and
+  should be swapped for this real value — not done here (Flutter-side, not
+  this pass).
 
 - [ ] **DRV-5 — Earnings & balance screen** *(deps: LED-1)*
   Completed jobs list, cash totals per day/week, commission balance owed, settlement instructions (static text until PAY-* lands).

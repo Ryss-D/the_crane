@@ -23,6 +23,7 @@ from app.models.job import (
     JobStatus,
     OfferResponse,
 )
+from app.models.ledger import DriverLedgerEntry, LedgerEntryType
 from app.models.user import User, UserRole
 from app.schemas.job import (
     JobCreate,
@@ -90,8 +91,21 @@ async def _job_read(session: AsyncSession, job: Job) -> JobRead:
     actually populated -- `Job` has no ORM relationship for it, so this is
     the one extra query (skipped once there's no driver yet) that fills in
     `JobRead.driver`, the same fields `track_job` below already fetches for
-    the public tracking view."""
+    the public tracking view.
+
+    DRV-4: also fills in `driver_commission` from the job's completion-accrual
+    ledger row (LED-1's `_accrue_completion`) -- one extra query, skipped
+    (stays null) unless the job is actually `completed`, never raises."""
     read = JobRead.model_validate(job)
+    if job.status is JobStatus.completed:
+        ledger_entry = await session.scalar(
+            select(DriverLedgerEntry).where(
+                DriverLedgerEntry.job_id == job.id,
+                DriverLedgerEntry.entry_type == LedgerEntryType.earning,
+            )
+        )
+        if ledger_entry is not None:
+            read = read.model_copy(update={"driver_commission": int(ledger_entry.commission)})
     if job.driver_id is None:
         return read
     driver_user = await session.get(User, job.driver_id)
