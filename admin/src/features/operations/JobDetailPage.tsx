@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api';
 import { TERMINAL_JOB_STATUSES } from '../../api/types';
+import type { JobDetail } from '../../api/types';
 import { formatCOP, formatDateTime } from '../../i18n/format';
 import { strings } from '../../i18n/strings';
 import { Badge, Button, Card, Table, TBody, Td, Th, THead, Tr } from '../../ui';
@@ -30,7 +31,12 @@ export function JobDetailPage() {
   const cancelMutation = useMutation({
     mutationFn: () => api.cancelJob(id as string, reason.trim() || undefined),
     onSuccess: (updated) => {
-      queryClient.setQueryData(['job', id], updated);
+      // cancelJob's response is a plain Job — it has no `offers` field (only
+      // getJob's JobDetail carries the trail). Merge onto the cached detail
+      // instead of replacing it outright, or the offer trail below crashes.
+      queryClient.setQueryData<JobDetail>(['job', id], (prev) =>
+        prev ? { ...prev, ...updated } : prev,
+      );
       void queryClient.invalidateQueries({ queryKey: ['jobs'] });
     },
   });
