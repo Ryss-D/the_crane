@@ -124,3 +124,90 @@ async def test_google_client_without_key_raises_503() -> None:
     with pytest.raises(HTTPException) as exc_info:
         await GoogleDirectionsClient(None).road_distance_km((6.24, -75.58), (6.20, -75.57))
     assert exc_info.value.status_code == 503
+
+
+class _FakeGoogleResponse:
+    """Stand-in for httpx.Response — just the two attributes GoogleDirectionsClient reads."""
+
+    def __init__(self, status_code: int, payload: dict[str, Any]) -> None:
+        self.status_code = status_code
+        self._payload = payload
+
+    def json(self) -> dict[str, Any]:
+        return self._payload
+
+
+class _FakeGoogleAsyncClient:
+    """Stand-in for httpx.AsyncClient — never hits the network. Constructed with the
+    same kwargs pricing.py passes (e.g. timeout=10.0), so it doubles as the factory
+    httpx.AsyncClient is monkeypatched to."""
+
+    def __init__(self, response: _FakeGoogleResponse, **_: Any) -> None:
+        self._response = response
+
+    def __call__(self, **_: Any) -> "_FakeGoogleAsyncClient":
+        return self
+
+    async def __aenter__(self) -> "_FakeGoogleAsyncClient":
+        return self
+
+    async def __aexit__(self, *exc: Any) -> None:
+        return None
+
+    async def get(self, *args: Any, **kwargs: Any) -> _FakeGoogleResponse:
+        return self._response
+
+
+def _patch_google_response(
+    monkeypatch: pytest.MonkeyPatch, response: _FakeGoogleResponse
+) -> None:
+    monkeypatch.setattr(
+        "app.services.pricing.httpx.AsyncClient", _FakeGoogleAsyncClient(response)
+    )
+
+
+async def test_google_client_success_sums_leg_distances_across_the_route(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = {
+        "status": "OK",
+        "routes": [{"legs": [{"distance": {"value": 9000}}, {"distance": {"value": 3000}}]}],
+    }
+    _patch_google_response(monkeypatch, _FakeGoogleResponse(200, payload))
+
+    km = await GoogleDirectionsClient("fake-key").road_distance_km(
+        (6.24, -75.58), (6.20, -75.57)
+    )
+    assert km == 12.0  # (9000 + 3000) meters -> 12 km
+
+
+async def test_google_client_http_error_raises_503(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_google_response(monkeypatch, _FakeGoogleResponse(500, {}))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await GoogleDirectionsClient("fake-key").road_distance_km((6.24, -75.58), (6.20, -75.57))
+    assert exc_info.value.status_code == 503
+
+
+async def test_google_client_zero_results_raises_503(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_google_response(
+        monkeypatch, _FakeGoogleResponse(200, {"status": "ZERO_RESULTS", "routes": []})
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await GoogleDirectionsClient("fake-key").road_distance_km((6.24, -75.58), (6.20, -75.57))
+    assert exc_info.value.status_code == 503
+
+
+async def test_get_directions_client_returns_google_client_when_key_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeSettings:
+        google_maps_api_key = "configured-key"
+
+    monkeypatch.setattr("app.services.pricing.get_settings", lambda: _FakeSettings())
+
+    client = get_directions_client()
+
+    assert isinstance(client, GoogleDirectionsClient)
+    assert client.api_key == "configured-key"

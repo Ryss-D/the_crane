@@ -5,6 +5,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -17,6 +18,7 @@ from app.services import dispatch
 from app.services.config import set_config
 from app.services.jobs import get_job_event_hook
 from app.services.pricing import get_directions_client
+from app.workers import offer_expiry
 from app.workers.offer_expiry import sweep_expired_offers
 from tests.conftest import FakeRedis, _create_user, make_available_driver, make_job
 
@@ -487,3 +489,102 @@ async def test_sweep_is_a_noop_when_nothing_is_stale(
         )
         assert still_pending is not None
         assert still_pending.response is OfferResponse.pending
+
+
+async def test_sweep_skips_stale_offer_whose_job_left_matching_state(
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+    customer_user: User,
+    seeded_config: dict[str, Any],
+) -> None:
+    """DSP-4 race: the job moved out of `matching` (e.g. resolved another way) while
+    this offer was still pending. The sweep must leave it alone rather than calling
+    advance_dispatch on a job that isn't mid-dispatch anymore."""
+    await make_available_driver(session_maker, fake_redis, firebase_uid="race-left-matching")
+    job = await make_job(session_maker, customer_user, status=JobStatus.matching)
+    async with session_maker() as session:
+        job = await session.merge(job)
+        offer = await dispatch.start_dispatch(session, fake_redis, job, get_job_event_hook())
+    assert offer is not None
+
+    ttl = seeded_config["dispatch"]["offer_ttl_seconds"]
+    async with session_maker() as session:
+        offer_row = await session.scalar(select(JobOffer).where(JobOffer.id == offer.id))
+        assert offer_row is not None
+        offer_row.offered_at = datetime.now(UTC) - timedelta(seconds=ttl + 5)
+        job_row = await session.get(Job, job.id)
+        assert job_row is not None
+        job_row.status = JobStatus.cancelled
+        await session.commit()
+
+    expired_count = await sweep_expired_offers(session_maker, fake_redis)
+    assert expired_count == 0
+
+    async with session_maker() as session:
+        offer_row = await session.scalar(select(JobOffer).where(JobOffer.id == offer.id))
+        assert offer_row is not None
+        assert offer_row.response is OfferResponse.pending  # sweep never touched it
+
+
+async def test_sweep_skips_stale_offer_whose_job_no_longer_exists(
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+    seeded_config: dict[str, Any],
+) -> None:
+    """Defensive edge: a stale pending offer pointing at a job_id with no Job row
+    (e.g. hard-deleted) must be skipped, not raise."""
+    ttl = seeded_config["dispatch"]["offer_ttl_seconds"]
+    async with session_maker() as session:
+        session.add(
+            JobOffer(
+                job_id=uuid.uuid4(),
+                driver_id=uuid.uuid4(),
+                response=OfferResponse.pending,
+                offered_at=datetime.now(UTC) - timedelta(seconds=ttl + 5),
+            )
+        )
+        await session.commit()
+
+    expired_count = await sweep_expired_offers(session_maker, fake_redis)
+    assert expired_count == 0
+
+
+async def test_offer_expiry_worker_recovers_from_sweep_errors_and_stops_on_cancel(
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DSP-4's worker loop: a bad sweep pass logs and retries rather than dying, and
+    the loop stops cleanly (propagates CancelledError) on cancellation."""
+    monkeypatch.setattr(offer_expiry, "MIN_SWEEP_INTERVAL_SECONDS", 0.01)
+    async with session_maker() as session:
+        await set_config(session, fake_redis, "dispatch", {"offer_ttl_seconds": 0.06})
+
+    real_sweep = offer_expiry.sweep_expired_offers
+    calls = {"n": 0}
+    hanging = asyncio.Event()
+
+    async def flaky_sweep(*args: Any, **kwargs: Any) -> int:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("boom")
+        if calls["n"] == 2:
+            # Cancel while genuinely mid-sweep (inside the try block), not while
+            # parked in the loop's trailing `asyncio.sleep` — exercises the
+            # `except asyncio.CancelledError: raise` re-raise, not just the sleep.
+            hanging.set()
+            await asyncio.sleep(10)
+        return await real_sweep(*args, **kwargs)
+
+    monkeypatch.setattr(offer_expiry, "sweep_expired_offers", flaky_sweep)
+
+    task = asyncio.create_task(offer_expiry.run_offer_expiry_worker(session_maker, fake_redis))
+    try:
+        await asyncio.wait_for(hanging.wait(), timeout=5)
+    finally:
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    # Survived the first (raised) pass before hanging mid-sweep on the second.
+    assert calls["n"] == 2

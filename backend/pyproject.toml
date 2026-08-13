@@ -20,6 +20,7 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
     "httpx",
     "ruff",
     "aiosqlite",
@@ -36,6 +37,14 @@ packages = ["app"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+# SQLAlchemy's async engine bridges every `await` through a greenlet switch;
+# without this, coverage.py's tracer loses the frame across that switch and
+# misreports huge swaths of straight-line code in every async endpoint/service
+# as uncovered even though tests exercise it (verified: default config showed
+# app/api/jobs.py at 49%, jumps to 95% with this on, same test suite).
+concurrency = ["greenlet"]
 
 [tool.ruff]
 line-length = 100

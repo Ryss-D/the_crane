@@ -16,6 +16,7 @@ from app.models.driver import DriverProfile, DriverStatus
 from app.models.job import DriverLocationSnapshot, JobOffer, JobStatus, OfferResponse
 from app.models.ledger import DriverLedgerEntry, LedgerEntryType
 from app.models.user import User
+from app.services.dispatch import _geo_key
 from app.services.ledger import driver_owed_balance
 from tests.conftest import FakeRedis, make_available_driver, make_job
 
@@ -97,6 +98,30 @@ async def test_config_put_updates_value_and_appends_audit(
     audit_values = [entry["new_value"] for entry in body["audit"]]
     assert new_value in audit_values
     assert seeded_config["settlement"] in audit_values
+
+
+async def test_config_audit_trail_caps_at_recent_limit(
+    client: AsyncClient, tokens: dict, seeded_config: dict[str, Any]
+) -> None:
+    """CONFIG_AUDIT_RECENT_LIMIT (5) caps the audit trail returned per key --
+    older writes still happened but drop out of the response."""
+    for i in range(7):
+        response = await client.put(
+            "/v1/admin/config/dispatch",
+            headers=AUTH_ADMIN,
+            json={"value": {"offer_ttl_seconds": 30 + i}},
+        )
+        assert response.status_code == 200
+
+    listed = await client.get("/v1/admin/config", headers=AUTH_ADMIN)
+    row = next(r for r in listed.json() if r["key"] == "dispatch")
+    # 1 seed write + 7 updates = 8 total, but only the newest 5 come back.
+    # (SQLite's CURRENT_TIMESTAMP has second resolution, so which 5 of the
+    # 8 tie-broken rows land in the top-5 isn't deterministic here -- see the
+    # same caveat on test_config_put_updates_value_and_appends_audit above.)
+    assert len(row["audit"]) == 5
+    newest_values = {entry["new_value"]["offer_ttl_seconds"] for entry in row["audit"]}
+    assert newest_values.issubset(set(range(30, 37)))
 
 
 async def test_config_put_upserts_unknown_key(
@@ -190,6 +215,50 @@ async def test_verify_driver(
         assert profile.verified is True
 
 
+@pytest.mark.parametrize("action", ["verify", "block", "unblock"])
+async def test_driver_action_404_for_unknown_driver(
+    client: AsyncClient, tokens: dict, action: str
+) -> None:
+    response = await client.post(f"/v1/admin/drivers/{uuid.uuid4()}/{action}", headers=AUTH_ADMIN)
+    assert response.status_code == 404
+
+
+async def test_block_available_driver_removes_from_geo_index(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    """Regression: blocking a currently-available driver must pull them out of the
+    Redis geo index (block_driver's branch), not just flip their DB status --
+    otherwise dispatch could still offer a blocked driver a job."""
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="drv-blockavail", verified=True
+    )
+    assert str(driver.id) in fake_redis.geo[_geo_key("car")]
+
+    response = await client.post(f"/v1/admin/drivers/{driver.id}/block", headers=AUTH_ADMIN)
+    assert response.status_code == 200
+    assert response.json()["status"] == "blocked"
+    assert str(driver.id) not in fake_redis.geo.get(_geo_key("car"), {})
+
+
+async def test_unblock_driver_not_blocked_is_409(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    driver = await make_available_driver(
+        session_maker,
+        fake_redis,
+        firebase_uid="drv-notblocked",
+        status=DriverStatus.offline,
+    )
+    response = await client.post(f"/v1/admin/drivers/{driver.id}/unblock", headers=AUTH_ADMIN)
+    assert response.status_code == 409
+
+
 async def test_block_then_unblock_driver_gates_availability(
     client: AsyncClient,
     verified_tokens: dict[str, dict[str, Any]],
@@ -259,6 +328,54 @@ async def test_list_jobs_filters_by_status_newest_first(
     assert str(older.id) in ids
     assert ids.index(str(newer.id)) < ids.index(str(older.id))  # newest first
     assert all(item["status"] == "requested" for item in body["items"])
+
+
+async def test_list_jobs_empty_result_has_no_names(
+    client: AsyncClient, tokens: dict
+) -> None:
+    """Regression: an empty job page must short-circuit the name lookup
+    (_user_name_map's `if not user_ids: return {}`) rather than issuing an
+    `IN ()` query."""
+    response = await client.get(
+        "/v1/admin/jobs", headers=AUTH_ADMIN, params={"status": "completed"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["items"] == []
+    assert body["total"] == 0
+
+
+async def test_list_jobs_filters_by_date_range(
+    client: AsyncClient,
+    tokens: dict,
+    customer_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
+    now = datetime.now(UTC)
+    old_job = await make_job(
+        session_maker, customer_user, requested_at=now - timedelta(days=2)
+    )
+    recent_job = await make_job(session_maker, customer_user, requested_at=now)
+
+    from_response = await client.get(
+        "/v1/admin/jobs",
+        headers=AUTH_ADMIN,
+        params={"date_from": (now - timedelta(hours=1)).isoformat()},
+    )
+    assert from_response.status_code == 200
+    from_ids = {item["id"] for item in from_response.json()["items"]}
+    assert str(recent_job.id) in from_ids
+    assert str(old_job.id) not in from_ids
+
+    to_response = await client.get(
+        "/v1/admin/jobs",
+        headers=AUTH_ADMIN,
+        params={"date_to": (now - timedelta(days=1)).isoformat()},
+    )
+    assert to_response.status_code == 200
+    to_ids = {item["id"] for item in to_response.json()["items"]}
+    assert str(old_job.id) in to_ids
+    assert str(recent_job.id) not in to_ids
 
 
 async def test_list_jobs_includes_customer_and_driver_names(
@@ -499,3 +616,81 @@ async def test_settle_rejects_non_positive_amount(
         f"/v1/admin/ledger/{driver.id}/settle", headers=AUTH_ADMIN, json={"amount": 0}
     )
     assert response.status_code == 422
+
+
+async def test_settle_404_for_unknown_driver(client: AsyncClient, tokens: dict) -> None:
+    response = await client.post(
+        f"/v1/admin/ledger/{uuid.uuid4()}/settle", headers=AUTH_ADMIN, json={"amount": 1000}
+    )
+    assert response.status_code == 404
+
+
+async def test_settle_404_for_non_driver_user(
+    client: AsyncClient, tokens: dict, customer_user: User
+) -> None:
+    response = await client.post(
+        f"/v1/admin/ledger/{customer_user.id}/settle", headers=AUTH_ADMIN, json={"amount": 1000}
+    )
+    assert response.status_code == 404
+
+
+async def test_settle_allows_over_settlement_and_leaves_negative_balance(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    """app/services/ledger.py's driver_owed_balance docstring explicitly documents
+    a negative balance after over-settlement -- the endpoint deliberately doesn't
+    cap `amount` to the current owed balance."""
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="drv-oversettle", status=DriverStatus.offline
+    )
+    async with session_maker() as session:
+        session.add(
+            DriverLedgerEntry(
+                driver_id=driver.id,
+                job_id=None,
+                gross=70000,
+                commission=10000,
+                net=60000,
+                entry_type=LedgerEntryType.earning,
+            )
+        )
+        await session.commit()
+
+    response = await client.post(
+        f"/v1/admin/ledger/{driver.id}/settle",
+        headers=AUTH_ADMIN,
+        json={"amount": 25000, "note": "overpaid"},
+    )
+    assert response.status_code == 201
+
+    async with session_maker() as session:
+        balance = await driver_owed_balance(session, driver.id)
+    assert balance == -15000
+
+
+async def test_settle_already_zero_balance_driver_still_succeeds(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    """A driver with nothing owed (never earned, or already fully settled) can
+    still be settled again -- the endpoint has no owed-balance precondition."""
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="drv-zerobalance", status=DriverStatus.offline
+    )
+    async with session_maker() as session:
+        assert await driver_owed_balance(session, driver.id) == 0
+
+    response = await client.post(
+        f"/v1/admin/ledger/{driver.id}/settle",
+        headers=AUTH_ADMIN,
+        json={"amount": 5000, "note": "already settled"},
+    )
+    assert response.status_code == 201
+
+    async with session_maker() as session:
+        assert await driver_owed_balance(session, driver.id) == -5000
