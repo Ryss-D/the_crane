@@ -143,7 +143,10 @@ void main() {
       );
       var job = await jobs.createJob(
         quoteId: quote.quoteId,
+        vehicleType: VehicleType.car,
+        pickup: const LatLng(lat: 6.2088, lng: -75.5679),
         pickupAddress: 'Origin',
+        dropoff: const LatLng(lat: 6.1450, lng: -75.6169),
         dropoffAddress: 'Destination',
       );
       // matchingDelay is zero but still a Timer -- needs a real event-loop

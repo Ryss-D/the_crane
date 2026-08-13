@@ -195,7 +195,10 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
     try {
       final job = await _repo.createJob(
         quoteId: quote.quoteId,
+        vehicleType: state.vehicleType,
+        pickup: fakeGeocode(state.pickupAddress),
         pickupAddress: state.pickupAddress.trim(),
+        dropoff: fakeGeocode(state.dropoffAddress),
         dropoffAddress: state.dropoffAddress.trim(),
       );
       // CUS-2: the quote is spent — nothing left for the stale-refresh

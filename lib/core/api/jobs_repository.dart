@@ -53,9 +53,20 @@ abstract interface class JobsRepository {
 
   /// `POST /v1/jobs` — create a job from a cached quote id. The job starts
   /// in `matching`.
+  ///
+  /// [vehicleType]/[pickup]/[dropoff] must be resent here even though
+  /// [quoteId] was already priced against them — the backend's quote cache
+  /// (`app/services/pricing.py::build_quote`/`pop_quote`) only round-trips
+  /// `vehicle_type` (to 409 on a mismatch) plus `price`/`distance_km`/
+  /// `eta_minutes`, never the coordinates themselves, so `JobCreate`
+  /// (`backend/app/schemas/job.py`) requires the caller to resend
+  /// `vehicle_type`/`pickup`/`dropoff` on the create call itself.
   Future<Job> createJob({
     required String quoteId,
+    required VehicleType vehicleType,
+    required LatLng pickup,
     required String pickupAddress,
+    required LatLng dropoff,
     required String dropoffAddress,
   });
 
@@ -115,6 +126,23 @@ abstract interface class JobsRepository {
   });
 }
 
+/// The backend's `JobRead` (`backend/app/schemas/job.py`) serializes
+/// pickup/dropoff as flat `pickup_lat`/`pickup_lng`/`dropoff_lat`/
+/// `dropoff_lng` fields — never the nested `{"pickup": {"lat":.., "lng":..},
+/// ...}` shape `Job.fromJson` expects (that nested shape is `JobCreate`'s
+/// own `LocationIn`, used only on the way *in*; the backend doesn't mirror
+/// it on the way back out). Every job-returning endpoint needs this reshape
+/// first, or `pickup`/`dropoff` throw a null-cast trying to read a `pickup`/
+/// `dropoff` key the response never has.
+Map<String, dynamic> _reshapeJobJson(Map<String, dynamic> json) => {
+      ...json,
+      'pickup': {'lat': json['pickup_lat'], 'lng': json['pickup_lng']},
+      'dropoff': {'lat': json['dropoff_lat'], 'lng': json['dropoff_lng']},
+    };
+
+Job _jobFromApiJson(Map<String, dynamic> json) =>
+    Job.fromJson(_reshapeJobJson(json));
+
 /// Dio-backed implementation hitting the FastAPI v1 endpoints.
 class ApiJobsRepository implements JobsRepository {
   ApiJobsRepository(this._dio, [this._socket]);
@@ -166,24 +194,28 @@ class ApiJobsRepository implements JobsRepository {
   @override
   Future<Job> createJob({
     required String quoteId,
+    required VehicleType vehicleType,
+    required LatLng pickup,
     required String pickupAddress,
+    required LatLng dropoff,
     required String dropoffAddress,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/v1/jobs',
       data: {
         'quote_id': quoteId,
-        'pickup_address': pickupAddress,
-        'dropoff_address': dropoffAddress,
+        'vehicle_type': vehicleType.wire,
+        'pickup': {'lat': pickup.lat, 'lng': pickup.lng, 'address': pickupAddress},
+        'dropoff': {'lat': dropoff.lat, 'lng': dropoff.lng, 'address': dropoffAddress},
       },
     );
-    return Job.fromJson(res.data!);
+    return _jobFromApiJson(res.data!);
   }
 
   @override
   Future<Job> getJob(String id) async {
     final res = await _dio.get<Map<String, dynamic>>('/v1/jobs/$id');
-    return Job.fromJson(res.data!);
+    return _jobFromApiJson(res.data!);
   }
 
   @override
@@ -266,7 +298,7 @@ class ApiJobsRepository implements JobsRepository {
   @override
   Future<Job> acceptJob(String id) async {
     final res = await _dio.post<Map<String, dynamic>>('/v1/jobs/$id/accept');
-    return Job.fromJson(res.data!);
+    return _jobFromApiJson(res.data!);
   }
 
   @override
@@ -275,7 +307,7 @@ class ApiJobsRepository implements JobsRepository {
     // the caller's own identity (see the interface doc comment).
     try {
       final res = await _dio.post<Map<String, dynamic>>('/v1/jobs/$id/cancel');
-      return Job.fromJson(res.data!);
+      return _jobFromApiJson(res.data!);
     } on DioException catch (e) {
       final code = e.response?.statusCode;
       if (code == 403 || code == 409) {
@@ -294,7 +326,7 @@ class ApiJobsRepository implements JobsRepository {
         '/v1/jobs/$id/status',
         data: {'status': status.wire},
       );
-      return Job.fromJson(res.data!);
+      return _jobFromApiJson(res.data!);
     } on DioException catch (e) {
       final code = e.response?.statusCode;
       if (code == 403 || code == 409) {
@@ -310,7 +342,7 @@ class ApiJobsRepository implements JobsRepository {
   Future<Job> confirmDelivery(String id) async {
     final res =
         await _dio.post<Map<String, dynamic>>('/v1/jobs/$id/confirm-delivery');
-    return Job.fromJson(res.data!);
+    return _jobFromApiJson(res.data!);
   }
 
   @override
@@ -331,11 +363,10 @@ class ApiJobsRepository implements JobsRepository {
 
   @override
   Future<List<Rating>> getRatings(String jobId) async {
-    // RAT-1's rating endpoints aren't live on the backend yet at the time
-    // this client was written (no `app/api/ratings.py`/router registration
-    // — only the `Rating` model exists). This defensively accepts either a
-    // bare JSON array or a `{"items": [...]}` envelope so it keeps working
-    // whichever shape lands.
+    // RAT-1's rating endpoints are live (`app/api/ratings.py`, registered in
+    // `main.py`) and always return the `{"items": [...]}` envelope
+    // (`JobRatingsResponse`). This defensively also accepts a bare JSON
+    // array so it keeps working if that ever changes.
     final res = await _dio.get<dynamic>('/v1/jobs/$jobId/ratings');
     final data = res.data;
     final list = data is List
@@ -363,6 +394,12 @@ class ApiJobsRepository implements JobsRepository {
         'offset': offset,
       },
     );
-    return JobHistoryPage.fromJson(res.data!);
+    final data = res.data!;
+    // Each item is a JobRead, same flat-pickup/dropoff reshape as every
+    // other job-returning endpoint (see [_reshapeJobJson]).
+    final items = (data['items'] as List)
+        .map((e) => _reshapeJobJson(e as Map<String, dynamic>))
+        .toList();
+    return JobHistoryPage.fromJson({...data, 'items': items});
   }
 }

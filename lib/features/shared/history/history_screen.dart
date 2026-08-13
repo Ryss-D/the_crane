@@ -102,24 +102,32 @@ class _HistoryRow extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(formatHistoryDate(job.requestedAt)),
-      trailing: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            formatCop(job.finalPrice ?? job.quotedPrice),
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Chip(
-            visualDensity: VisualDensity.compact,
-            label: Text(
-              job.status.label(l10n),
-              style: theme.textTheme.labelSmall,
+      // `ListTile` caps a trailing widget's height at 56 regardless of the
+      // tile being two-line (Flutter's own `maxIconHeightConstraint`), which
+      // this price-over-chip stack alone slightly exceeds. `FittedBox`
+      // scales it down just enough to fit rather than overflow.
+      trailing: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              formatCop(job.finalPrice ?? job.quotedPrice),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Chip(
+              visualDensity: VisualDensity.compact,
+              label: Text(
+                job.status.label(l10n),
+                style: theme.textTheme.labelSmall,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

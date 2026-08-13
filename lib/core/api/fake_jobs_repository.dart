@@ -98,7 +98,10 @@ class FakeJobsRepository implements JobsRepository {
   @override
   Future<Job> createJob({
     required String quoteId,
+    required VehicleType vehicleType,
+    required LatLng pickup,
     required String pickupAddress,
+    required LatLng dropoff,
     required String dropoffAddress,
   }) async {
     await Future<void>.delayed(createDelay);
@@ -110,10 +113,10 @@ class FakeJobsRepository implements JobsRepository {
       id: 'job-${++_seq}',
       customerId: 'cus-001',
       status: JobStatus.matching,
-      vehicleType: cached.quote.vehicleType,
-      pickup: cached.pickup,
+      vehicleType: vehicleType,
+      pickup: pickup,
       pickupAddress: pickupAddress,
-      dropoff: cached.dropoff,
+      dropoff: dropoff,
       dropoffAddress: dropoffAddress,
       distanceKm: cached.quote.distanceKm,
       quotedPrice: cached.quote.price,

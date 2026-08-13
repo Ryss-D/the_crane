@@ -9,11 +9,17 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// [addServerMessage], read what the client sent via [sentMessages], sever
 /// the link with [closeFromServer].
 class FakeWebSocketChannel with StreamChannelMixin implements WebSocketChannel {
-  FakeWebSocketChannel({this.readyError});
+  FakeWebSocketChannel({this.readyError, Future<void>? readyGate})
+      : _readyGate = readyGate;
 
   /// When set, [ready] completes with this error instead of resolving —
   /// simulates a connect-time failure (DNS, refused connection, ...).
   final Object? readyError;
+
+  /// When set, [ready] doesn't resolve until this future does — lets a test
+  /// hold a connect attempt open (channel created, not yet "ready") to race
+  /// another attempt against it. Ignored when [readyError] is also set.
+  final Future<void>? _readyGate;
 
   final StreamController<dynamic> _incoming =
       StreamController<dynamic>.broadcast();
@@ -31,8 +37,21 @@ class FakeWebSocketChannel with StreamChannelMixin implements WebSocketChannel {
     if (!_incoming.isClosed) _incoming.add(raw);
   }
 
+  /// Simulates the server pushing a non-text frame (e.g. binary) — real
+  /// `web_socket_channel` streams can emit these; [CraneSocket] guards
+  /// against decoding anything that isn't a [String].
+  void addNonStringServerMessage(Object raw) {
+    if (!_incoming.isClosed) _incoming.add(raw);
+  }
+
   /// Simulates the server dropping the connection.
   Future<void> closeFromServer() => _incoming.close();
+
+  /// Simulates the transport erroring out (as opposed to a clean
+  /// [closeFromServer]) — `CraneSocket` treats both the same way.
+  void errorFromServer(Object error) {
+    if (!_incoming.isClosed) _incoming.addError(error);
+  }
 
   @override
   Stream get stream => _incoming.stream;
@@ -41,8 +60,10 @@ class FakeWebSocketChannel with StreamChannelMixin implements WebSocketChannel {
   late final WebSocketSink sink = _FakeWebSocketSink(_outgoing, this);
 
   @override
-  Future<void> get ready =>
-      readyError != null ? Future<void>.error(readyError!) : Future.value();
+  Future<void> get ready {
+    if (readyError != null) return Future<void>.error(readyError!);
+    return _readyGate ?? Future.value();
+  }
 
   @override
   String? get protocol => null;

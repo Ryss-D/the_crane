@@ -8,9 +8,52 @@ import 'package:the_crane/core/models/job.dart';
 import 'package:the_crane/core/models/truck.dart';
 import 'package:the_crane/features/customer/request/matching_screen.dart';
 import 'package:the_crane/features/customer/request/request_screen.dart';
+import 'package:the_crane/features/shared/history/history_screen.dart';
 import 'package:the_crane/main.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../support/test_dependencies.dart';
+
+/// CUS-4's "call driver" button deep-links out through `url_launcher`; with
+/// no real platform underneath a VM widget test, an unmocked call to it
+/// just throws `MissingPluginException`. Fake the platform interface
+/// in-memory, mirroring how this file already fakes `Clipboard`.
+class _FakeUrlLauncher extends UrlLauncherPlatform {
+  String? lastLaunchedUrl;
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    lastLaunchedUrl = url;
+    return true;
+  }
+}
+
+/// Fails the next `confirmDelivery` call exactly once, mirroring
+/// `RejectingOnceJobsRepository`'s shape (`test/support/`, which only
+/// covers `updateJobStatus`).
+class _RejectingOnceDeliveryJobsRepository extends FakeJobsRepository {
+  _RejectingOnceDeliveryJobsRepository({
+    super.quoteDelay,
+    super.createDelay,
+    super.actionDelay,
+    super.matchingDelay,
+  });
+
+  bool rejectNext = false;
+
+  @override
+  Future<Job> confirmDelivery(String id) {
+    if (rejectNext) {
+      rejectNext = false;
+      return Future.error(StateError('boom'));
+    }
+    return super.confirmDelivery(id);
+  }
+}
 
 void main() {
   // CUS-4: `Clipboard.setData`/`getData` go through `SystemChannels.platform`
@@ -309,5 +352,145 @@ void main() {
     final clipboard = await Clipboard.getData(Clipboard.kTextPlain);
     expect(clipboard?.text, '${Env.webBaseUrl}/t/${job.shareToken}');
     expect(find.text('Enlace copiado al portapapeles'), findsOneWidget);
+  });
+
+  testWidgets('CUS-4: the call button actually dials the driver\'s phone',
+      (tester) async {
+    final launcher = _FakeUrlLauncher();
+    UrlLauncherPlatform.instance = launcher;
+    final jobs = fastFakeJobs();
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+
+    final job = await tester.runAsync(
+      () async => (await jobs.listHistory(role: JobHistoryRole.customer))
+          .items
+          .single,
+    );
+    await tester.ensureVisible(find.byKey(const Key('callDriverButton')));
+    await tester.tap(find.byKey(const Key('callDriverButton')));
+    await tester.pump();
+
+    expect(launcher.lastLaunchedUrl, 'tel:${job!.driver!.phone}');
+  });
+
+  testWidgets('CUS-3: cancelling out of the no-drivers state goes back to '
+      'the request screen', (tester) async {
+    final jobs = fastFakeJobs(matchingOutcome: FakeMatchingOutcome.noDrivers);
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+    expect(find.text('Sin grúas disponibles'), findsOneWidget);
+
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RequestScreen), findsOneWidget);
+    expect(find.byType(MatchingScreen), findsNothing);
+  });
+
+  testWidgets(
+      'CUS-5: a rejected cash-payment confirmation shows an inline error',
+      (tester) async {
+    final jobs = _RejectingOnceDeliveryJobsRepository(
+      quoteDelay: const Duration(milliseconds: 20),
+      createDelay: const Duration(milliseconds: 20),
+      actionDelay: const Duration(milliseconds: 10),
+      matchingDelay: const Duration(milliseconds: 300),
+    );
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+
+    await tester.runAsync(() async {
+      final page = await jobs.listHistory(role: JobHistoryRole.customer);
+      var job = page.items.single;
+      while (job.status != JobStatus.delivered) {
+        job = await jobs.updateJobStatus(job.id, job.status.nextDriverStatus!);
+      }
+    });
+    await tester.pump(const Duration(milliseconds: 10));
+    expect(find.byKey(const Key('confirmCashPaymentButton')), findsOneWidget);
+
+    jobs.rejectNext = true;
+    await tester.ensureVisible(find.byKey(const Key('confirmCashPaymentButton')));
+    await tester.tap(find.byKey(const Key('confirmCashPaymentButton')));
+    await tester.pump(const Duration(milliseconds: 20));
+
+    expect(find.byKey(const Key('confirmCashPaymentButton')), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const Key('confirmCashPaymentButton')),
+          )
+          .onPressed,
+      isNotNull,
+    );
+
+    // A later, non-rejected confirm still works normally.
+    await tester.tap(find.byKey(const Key('confirmCashPaymentButton')));
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(find.byKey(const Key('confirmCashPaymentButton')), findsNothing);
+    expect(find.byKey(const Key('rateTripButton')), findsOneWidget);
+
+    // RAT-2: tapping it opens the rating dialog.
+    await tester.ensureVisible(find.byKey(const Key('rateTripButton')));
+    await tester.tap(find.byKey(const Key('rateTripButton')));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+  });
+
+  testWidgets(
+      'CUS-4: the status timeline shows a failure banner once the job is '
+      'cancelled while still assigned', (tester) async {
+    final jobs = fastFakeJobs();
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+    expect(find.byKey(const Key('statusTimeline')), findsOneWidget);
+
+    // Cancelled by something other than this screen's own "leave" button
+    // (which pops immediately) -- e.g. the grace-period 409 path aside,
+    // any out-of-band cancellation the live `watchJob` subscription
+    // delivers. `_customerCancellable` still allows it from `assigned`.
+    await tester.runAsync(() async {
+      final page = await jobs.listHistory(role: JobHistoryRole.customer);
+      await jobs.cancelJob(page.items.single.id);
+    });
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.byKey(const Key('statusTimelineFailureBanner')), findsOneWidget);
+    expect(find.byKey(const Key('statusTimeline')), findsNothing);
+  });
+
+  testWidgets('RAT-3: the history nav button opens the trip-history screen',
+      (tester) async {
+    await pumpToRequestScreen(tester, fastFakeJobs());
+
+    await tester.tap(find.byKey(const Key('historyNavButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HistoryScreen), findsOneWidget);
   });
 }

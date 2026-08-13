@@ -4,12 +4,33 @@ import 'package:the_crane/core/api/fake_drivers_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/api/jobs_repository.dart';
 import 'package:the_crane/core/models/app_user.dart';
+import 'package:the_crane/core/models/job.dart';
 import 'package:the_crane/features/driver/home/driver_home_screen.dart';
 import 'package:the_crane/features/driver/job/active_job_screen.dart';
+import 'package:the_crane/features/shared/history/history_screen.dart';
 import 'package:the_crane/main.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../support/rejecting_jobs_repository.dart';
 import '../../support/test_dependencies.dart';
+
+/// DRV-3's "navigate" button deep-links out through `url_launcher`; with no
+/// real platform underneath a VM widget test, an unmocked call to it just
+/// throws `MissingPluginException`. Fake the platform interface in-memory,
+/// mirroring how `request_flow_widget_test.dart` fakes `Clipboard`.
+class _FakeUrlLauncher extends UrlLauncherPlatform {
+  String? lastLaunchedUrl;
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    lastLaunchedUrl = url;
+    return true;
+  }
+}
 
 void main() {
   Future<void> pumpToDriverHome(WidgetTester tester) async {
@@ -235,5 +256,153 @@ void main() {
     await tester.tap(find.byKey(const Key('advanceStatusButton')));
     await tester.pump(const Duration(milliseconds: 20));
     expect(find.text('En camino a la recogida'), findsOneWidget);
+  });
+
+  testWidgets(
+      'DRV-3: the navigate button deep-links to the current leg\'s point',
+      (tester) async {
+    final launcher = _FakeUrlLauncher();
+    UrlLauncherPlatform.instance = launcher;
+    final jobs = fastFakeJobs();
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(jobs: jobs, authRole: UserRole.driver),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await goAvailable(tester);
+
+    await tester.tap(find.byKey(const Key('devTriggerOfferButton')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const Key('acceptOfferButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(ActiveJobScreen), findsOneWidget);
+
+    // `assigned`: still on the way to pickup, so the target is the pickup
+    // point, not the dropoff.
+    final job = await tester.runAsync(
+      () async => (await jobs.listHistory(role: JobHistoryRole.driver))
+          .items
+          .single,
+    );
+    await tester.tap(find.byKey(const Key('navigateButton')));
+    await tester.pump();
+
+    expect(
+      launcher.lastLaunchedUrl,
+      'https://www.google.com/maps/dir/?api=1&destination='
+      '${job!.pickup.lat},${job.pickup.lng}',
+    );
+
+    // Advance past `arrived_pickup`: once loading starts, the leg (and the
+    // navigate target) flips to the dropoff point.
+    await tester.tap(find.byKey(const Key('advanceStatusButton'))); // en_route
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byKey(const Key('advanceStatusButton'))); // arrived
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byKey(const Key('advanceStatusButton'))); // loading
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await tester.tap(find.byKey(const Key('navigateButton')));
+    await tester.pump();
+    expect(
+      launcher.lastLaunchedUrl,
+      'https://www.google.com/maps/dir/?api=1&destination='
+      '${job.dropoff.lat},${job.dropoff.lng}',
+    );
+  });
+
+  testWidgets(
+      'DRV-3: cancel is confirm-dialog-gated -- dismissing it leaves the job '
+      'untouched, confirming it returns the job to matching and this screen '
+      'to its no-active-job state', (tester) async {
+    final jobs = fastFakeJobs();
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(jobs: jobs, authRole: UserRole.driver),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await goAvailable(tester);
+
+    await tester.tap(find.byKey(const Key('devTriggerOfferButton')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const Key('acceptOfferButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(ActiveJobScreen), findsOneWidget);
+    // `assigned` is driver-cancellable.
+    expect(find.byKey(const Key('cancelJobButton')), findsOneWidget);
+
+    // Dismiss: job is untouched.
+    await tester.ensureVisible(find.byKey(const Key('cancelJobButton')));
+    await tester.tap(find.byKey(const Key('cancelJobButton')));
+    await tester.pumpAndSettle();
+    expect(find.text('¿Cancelar este servicio?'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Asignada'), findsOneWidget);
+    expect(find.byKey(const Key('cancelJobButton')), findsOneWidget);
+
+    // Confirm: the job is cancelled (back to matching, per
+    // `DRIVER_CANCELLABLE`) and `ActiveJobCubit`'s state clears -- this
+    // screen falls back to its no-active-job view.
+    await tester.tap(find.byKey(const Key('cancelJobButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirmCancelJobButton')));
+    await tester.pump(const Duration(milliseconds: 20)); // cancelJob's delay
+
+    expect(find.byKey(const Key('jobStatusChip')), findsNothing);
+    expect(find.text('Volver al inicio'), findsOneWidget);
+
+    await tester.tap(find.text('Volver al inicio'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DriverHomeScreen), findsOneWidget);
+  });
+
+  testWidgets('DRV-4/RAT-2: the completed job\'s rate-trip button opens the '
+      'rating dialog', (tester) async {
+    final jobs = fastFakeJobs();
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(jobs: jobs, authRole: UserRole.driver),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await goAvailable(tester);
+
+    await tester.tap(find.byKey(const Key('devTriggerOfferButton')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const Key('acceptOfferButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.runAsync(() async {
+      final page = await jobs.listHistory(role: JobHistoryRole.driver);
+      var job = page.items.single;
+      while (job.status != JobStatus.delivered) {
+        job = await jobs.updateJobStatus(job.id, job.status.nextDriverStatus!);
+      }
+      await jobs.confirmDelivery(job.id);
+    });
+    await tester.pump(const Duration(milliseconds: 10));
+    expect(find.byKey(const Key('rateTripButton')), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('rateTripButton')));
+    await tester.tap(find.byKey(const Key('rateTripButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+  });
+
+  testWidgets('RAT-3: the history nav button opens the trip-history screen',
+      (tester) async {
+    await pumpToDriverHome(tester);
+
+    await tester.tap(find.byKey(const Key('historyNavButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HistoryScreen), findsOneWidget);
   });
 }

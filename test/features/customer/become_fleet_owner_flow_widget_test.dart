@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/core/api/fake_fleet_repository.dart';
+import 'package:the_crane/core/models/fleet.dart';
 import 'package:the_crane/features/customer/request/request_screen.dart';
 import 'package:the_crane/features/customer/settings/become_fleet_owner_screen.dart';
 import 'package:the_crane/features/customer/settings/settings_screen.dart';
@@ -7,6 +9,23 @@ import 'package:the_crane/features/fleet/home/fleet_home_screen.dart';
 import 'package:the_crane/main.dart';
 
 import '../../support/test_dependencies.dart';
+
+/// Fails the next `createFleet` call exactly once, mirroring
+/// `RejectingOnceJobsRepository`'s shape (`test/support/`).
+class _RejectingOnceFleetRepository extends FakeFleetRepository {
+  _RejectingOnceFleetRepository({super.actionDelay});
+
+  bool rejectNext = false;
+
+  @override
+  Future<Fleet> createFleet({required String name}) async {
+    if (rejectNext) {
+      rejectNext = false;
+      throw StateError('boom');
+    }
+    return super.createFleet(name: name);
+  }
+}
 
 void main() {
   testWidgets(
@@ -64,5 +83,45 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const Key('fleetTruckRow_trk-fleet-1')), findsOneWidget);
     expect(find.byKey(const Key('fleetTruckRow_trk-fleet-2')), findsOneWidget);
+  });
+
+  testWidgets(
+      'FLT-1: a rejected fleet creation shows an inline error and '
+      're-enables the submit button', (tester) async {
+    final fleet = _RejectingOnceFleetRepository(
+      actionDelay: const Duration(milliseconds: 10),
+    )..rejectNext = true;
+    await tester.pumpWidget(
+      TheCraneApp(dependencies: testDependencies(fleet: fleet)),
+    );
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await tester.tap(find.byKey(const Key('settingsNavButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('becomeFleetOwnerMenuItem')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('fleetNameField')),
+      'Grúas del Valle',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('becomeFleetOwnerSubmitButton')));
+    await tester.pump(); // isSubmitting
+    await tester.pump(const Duration(milliseconds: 20)); // actionDelay
+
+    expect(
+      find.text('No pudimos crear tu flota. Intenta de nuevo.'),
+      findsOneWidget,
+    );
+    expect(find.byType(BecomeFleetOwnerScreen), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const Key('becomeFleetOwnerSubmitButton')),
+          )
+          .onPressed,
+      isNotNull,
+    );
   });
 }

@@ -64,10 +64,23 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await _showForMessage(plugin, message);
 }
 
-/// Builds the title/body from [message.data]'s `type` (falling back to a
-/// generic pair for a type this client doesn't recognize — same
-/// forward-compatible stance `ServerMessage.fromWire` takes for the WS
-/// side) and shows it via [plugin].
+/// Maps an FCM data message's `type` field to a localized (title, body)
+/// pair — a generic fallback pair for a type this client doesn't recognize,
+/// same forward-compatible stance `ServerMessage.fromWire` takes for the WS
+/// side. Pulled out of [_showForMessage] as a pure function (no plugin, no
+/// platform channel) specifically so this mapping is unit-testable without
+/// dragging in Firebase or `flutter_local_notifications`.
+@visibleForTesting
+(String, String) notificationTextFor(String? type, AppLocalizations l10n) {
+  return switch (type) {
+    'job_offer' => (l10n.pushJobOfferTitle, l10n.pushJobOfferBody),
+    'job_event' => (l10n.pushJobEventTitle, l10n.pushJobEventBody),
+    _ => (l10n.pushGenericTitle, l10n.pushGenericBody),
+  };
+}
+
+/// Builds the title/body from [message.data]'s `type` (see
+/// [notificationTextFor]) and shows it via [plugin].
 ///
 /// The app's locale is hardcoded to `es` (see `main.dart`'s
 /// `MaterialApp.router(locale: const Locale('es'))`) — matched here rather
@@ -79,11 +92,10 @@ Future<void> _showForMessage(
 ) async {
   final l10n = await AppLocalizations.delegate.load(const Locale('es'));
   final jobId = message.data['job_id'] as String?;
-  final (title, body) = switch (message.data['type']) {
-    'job_offer' => (l10n.pushJobOfferTitle, l10n.pushJobOfferBody),
-    'job_event' => (l10n.pushJobEventTitle, l10n.pushJobEventBody),
-    _ => (l10n.pushGenericTitle, l10n.pushGenericBody),
-  };
+  final (title, body) = notificationTextFor(
+    message.data['type'] as String?,
+    l10n,
+  );
   await plugin.show(
     // Same job's pushes replace each other's notification tile instead of
     // stacking — a job_event push superseding an earlier one for the same
