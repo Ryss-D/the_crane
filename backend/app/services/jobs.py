@@ -25,7 +25,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.driver import DriverProfile, DriverStatus
 from app.models.job import DriverLocationSnapshot, Job, JobStatus
-from app.models.ledger import DriverLedgerEntry, LedgerEntryType
+from app.models.ledger import DriverLedgerEntry, LedgerEntryType, Payment, PaymentStatus
+from app.models.ledger import PaymentProvider as PaymentProviderEnum
 from app.models.user import User
 from app.services.config import RedisLike, get_config
 from app.services.payments.base import PaymentGateway
@@ -284,26 +285,59 @@ async def confirm_delivery(
 
 
 async def _accrue_completion(session: AsyncSession, job: Job, gateway: PaymentGateway) -> None:
-    """LED-1 accrual: payment (via `gateway`) + driver ledger earning, exactly
-    once per job — `create_intent`'s `created` flag is the idempotency check.
+    """LED-1/PAY-4 accrual: payment (via `gateway`) + driver ledger earning,
+    exactly once per job — `create_intent`'s `created` flag is the
+    idempotency check.
 
-    Commission comes from the job's config_snapshot (never current config), so a
-    rate change after creation cannot rewrite history. Which gateway settled the
-    fare is the gateway's concern; commission/ledger accounting is platform
-    business logic that stays here regardless of gateway (cash today, Wompi later).
+    PAY-4: cash settles synchronously (`CashGateway.create_intent` always
+    returns `status=approved`), so the ledger entry is written right here,
+    same as before. A digital fare (`WompiGateway`) instead comes back
+    `pending`/`processing` — its ledger entry is deferred to
+    `apply_ledger_for_settled_payment`, called from the webhook handler
+    (`app/api/payments.py`) once Wompi actually reports `approved`. Writing
+    it optimistically here, before the money has actually arrived, would be
+    wrong — a declined/expired digital payment must accrue nothing.
     """
-    _payment, created = await gateway.create_intent(session, job)
+    payment, created = await gateway.create_intent(session, job)
     if not created:
-        return  # retry — payment + ledger already written
+        return  # retry — payment (and, if settled, the ledger row) already written
+    if payment.status is PaymentStatus.approved:
+        await apply_ledger_for_settled_payment(session, job, payment)
 
+
+async def apply_ledger_for_settled_payment(
+    session: AsyncSession, job: Job, payment: Payment
+) -> None:
+    """Writes the one `driver_ledger` `earning` row a settled payment produces.
+
+    Cash: the driver physically kept the fare, so they owe the platform
+    `commission` — `commission` is positive (the existing, pre-PAY-4 shape).
+
+    Any digital gateway (Wompi et al.): the *platform* collected the fare, so
+    it owes the driver `net` (fare minus commission) instead — this is
+    "platform owes driver net" (PAY-4's own AC wording) encoded as a
+    *negative* `commission` on the same `earning` row: `driver_owed_balance`
+    (`app/services/ledger.py`) is `sum(earning.commission) -
+    sum(payout/adjustment.net)`, so a negative commission here reduces (or
+    inverts, if it's larger than what's otherwise owed) what the driver owes
+    the platform — exactly the inverse of the cash case, with no schema
+    change and no new balance formula needed.
+
+    Commission comes from the job's config_snapshot (never current config),
+    so a rate change after creation cannot rewrite history.
+    """
     amount = int(job.final_price)
     commission = commission_for_fare(job, amount)
+    # `==`, not `is`: PaymentProvider is a StrEnum, so this is true whether
+    # `payment.provider` is the enum member or (a not-yet-persisted row
+    # constructed directly with) the plain string -- both compare equal.
+    is_cash = payment.provider == PaymentProviderEnum.cash
     session.add(
         DriverLedgerEntry(
             driver_id=job.driver_id,
             job_id=job.id,
             gross=amount,
-            commission=commission,
+            commission=commission if is_cash else -(amount - commission),
             net=amount - commission,
             entry_type=LedgerEntryType.earning,
         )

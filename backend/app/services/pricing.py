@@ -33,20 +33,28 @@ LatLng = tuple[float, float]
 
 
 class DirectionsClient(Protocol):
-    """The slice of a directions provider pricing needs (injected, overridable in tests)."""
+    """The slice of a directions provider pricing/routing needs (injected, overridable
+    in tests). [road_distance_km] backs JOB-4 pricing; [route_polyline] backs the
+    /v1/directions/route proxy (FND-6 follow-up) — a real route line has no haversine
+    equivalent, so [HaversineFallback] raises 503 for it rather than faking one.
+    """
 
     async def road_distance_km(self, pickup: LatLng, dropoff: LatLng) -> float: ...
+    async def route_polyline(self, pickup: LatLng, dropoff: LatLng) -> list[LatLng]: ...
 
 
 class GoogleDirectionsClient:
-    """Road distance via the Google Directions API (needs settings.google_maps_api_key)."""
+    """Road distance + route geometry via the Google Directions API (needs
+    settings.google_maps_api_key). [road_distance_km] and [route_polyline] share the
+    one underlying HTTP call via [_fetch_route] rather than each issuing their own.
+    """
 
     BASE_URL = "https://maps.googleapis.com/maps/api/directions/json"
 
     def __init__(self, api_key: str | None) -> None:
         self.api_key = api_key
 
-    async def road_distance_km(self, pickup: LatLng, dropoff: LatLng) -> float:
+    async def _fetch_route(self, pickup: LatLng, dropoff: LatLng) -> dict[str, Any]:
         if not self.api_key:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -68,8 +76,17 @@ class GoogleDirectionsClient:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Directions service unavailable",
             )
-        meters = sum(leg["distance"]["value"] for leg in routes[0]["legs"])
+        return routes[0]
+
+    async def road_distance_km(self, pickup: LatLng, dropoff: LatLng) -> float:
+        route = await self._fetch_route(pickup, dropoff)
+        meters = sum(leg["distance"]["value"] for leg in route["legs"])
         return meters / 1000
+
+    async def route_polyline(self, pickup: LatLng, dropoff: LatLng) -> list[LatLng]:
+        route = await self._fetch_route(pickup, dropoff)
+        encoded = route["overview_polyline"]["points"]
+        return decode_polyline(encoded)
 
 
 class HaversineFallback:
@@ -77,6 +94,51 @@ class HaversineFallback:
 
     async def road_distance_km(self, pickup: LatLng, dropoff: LatLng) -> float:
         return haversine_km(pickup, dropoff) * ROAD_FACTOR
+
+    async def route_polyline(self, pickup: LatLng, dropoff: LatLng) -> list[LatLng]:
+        # No straight-line equivalent worth faking for a route *line* the way
+        # haversine stands in for a *distance* — a fake polyline would just be
+        # the two endpoints, which isn't a "route" in any real sense. Same
+        # 503 shape GoogleDirectionsClient(None) raises for a missing key.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="google_maps_api_key is not configured",
+        )
+
+
+def decode_polyline(encoded: str) -> list[LatLng]:
+    """Decodes Google's polyline encoding (the `overview_polyline.points` string a
+    Directions response carries) into plain (lat, lng) points, precision 5 -- the
+    standard algorithm: https://developers.google.com/maps/documentation/utilities/polylinealgorithm
+    """
+    points: list[LatLng] = []
+    index = lat = lng = 0
+    length = len(encoded)
+    while index < length:
+        result = shift = 0
+        while True:
+            b = ord(encoded[index]) - 63
+            index += 1
+            result |= (b & 0x1F) << shift
+            shift += 5
+            if b < 0x20:
+                break
+        dlat = ~(result >> 1) if result & 1 else (result >> 1)
+        lat += dlat
+
+        result = shift = 0
+        while True:
+            b = ord(encoded[index]) - 63
+            index += 1
+            result |= (b & 0x1F) << shift
+            shift += 5
+            if b < 0x20:
+                break
+        dlng = ~(result >> 1) if result & 1 else (result >> 1)
+        lng += dlng
+
+        points.append((lat / 1e5, lng / 1e5))
+    return points
 
 
 def haversine_km(a: LatLng, b: LatLng) -> float:

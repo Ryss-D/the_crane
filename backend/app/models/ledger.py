@@ -10,7 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, JSONValue
@@ -47,7 +47,10 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    job_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("jobs.id"), index=True)
+    # PAY-3: nullable -- a driver-balance-settlement Payment (WompiGateway
+    # .create_checkout, called from POST /v1/drivers/me/settle) isn't for
+    # any one job.
+    job_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("jobs.id"), index=True)
     provider: Mapped[PaymentProvider] = mapped_column(
         Enum(PaymentProvider, name="payment_provider", native_enum=False, length=20)
     )
@@ -69,9 +72,19 @@ class Payment(Base):
 
 class PaymentEvent(Base):
     __tablename__ = "payment_events"
+    # PAY-1: one row per *unique* webhook delivery for a payment — a replay
+    # (Wompi retries on a non-2xx response) or a duplicate never inserts a
+    # second row here, per the AC's "replayed ... events produce a single
+    # correct final state".
+    __table_args__ = (
+        UniqueConstraint("payment_id", "dedup_key", name="uq_payment_events_payment_dedup"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     payment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("payments.id"), index=True)
+    # PAY-1: Wompi's transaction id + status concatenated (see app/api/payments.py) —
+    # the same (transaction, status) pair arriving twice is the same event.
+    dedup_key: Mapped[str] = mapped_column(String(160))
     payload: Mapped[dict[str, Any]] = mapped_column(JSONValue)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

@@ -11,7 +11,13 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://crane:crane@localhost:5432/crane"
     redis_url: str = "redis://localhost:6379/0"
     firebase_credentials_path: str | None = None
-    # Unset -> pricing falls back to haversine road-distance estimates (JOB-4).
+    # Unset -> pricing falls back to haversine road-distance estimates (JOB-4);
+    # also backs the /v1/places/* and /v1/directions/route proxy endpoints
+    # (app/services/places.py, app/api/places.py) so client apps never hold a
+    # Places-or-Directions-capable key themselves (Android/iOS app-restricted
+    # keys don't work for raw REST calls anyway). A *server-side* key, distinct
+    # from the Android/iOS/Web client keys — ideally IP-restricted once real
+    # hosting exists (OPS-3, not yet), scoped to Places API + Directions API only.
     google_maps_api_key: str | None = None
     env: str = "dev"
     # DSP-4 guard: background workers (offer-expiry sweep) start in the app
@@ -21,6 +27,16 @@ class Settings(BaseSettings):
     # (web-client/admin). Defaults cover both apps' local Vite dev servers;
     # set CORS_ORIGINS in each environment's .env once real domains exist.
     cors_origins: str = "http://localhost:5173,http://localhost:5174"
+    # PAY-1..5: Wompi (Bancolombia) payments. A 5th external secret set,
+    # distinct from the 4 Google Maps keys (Android/iOS/Web client + the
+    # server-side Places/Directions one) — unset means every WompiGateway
+    # call raises WompiNotConfiguredError (mapped to a 503) rather than
+    # silently pretending to succeed, same fallback discipline as
+    # google_maps_api_key above.
+    wompi_public_key: str | None = None
+    wompi_private_key: str | None = None
+    wompi_events_key: str | None = None
+    wompi_env: str = "sandbox"  # or "prod"
 
     @property
     def cors_origins_list(self) -> list[str]:

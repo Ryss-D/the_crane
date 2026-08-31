@@ -8,7 +8,19 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api import admin, auth, drivers, fleets, jobs, ratings, users, vehicles, ws
+from app.api import (
+    admin,
+    auth,
+    drivers,
+    fleets,
+    jobs,
+    payments,
+    places,
+    ratings,
+    users,
+    vehicles,
+    ws,
+)
 from app.core.config import get_settings
 from app.core.database import dispose_engine, get_session, get_sessionmaker
 from app.core.redis import close_redis, get_redis, get_redis_client
@@ -99,6 +111,9 @@ def create_app() -> FastAPI:
     app.include_router(drivers.router, prefix="/v1")
     app.include_router(fleets.router, prefix="/v1")
     app.include_router(vehicles.router, prefix="/v1")
+    app.include_router(places.router, prefix="/v1")  # FND-6 follow-up: Places proxy
+    app.include_router(places.directions_router, prefix="/v1")  # FND-6 follow-up: route polyline
+    app.include_router(payments.router, prefix="/v1")  # PAY-1: Wompi webhook
     app.include_router(ws.router, prefix="/v1")
 
     # TRK-3: wire the real broadcasters as the actual overrides — the no-op defaults

@@ -32,6 +32,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
     },
     "commission": {"mode": "percent", "rate": {"moto": 0.15, "car": 0.15, "suv": 0.15}},
     "settlement": {"balance_cap": None, "period": "weekly"},
+    # PAY-4: off = cash-only, unchanged behavior (see app/api/jobs.py's
+    # confirm-delivery endpoint).
+    "payments": {"digital_fares_enabled": False},
     "dispatch": {
         "offer_ttl_seconds": 30,
         "search_radius_km": 10,

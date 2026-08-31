@@ -59,6 +59,17 @@ See `.env.example`: `DATABASE_URL`, `REDIS_URL`, `FIREBASE_CREDENTIALS_PATH`, `E
 The app boots without Firebase credentials — firebase-admin is initialized lazily, only when
 a token actually needs verifying (FND-1 provides the service-account JSON).
 
+`GOOGLE_MAPS_API_KEY` (also unset by default) backs road-distance pricing (falls back to a
+haversine estimate without it) and the `/v1/places/*` + `/v1/directions/route` proxy endpoints
+(empty/503 fallback without it) — a server-side key, distinct from the app's Android/iOS/Web
+client keys.
+
+`WOMPI_PUBLIC_KEY`/`WOMPI_PRIVATE_KEY`/`WOMPI_EVENTS_KEY`/`WOMPI_ENV` (all unset by default)
+back Wompi payments (PAY-1..5): driver balance settlement (`POST /v1/drivers/me/settle`),
+digital customer fares (feature-flagged, `platform_config.payments.digital_fares_enabled`),
+and their webhook (`POST /v1/webhooks/wompi`). Every call raises a typed, 503-mapped error
+without a key configured — no real Wompi sandbox account exists yet.
+
 ## Auth model
 
 Every protected route takes `Authorization: Bearer <firebase_id_token>`. The

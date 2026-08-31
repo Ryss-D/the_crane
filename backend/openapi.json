@@ -660,6 +660,23 @@
         "title": "ConfigUpdate",
         "type": "object"
       },
+      "ConfirmDeliveryRequest": {
+        "description": "POST /v1/jobs/{id}/confirm-delivery body (PAY-4). Optional and\ndefaults to nothing sent at all (`None` field) so every existing caller\nkeeps confirming in cash unchanged -- only a customer explicitly\nchoosing a non-cash `payment_method` opts into the digital-fare path,\nand only when `payments.digital_fares_enabled` is also on\n(`app/api/jobs.py`).",
+        "properties": {
+          "payment_method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "ConfirmDeliveryRequest",
+        "type": "object"
+      },
       "DriverBalanceRead": {
         "description": "GET /v1/drivers/me/balance (DRV-5): current owed balance, the settlement\ncap it's gated against (null if disabled), and recent settlement history.",
         "properties": {
@@ -980,6 +997,49 @@
           }
         },
         "title": "DriverRegisterRequest",
+        "type": "object"
+      },
+      "DriverSettleRequest": {
+        "description": "POST /v1/drivers/me/settle body \u2014 same `amount` shape as the admin\nsettlement request (`app/schemas/admin.py`'s `LedgerSettleRequest`), plain\nCOP, no sub-unit.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "integer"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "default": "nequi"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "title": "DriverSettleRequest",
+        "type": "object"
+      },
+      "DriverSettleResponse": {
+        "description": "What the driver app needs to complete the Wompi checkout: the payment\nreference (for polling `GET /v1/drivers/me/balance` afterward) and, for\nan async (PSE) method, the URL to redirect the driver to. Null for a\nmethod with no redirect step at this stage of the flow (e.g. Nequi,\nwhich instead pushes a push-notification/OTP prompt in the driver's own\nNequi app -- nothing for this backend to hand back).",
+        "properties": {
+          "async_payment_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Async Payment Url"
+          },
+          "payment_reference": {
+            "title": "Payment Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment_reference"
+        ],
+        "title": "DriverSettleResponse",
         "type": "object"
       },
       "DriverSettlementRead": {
@@ -1610,6 +1670,45 @@
         "title": "JobCreate",
         "type": "object"
       },
+      "JobCustomerInfo": {
+        "description": "DRV-3: the symmetric customer summary `JobDriverInfo` never had a\ncounterpart for \u2014 the driver app's call-customer button had no phone\nnumber to call. Deliberately minimal (id/name/phone only, no rating \u2014\nthere's no `JobDriverInfo.rating_avg` equivalent for customers).",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone"
+        ],
+        "title": "JobCustomerInfo",
+        "type": "object"
+      },
       "JobDriverInfo": {
         "description": "Assigned-driver summary embedded in `JobRead` once a job has one \u2014\nmatches the Flutter app's `JobDriverSummary` field-for-field\n(`lib/core/models/job.dart`); the customer request/matching/active-job\nscreens have expected this shape all along, but nothing populated it\nagainst the real backend until now (only the `FakeJobsRepository` seed\never had one).",
         "properties": {
@@ -1798,6 +1897,17 @@
             ],
             "title": "Assigned At"
           },
+          "async_payment_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Async Payment Url"
+          },
           "cancel_reason": {
             "anyOf": [
               {
@@ -1845,6 +1955,16 @@
             ],
             "title": "Config Snapshot"
           },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobCustomerInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "customer_id": {
             "format": "uuid",
             "title": "Customer Id",
@@ -1870,6 +1990,17 @@
                 "type": "null"
               }
             ]
+          },
+          "driver_commission": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Commission"
           },
           "driver_id": {
             "anyOf": [
@@ -2143,6 +2274,63 @@
         "title": "PaymentMethod",
         "type": "string"
       },
+      "PlaceAutocompleteResponse": {
+        "properties": {
+          "predictions": {
+            "items": {
+              "$ref": "#/components/schemas/PlacePrediction"
+            },
+            "title": "Predictions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "predictions"
+        ],
+        "title": "PlaceAutocompleteResponse",
+        "type": "object"
+      },
+      "PlaceDetailsResponse": {
+        "properties": {
+          "formatted_address": {
+            "title": "Formatted Address",
+            "type": "string"
+          },
+          "lat": {
+            "title": "Lat",
+            "type": "number"
+          },
+          "lng": {
+            "title": "Lng",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lat",
+          "lng",
+          "formatted_address"
+        ],
+        "title": "PlaceDetailsResponse",
+        "type": "object"
+      },
+      "PlacePrediction": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "place_id": {
+            "title": "Place Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "place_id",
+          "description"
+        ],
+        "title": "PlacePrediction",
+        "type": "object"
+      },
       "QuoteRequest": {
         "properties": {
           "dropoff": {
@@ -2281,6 +2469,22 @@
           "created_at"
         ],
         "title": "RatingRead",
+        "type": "object"
+      },
+      "RouteResponse": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/LatLng"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "title": "RouteResponse",
         "type": "object"
       },
       "TrackDriver": {
@@ -2775,6 +2979,25 @@
           }
         },
         "title": "VehicleUpdate",
+        "type": "object"
+      },
+      "WompiWebhookAck": {
+        "description": "POST /v1/webhooks/wompi's own response \u2014 Wompi only checks for a 2xx,\nbut a real body makes manual/sandbox debugging saner than a bare 204.",
+        "properties": {
+          "applied": {
+            "title": "Applied",
+            "type": "boolean"
+          },
+          "received": {
+            "title": "Received",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "received",
+          "applied"
+        ],
+        "title": "WompiWebhookAck",
         "type": "object"
       }
     },
@@ -3771,6 +3994,80 @@
         ]
       }
     },
+    "/v1/directions/route": {
+      "get": {
+        "operationId": "route_v1_directions_route_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "origin_lat",
+            "required": true,
+            "schema": {
+              "title": "Origin Lat",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "origin_lng",
+            "required": true,
+            "schema": {
+              "title": "Origin Lng",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dest_lat",
+            "required": true,
+            "schema": {
+              "title": "Dest Lat",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dest_lng",
+            "required": true,
+            "schema": {
+              "title": "Dest Lng",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Route",
+        "tags": [
+          "places"
+        ]
+      }
+    },
     "/v1/drivers/me/balance": {
       "get": {
         "description": "DRV-5: the calling driver's current owed balance plus recent settlement\nhistory (backs the Flutter earnings & balance screen).\n\n\"Recent settlements\" is every `payout` driver_ledger row for this driver, newest\nfirst, capped at 20 \u2014 the same row shape both LED-4's per-driver settle and\nFLT-2's fleet settle write, so a fleet settlement shows up here too.",
@@ -3840,6 +4137,53 @@
           }
         ],
         "summary": "Register Driver",
+        "tags": [
+          "drivers"
+        ]
+      }
+    },
+    "/v1/drivers/me/settle": {
+      "post": {
+        "description": "PAY-3: \"pay my balance\" \u2014 creates a Wompi checkout (Nequi/PSE) for\n`body.amount` of the driver's owed commission. The actual balance\nreduction (a `payout` driver_ledger row, same shape LED-4's admin\nsettlement writes) happens once Wompi's webhook reports the payment\n`approved` (`app/api/payments.py`) \u2014 this endpoint only starts the\ncheckout, it never settles anything itself.",
+        "operationId": "settle_my_balance_v1_drivers_me_settle_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DriverSettleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverSettleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Settle My Balance",
         "tags": [
           "drivers"
         ]
@@ -4528,7 +4872,7 @@
     },
     "/v1/jobs/{job_id}/confirm-delivery": {
       "post": {
-        "description": "CUS-5/LED-1: customer confirms delivery + cash payment -> completed + accrual.",
+        "description": "CUS-5/LED-1: customer confirms delivery + cash payment -> completed + accrual.\n\nPAY-4: `body.payment_method` opts into a digital fare instead of cash --\nonly honored when `payments.digital_fares_enabled` is also on in\n`platform_config` (\"flag off = cash-only unchanged\", the PAY-4 AC). A\nnon-cash method requested while the flag is off is a 422, not a silent\nfallback to cash -- a caller sending it clearly expects the digital\npath, so silently switching payment behavior underneath it would be\nworse than telling it plainly the flag isn't on.",
         "operationId": "confirm_delivery_endpoint_v1_jobs__job_id__confirm_delivery_post",
         "parameters": [
           {
@@ -4542,6 +4886,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ConfirmDeliveryRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -5086,6 +5447,101 @@
         ]
       }
     },
+    "/v1/places/autocomplete": {
+      "get": {
+        "operationId": "autocomplete_v1_places_autocomplete_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "input",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "title": "Input",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceAutocompleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Autocomplete",
+        "tags": [
+          "places"
+        ]
+      }
+    },
+    "/v1/places/details/{place_id}": {
+      "get": {
+        "operationId": "place_details_v1_places_details__place_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "place_id",
+            "required": true,
+            "schema": {
+              "title": "Place Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceDetailsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Place Details",
+        "tags": [
+          "places"
+        ]
+      }
+    },
     "/v1/track/{share_token}": {
       "get": {
         "description": "TRK-6 (poll half): public tracking by share token \u2014 no auth, minimal PII.\n\nExposes only the job status, pickup/dropoff coords, the driver's first name\n+ truck plate once assigned, and the last known driver location snapshot.\nThe WebSocket half arrives with the TRK tasks.",
@@ -5126,6 +5582,50 @@
         "summary": "Track Job",
         "tags": [
           "track"
+        ]
+      }
+    },
+    "/v1/webhooks/wompi": {
+      "post": {
+        "description": "PAY-1: signature-verified, idempotent, out-of-order-tolerant.\n\nAlways acks 2xx once the signature itself checks out (even for an\nunknown reference, or a stale/duplicate event) \u2014 the only thing that\nshould make Wompi keep retrying is *not being able to verify the\nrequest at all*, which is exactly what the 401 branch below is for.",
+        "operationId": "wompi_webhook_v1_webhooks_wompi_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WompiWebhookAck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Wompi Webhook",
+        "tags": [
+          "payments"
         ]
       }
     }

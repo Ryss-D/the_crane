@@ -22,11 +22,14 @@ from app.models.job import (
     JobOffer,
     JobStatus,
     OfferResponse,
+    PaymentMethod,
 )
 from app.models.ledger import DriverLedgerEntry, LedgerEntryType
 from app.models.user import User, UserRole
 from app.schemas.job import (
+    ConfirmDeliveryRequest,
     JobCreate,
+    JobCustomerInfo,
     JobDriverInfo,
     JobListResponse,
     JobRead,
@@ -49,6 +52,7 @@ from app.services.jobs import (
     get_job_event_hook,
     transition,
 )
+from app.services.payments.wompi import WompiGateway
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 track_router = APIRouter(prefix="/track", tags=["track"])
@@ -95,8 +99,21 @@ async def _job_read(session: AsyncSession, job: Job) -> JobRead:
 
     DRV-4: also fills in `driver_commission` from the job's completion-accrual
     ledger row (LED-1's `_accrue_completion`) -- one extra query, skipped
-    (stays null) unless the job is actually `completed`, never raises."""
+    (stays null) unless the job is actually `completed`, never raises.
+
+    DRV-3: also fills in `customer` (name/phone), unconditionally -- unlike
+    `driver`, the customer always exists for a job, so there's no "skip
+    until assigned" gate here."""
     read = JobRead.model_validate(job)
+    # PAY-4: `pending_payment_url` is a transient attribute (not a mapped
+    # column, so `model_validate`'s from_attributes lookup above never sees
+    # it under a differently-named field) that `WompiGateway.create_intent`
+    # sets on this exact `job` instance when this call just started a
+    # digital-fare checkout. `getattr` default handles both "not a Wompi
+    # gateway" and "no checkout happened this call" the same way: null.
+    pending_payment_url = getattr(job, "pending_payment_url", None)
+    if pending_payment_url is not None:
+        read = read.model_copy(update={"async_payment_url": pending_payment_url})
     if job.status is JobStatus.completed:
         ledger_entry = await session.scalar(
             select(DriverLedgerEntry).where(
@@ -106,6 +123,17 @@ async def _job_read(session: AsyncSession, job: Job) -> JobRead:
         )
         if ledger_entry is not None:
             read = read.model_copy(update={"driver_commission": int(ledger_entry.commission)})
+    customer_user = await session.get(User, job.customer_id)
+    if customer_user is not None:
+        read = read.model_copy(
+            update={
+                "customer": JobCustomerInfo(
+                    id=job.customer_id,
+                    name=customer_user.name,
+                    phone=customer_user.phone,
+                )
+            }
+        )
     if job.driver_id is None:
         return read
     driver_user = await session.get(User, job.driver_id)
@@ -464,12 +492,36 @@ async def confirm_delivery_endpoint(
     job_id: uuid.UUID,
     user: CurrentUser,
     session: SessionDep,
+    redis: RedisDep,
     event_hook: EventHookDep,
+    body: ConfirmDeliveryRequest | None = None,
 ) -> JobRead:
-    """CUS-5/LED-1: customer confirms delivery + cash payment -> completed + accrual."""
+    """CUS-5/LED-1: customer confirms delivery + cash payment -> completed + accrual.
+
+    PAY-4: `body.payment_method` opts into a digital fare instead of cash --
+    only honored when `payments.digital_fares_enabled` is also on in
+    `platform_config` ("flag off = cash-only unchanged", the PAY-4 AC). A
+    non-cash method requested while the flag is off is a 422, not a silent
+    fallback to cash -- a caller sending it clearly expects the digital
+    path, so silently switching payment behavior underneath it would be
+    worse than telling it plainly the flag isn't on.
+    """
     job = await _get_job_or_404(session, job_id)
+    payment_gateway = None
+    requested_method = body.payment_method if body else None
+    if requested_method is not None and requested_method != PaymentMethod.cash:
+        payments_config = await get_config(session, redis, "payments") or {}
+        if not payments_config.get("digital_fares_enabled"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Digital fares are not enabled",
+            )
+        job.payment_method = requested_method
+        payment_gateway = WompiGateway()
     try:
-        job = await confirm_delivery(session, job, actor=user, event_hook=event_hook)
+        job = await confirm_delivery(
+            session, job, actor=user, event_hook=event_hook, payment_gateway=payment_gateway
+        )
     except JobAccessError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except JobTransitionError as exc:

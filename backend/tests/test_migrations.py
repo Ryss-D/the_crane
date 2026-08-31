@@ -79,7 +79,20 @@ def test_upgrade_head_on_sqlite(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
         }
         assert "ix_driver_invites_token" in invite_indexes
 
+        # 0010: payment_events.dedup_key (PAY-1) is unique per payment.
+        payment_event_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(payment_events)")
+        }
+        assert "dedup_key" in payment_event_columns
+
+        # 0011: payments.job_id is nullable (PAY-3 driver settlements aren't
+        # tied to a job).
+        payments_job_id_col = next(
+            row for row in conn.execute("PRAGMA table_info(payments)") if row[1] == "job_id"
+        )
+        assert payments_job_id_col[3] == 0  # `notnull` flag off
+
         head = conn.execute("SELECT version_num FROM alembic_version").fetchone()
-        assert head == ("0009",)
+        assert head == ("0011",)
     finally:
         conn.close()

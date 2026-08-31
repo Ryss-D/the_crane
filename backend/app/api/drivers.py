@@ -6,6 +6,7 @@ the "actor may act on this job" permission patterns and the job_offers/dispatch
 service wiring. This router stays driver-profile-centric (registration, own status).
 """
 
+import uuid
 from datetime import UTC, datetime
 from typing import Annotated
 
@@ -29,9 +30,11 @@ from app.schemas.driver import (
     DriverStatusUpdate,
     TruckRead,
 )
+from app.schemas.payments import DriverSettleRequest, DriverSettleResponse
 from app.services import dispatch
 from app.services.config import RedisLike, get_config
 from app.services.ledger import driver_owed_balance, fleet_owed_balance
+from app.services.payments.wompi import WompiApiError, WompiGateway, WompiNotConfiguredError
 
 router = APIRouter(prefix="/drivers", tags=["drivers"])
 
@@ -275,4 +278,52 @@ async def get_my_balance(
             )
             for e in entries
         ],
+    )
+
+
+@router.post("/me/settle", response_model=DriverSettleResponse)
+async def settle_my_balance(
+    body: DriverSettleRequest, user: CurrentUser, session: SessionDep
+) -> DriverSettleResponse:
+    """PAY-3: "pay my balance" — creates a Wompi checkout (Nequi/PSE) for
+    `body.amount` of the driver's owed commission. The actual balance
+    reduction (a `payout` driver_ledger row, same shape LED-4's admin
+    settlement writes) happens once Wompi's webhook reports the payment
+    `approved` (`app/api/payments.py`) — this endpoint only starts the
+    checkout, it never settles anything itself.
+    """
+    await _get_profile_or_404(session, user.id)
+    if body.amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="amount must be positive"
+        )
+    owed = await driver_owed_balance(session, user.id)
+    if owed <= 0:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No balance owed")
+    if body.amount > owed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="amount exceeds the owed balance",
+        )
+
+    reference = f"settlement_{user.id}_{uuid.uuid4().hex}"
+    gateway = WompiGateway()
+    try:
+        checkout = await gateway.create_checkout(
+            session,
+            reference=reference,
+            amount=body.amount,
+            customer_email=user.email or f"{user.id}@thecrane.app",
+            payment_method_type=body.payment_method,
+        )
+    except WompiNotConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        ) from exc
+    except WompiApiError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    await session.commit()
+    return DriverSettleResponse(
+        payment_reference=checkout.payment.reference,
+        async_payment_url=checkout.async_payment_url,
     )

@@ -220,6 +220,20 @@ def fcm_sent(monkeypatch: pytest.MonkeyPatch) -> list[Any]:
 
 
 @pytest.fixture
+def wompi_configured(monkeypatch: pytest.MonkeyPatch) -> Any:
+    """PAY-1..5: endpoints construct `WompiGateway()` bare (matching
+    `get_directions_client`'s own plain-function-call style, not a FastAPI
+    `Depends`), so `app.dependency_overrides` can't reach it -- same
+    real-env-vars-plus-cache-clear shape as `fcm_sent` above."""
+    monkeypatch.setenv("WOMPI_PUBLIC_KEY", "pub-test")
+    monkeypatch.setenv("WOMPI_PRIVATE_KEY", "priv-test")
+    monkeypatch.setenv("WOMPI_EVENTS_KEY", "events-secret")
+    get_settings.cache_clear()
+    yield get_settings()
+    get_settings.cache_clear()
+
+
+@pytest.fixture
 def connection_manager() -> ConnectionManager:
     """Fresh WS connection manager per test — mirrors fake_redis's isolation (the
     default get_connection_manager() is a process-wide singleton in prod, which would
@@ -298,6 +312,7 @@ TEST_CONFIG: dict[str, Any] = {
     },
     "commission": {"mode": "percent", "rate": {"moto": 0.15, "car": 0.15, "suv": 0.15}},
     "settlement": {"balance_cap": None, "period": "weekly"},
+    "payments": {"digital_fares_enabled": False},
     "dispatch": {
         "offer_ttl_seconds": 30,
         "search_radius_km": 10,

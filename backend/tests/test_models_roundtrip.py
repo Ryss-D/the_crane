@@ -188,7 +188,11 @@ async def test_ledger_tables_roundtrip(session_maker: async_sessionmaker[AsyncSe
         )
         session.add(payment)
         await session.flush()
-        session.add(PaymentEvent(payment_id=payment.id, payload={"event": "created"}))
+        session.add(
+            PaymentEvent(
+                payment_id=payment.id, dedup_key="evt-1:created", payload={"event": "created"}
+            )
+        )
 
         payout = Payout(
             driver_id=driver.id,

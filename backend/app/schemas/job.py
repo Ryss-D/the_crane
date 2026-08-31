@@ -64,6 +64,17 @@ class JobDriverInfo(BaseModel):
     photo_url: str | None = None
 
 
+class JobCustomerInfo(BaseModel):
+    """DRV-3: the symmetric customer summary `JobDriverInfo` never had a
+    counterpart for — the driver app's call-customer button had no phone
+    number to call. Deliberately minimal (id/name/phone only, no rating —
+    there's no `JobDriverInfo.rating_avg` equivalent for customers)."""
+
+    id: uuid.UUID
+    name: str | None
+    phone: str | None
+
+
 class JobRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -71,6 +82,14 @@ class JobRead(BaseModel):
     customer_id: uuid.UUID
     driver_id: uuid.UUID | None
     driver: JobDriverInfo | None = None
+    # DRV-3: symmetric to `driver` above -- populated in `_job_read`
+    # (app/api/jobs.py) the same unconditional way. Safe: `JobRead` is only
+    # ever returned to the job's own customer, its assigned driver, or an
+    # admin (`get_job`'s `_require_view_access`) -- the same three parties
+    # who could already see this via `AdminJobListItem.customer_phone`
+    # (admin) or by being the customer themself. No new exposure, matching
+    # `driver`'s own precedent exactly rather than inventing a narrower rule.
+    customer: JobCustomerInfo | None = None
     vehicle_type: VehicleType
     status: JobStatus
     pickup_lat: float
@@ -95,6 +114,13 @@ class JobRead(BaseModel):
     # not a client-side flat-15% guess) -- null until the job is actually completed,
     # since that's the only point a ledger earning row exists to read it from.
     driver_commission: int | None = None
+    # PAY-4: the Wompi checkout URL to redirect the customer to, if the call
+    # that produced this response just started a digital-fare payment
+    # (PSE/card -- null for Nequi, which has no redirect step, and for every
+    # other response, including a retried/idempotent confirm-delivery call).
+    # Not a persisted job field -- see `WompiGateway.create_intent`'s
+    # `job.pending_payment_url` transient attribute.
+    async_payment_url: str | None = None
 
 
 class JobListResponse(BaseModel):
@@ -110,6 +136,17 @@ class JobStatusUpdate(BaseModel):
     status: JobStatus
     lat: float | None = None
     lng: float | None = None
+
+
+class ConfirmDeliveryRequest(BaseModel):
+    """POST /v1/jobs/{id}/confirm-delivery body (PAY-4). Optional and
+    defaults to nothing sent at all (`None` field) so every existing caller
+    keeps confirming in cash unchanged -- only a customer explicitly
+    choosing a non-cash `payment_method` opts into the digital-fare path,
+    and only when `payments.digital_fares_enabled` is also on
+    (`app/api/jobs.py`)."""
+
+    payment_method: PaymentMethod | None = None
 
 
 class TrackDriver(BaseModel):

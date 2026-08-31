@@ -409,3 +409,40 @@ async def test_unassigned_job_has_no_driver_summary(
     response = await client.get(f"/v1/jobs/{job.id}", headers=AUTH_CUSTOMER)
     assert response.status_code == 200
     assert response.json()["driver"] is None
+
+
+async def test_job_embeds_customer_summary_for_the_assigned_driver(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+    driver_user: User,
+) -> None:
+    """DRV-3: the driver app's call-customer button needs a phone number --
+    symmetric to `test_assigned_job_embeds_driver_summary` above, but
+    unconditional (a job always has a customer, unlike a driver). Uses the
+    `driver_user`/`AUTH_DRIVER` fixture pair directly (rather than
+    `make_available_driver`, which has no matching bearer token wired in
+    `tokens`) since this test only cares about `customer`, not `driver`."""
+    job = await make_job(
+        session_maker, customer_user, status=JobStatus.assigned, driver=driver_user
+    )
+
+    response = await client.get(f"/v1/jobs/{job.id}", headers=AUTH_DRIVER)
+    assert response.status_code == 200
+    body = response.json()["customer"]
+    assert body["id"] == str(customer_user.id)
+    assert body["name"] == "Test User"
+    assert body["phone"] == "+573001112233"
+
+
+async def test_job_embeds_customer_summary_before_assignment_too(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    customer_user: User,
+) -> None:
+    job = await make_job(session_maker, customer_user, status=JobStatus.matching)
+    response = await client.get(f"/v1/jobs/{job.id}", headers=AUTH_CUSTOMER)
+    assert response.status_code == 200
+    assert response.json()["customer"]["phone"] == "+573001112233"
