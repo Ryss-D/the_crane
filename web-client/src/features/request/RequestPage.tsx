@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../../api';
@@ -39,6 +39,14 @@ export function RequestPage() {
   const [locationError, setLocationError] = useState(false);
   const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
+  // WEB-1 follow-up: quoting is public now (see backend's create_quote
+  // docstring) -- the sign-in/profile gate no longer blocks the whole page,
+  // it only appears once the customer tries to *confirm* a quote. Set when
+  // Confirm is pressed without a usable identity yet; cleared either once
+  // that identity completes (which auto-fires createMutation below) or the
+  // quote itself goes stale, so a leftover gate doesn't reappear next time
+  // a fresh quote is fetched.
+  const [awaitingAuth, setAwaitingAuth] = useState(false);
 
   const pickupInputRef = useRef<HTMLInputElement>(null);
   const dropoffInputRef = useRef<HTMLInputElement>(null);
@@ -103,13 +111,31 @@ export function RequestPage() {
     },
   });
 
-  if (!user) return <PhoneSignIn />;
-  // WEB-1: gate the request flow behind profile completion, same as the
-  // Flutter app's AuthPhase.needsProfile. `profile` is briefly null right
-  // after sign-in while syncAuth() is in flight — render nothing for that
-  // instant rather than flashing the request form first.
-  if (!profile) return null;
-  if (!profile.name) return <CompleteProfileForm />;
+  useEffect(() => {
+    if (!quote) {
+      setAwaitingAuth(false);
+      return;
+    }
+    if (awaitingAuth && user && profile?.name) {
+      setAwaitingAuth(false);
+      createMutation.mutate();
+    }
+    // createMutation is a fresh object every render (react-query doesn't
+    // memoize it) -- depending on it here would re-fire this effect every
+    // render and loop, since `.mutate()` triggers a pending-state render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quote, awaitingAuth, user, profile]);
+
+  function onConfirm() {
+    if (user && profile?.name) {
+      createMutation.mutate();
+    } else {
+      // Not signed in, or signed in but `profile` hasn't synced/hasn't got a
+      // name yet — same AUTH-3/WEB-1 profile-completion requirement as
+      // before, just deferred to this moment instead of gating page load.
+      setAwaitingAuth(true);
+    }
+  }
 
   const canQuote = pickup.trim().length > 0 && dropoff.trim().length > 0 && vehicleType !== null;
 
@@ -227,11 +253,13 @@ export function RequestPage() {
       </Card>
 
       {quote && (
-        <QuoteCard
-          quote={quote}
-          onConfirm={() => createMutation.mutate()}
-          confirming={createMutation.isPending}
-        />
+        <>
+          <QuoteCard quote={quote} onConfirm={onConfirm} confirming={createMutation.isPending} />
+          {/* WEB-1 follow-up: identity is only asked for at this point, not
+              before -- see `awaitingAuth` above. */}
+          {awaitingAuth && !user && <PhoneSignIn />}
+          {awaitingAuth && user && profile && !profile.name && <CompleteProfileForm />}
+        </>
       )}
       {createMutation.isError && (
         <p role="alert" className="text-sm text-rose-400">

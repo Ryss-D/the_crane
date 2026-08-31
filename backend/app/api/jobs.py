@@ -174,12 +174,19 @@ def _require_view_access(job: Job, user: User) -> None:
 @router.post("/quote", response_model=QuoteResponse)
 async def create_quote(
     body: QuoteRequest,
-    user: CurrentUser,
     session: SessionDep,
     redis: RedisDep,
     directions: DirectionsDep,
 ) -> dict[str, Any]:
-    """JOB-4: price a trip from live config; the quote is Redis-cached for 10 minutes."""
+    """JOB-4: price a trip from live config; the quote is Redis-cached for 10 minutes.
+
+    Deliberately public (no CurrentUser dependency) -- `build_quote` never
+    used the caller's identity for anything, and letting a customer see a
+    real price before signing in (web-client's request flow, see the
+    follow-up note below) is the whole point. `create_job` right below
+    this, which actually commits to something, still requires auth --
+    quoting is stateless/anonymous, booking isn't.
+    """
     return await pricing.build_quote(
         session,
         redis,

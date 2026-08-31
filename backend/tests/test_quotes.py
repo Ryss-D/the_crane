@@ -47,9 +47,19 @@ def _quote_body(vehicle_type: str = "car") -> dict[str, Any]:
     return {"vehicle_type": vehicle_type, "pickup": MEDELLIN_A, "dropoff": MEDELLIN_B}
 
 
-async def test_quote_requires_auth(client: AsyncClient) -> None:
-    response = await client.post("/v1/jobs/quote", json=_quote_body())
-    assert response.status_code == 401
+async def test_quote_works_without_auth(
+    app: FastAPI,
+    client: AsyncClient,
+    seeded_config: dict[str, Any],
+) -> None:
+    """Deliberately public (app/api/jobs.py's create_quote): a customer can
+    see a real price before signing in -- the web-client request flow's
+    whole point. No CurrentUser dependency, no Authorization header sent
+    here at all, and this still returns a real priced quote, not a 401."""
+    app.dependency_overrides[get_directions_client] = lambda: FixedDirections(10.0)
+    response = await client.post("/v1/jobs/quote", json=_quote_body("car"))
+    assert response.status_code == 200
+    assert response.json()["price"] == 110000
 
 
 async def test_quote_uses_config_values(

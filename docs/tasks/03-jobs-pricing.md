@@ -56,6 +56,18 @@ The core domain: platform config, quoting, the job record and its state machine.
   code path above is real and tested, but is currently only ever exercising
   its no-key fallback branch — no live call against a real key has happened.
 
+  Follow-up: `POST /v1/jobs/quote` is now deliberately public — dropped the
+  unused `CurrentUser` dependency from `create_quote` (`app/api/jobs.py`;
+  `build_quote` never read the caller's identity for anything, dead
+  parameter). Driven by a web-client UX fix (see `10-web-client.md`'s WEB-1
+  follow-up): forcing phone sign-in before a customer can even see a price
+  was bad ordering, and quoting is stateless/anonymous by nature — only
+  `create_job` right below it, which actually commits to something, still
+  requires auth. `test_quote_requires_auth` (asserted 401) replaced with
+  `test_quote_works_without_auth` (asserts a real 200 priced quote, no
+  `Authorization` header sent at all). `openapi.json` regenerated. Full
+  suite green (338 passed), ruff clean.
+
 - [x] **JOB-5 — Create / get / list / cancel endpoints** *(deps: JOB-3, JOB-4)*
   `POST /v1/jobs` (from a quote id) → status `matching`; `GET /v1/jobs/{id}`; `GET /v1/jobs?role=` history with pagination; `POST /v1/jobs/{id}/cancel` enforcing JOB-3 rules. Job stores the pricing/commission config snapshot.
   *AC: customer can only see own jobs, driver only assigned ones; snapshot present on created jobs.*

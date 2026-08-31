@@ -49,6 +49,42 @@ Request and track a grúa from the browser — no install. Customer role only.
   this task), and the `types.ts` -> generated-types migration flagged
   above is still not done.
 
+  Follow-up (UX fix): the profile-completion gate above blocked the entire
+  `RequestPage` behind sign-in -- a customer couldn't even see the map or
+  get a price without giving a phone number first. Moved the gate: the
+  backend's `/v1/jobs/quote` is now public (see `03-jobs-pricing.md`'s JOB-4
+  follow-up), so `RequestPage` no longer gates on `user`/`profile` at page
+  load at all -- the form, map and "Cotizar" button are always visible, and
+  `PhoneSignIn`/`CompleteProfileForm` only appear inline once the customer
+  presses **Confirm** without a usable identity yet (new `awaitingAuth`
+  state). A `useEffect` watches for that identity completing while a quote
+  is still held and fires `createMutation.mutate()` on its own, so signing
+  in mid-flow doesn't lose the quote or need a second button press;
+  clearing the quote (editing an address, picking a new one) resets
+  `awaitingAuth` so a stale gate can't reappear on the next quote. Booking
+  itself (`create_job`) still requires auth, unchanged -- only quoting
+  moved. Caught and fixed one real bug while building this: the effect's
+  dependency array initially included the `createMutation` object itself,
+  which react-query returns as a fresh reference every render -- caused an
+  infinite render loop (caught by a hung `vitest run`, not by the tests
+  themselves passing/failing). Fixed by depending only on the primitives
+  that actually need to retrigger it (`quote`, `awaitingAuth`, `user`,
+  `profile`) and calling `.mutate()` from inside without depending on the
+  object, same pattern as the effect's cleanup guard.
+
+  `RequestPage.profileGate.test.tsx` rewritten for the new confirm-time
+  gate (form renders immediately with no user/profile; sign-in and
+  completion widgets only appear after Confirm; booking proceeds straight
+  through when a name is already on file). `RequestPage.test.tsx`'s
+  sign-in helper split into `requestQuote()` (no auth involved) and
+  `confirmSigningIn()` (drives the post-Confirm gate), and the
+  geolocation/map tests no longer sign in at all since none of them touch
+  Confirm. Full web-client suite green (72 passed, up from 71), lint
+  clean, `npm run build` clean.
+
+  Not yet verified: no live pass against a real backend (same standing gap
+  as above) -- this was all exercised against `MockApi`.
+
 - [ ] **WEB-2 — Request flow** *(deps: WEB-1, CUS parity)*
   Browser-geolocation pickup, Places dropoff, vehicle type, quote, confirm — mobile-first layout.
   *AC: full request lands in the same dispatch pipeline as the app.*

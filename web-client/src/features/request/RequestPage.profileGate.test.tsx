@@ -10,13 +10,14 @@ import { strings } from '../../i18n/strings';
 import { RequestPage } from './RequestPage';
 
 /**
- * WEB-1 profile-completion gate, tested in isolation from the real
- * AuthProvider/MockApi singleton (see RequestPage.test.tsx for the full
- * sign-in-through-mocks integration coverage) — the singleton's `userProfile`
- * persists across `it()` blocks in the same file once synced, which would
- * make a "profile already has a name" case here order-dependent on whatever
- * earlier test last completed one. Mocking `useAuth` directly sidesteps that
- * entirely and lets each case assert its own exact profile shape.
+ * WEB-1 follow-up: quoting is public now (see backend's create_quote
+ * docstring), so RequestPage no longer gates page load on `user`/`profile`
+ * at all — it renders the form unconditionally and only reaches for
+ * PhoneSignIn/CompleteProfileForm once Confirm is pressed without a usable
+ * identity yet. Mocking `useAuth` directly (rather than driving the real
+ * AuthProvider/MockApi singleton, see RequestPage.test.tsx for that
+ * integration coverage) lets each case assert its own exact user/profile
+ * shape in isolation.
  */
 const mockUseAuth = vi.fn<() => AuthContextValue>();
 
@@ -41,7 +42,7 @@ function profile(overrides: Partial<UserProfile> = {}): UserProfile {
 
 function authValue(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
   return {
-    user: { uid: 'fb_1', phone: '+573001234567' },
+    user: null,
     profile: null,
     sendCode: vi.fn(),
     confirmCode: vi.fn(),
@@ -62,28 +63,67 @@ function renderPage() {
   );
 }
 
-describe('RequestPage profile-completion gate (WEB-1)', () => {
-  it('renders nothing while the profile sync is still in flight', () => {
-    mockUseAuth.mockReturnValue(authValue({ profile: null }));
-    const { container } = renderPage();
-    expect(container).toBeEmptyDOMElement();
-  });
+/** Fills the form and fetches a quote so a Confirm button exists to press. */
+async function requestQuote(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(
+    screen.getByLabelText(strings.request.pickupLabel),
+    'Cra. 43A #1-50, El Poblado',
+  );
+  await user.type(screen.getByLabelText(strings.request.dropoffLabel), 'Cl. 10 #52-25, Guayabal');
+  await user.click(screen.getByRole('radio', { name: strings.vehicleTypes.car }));
+  await user.click(screen.getByRole('button', { name: strings.request.getQuote }));
+  await screen.findByTestId('quote-price');
+}
 
-  it('shows the completion form when the synced profile has no name', async () => {
-    mockUseAuth.mockReturnValue(authValue({ profile: profile({ name: null }) }));
+describe('RequestPage auth-at-confirm gate (WEB-1 follow-up)', () => {
+  it('renders the request form immediately with no user and no profile at all', () => {
+    mockUseAuth.mockReturnValue(authValue({ user: null, profile: null }));
     renderPage();
 
-    expect(await screen.findByText(strings.completeProfile.title)).toBeInTheDocument();
-    expect(screen.queryByLabelText(strings.request.pickupLabel)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(strings.request.pickupLabel)).toBeInTheDocument();
+    expect(screen.queryByText(strings.auth.title)).not.toBeInTheDocument();
+    expect(screen.queryByText(strings.completeProfile.title)).not.toBeInTheDocument();
   });
 
-  it('submitting the form calls completeProfile with the entered name', async () => {
-    const completeProfile = vi.fn().mockResolvedValue(undefined);
+  it('shows phone sign-in only after Confirm is pressed with no user signed in', async () => {
+    mockUseAuth.mockReturnValue(authValue({ user: null, profile: null }));
+    const user = userEvent.setup();
+    renderPage();
+    await requestQuote(user);
+
+    expect(screen.queryByText(strings.auth.title)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: strings.request.confirm }));
+
+    expect(await screen.findByText(strings.auth.title)).toBeInTheDocument();
+  });
+
+  it('shows the completion form after Confirm when signed in but the synced profile has no name', async () => {
     mockUseAuth.mockReturnValue(
-      authValue({ profile: profile({ name: null }), completeProfile }),
+      authValue({ user: { uid: 'fb_1', phone: '+573001234567' }, profile: profile({ name: null }) }),
     );
     const user = userEvent.setup();
     renderPage();
+    await requestQuote(user);
+
+    expect(screen.queryByText(strings.completeProfile.title)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: strings.request.confirm }));
+
+    expect(await screen.findByText(strings.completeProfile.title)).toBeInTheDocument();
+  });
+
+  it('submitting the completion form calls completeProfile with the entered name', async () => {
+    const completeProfile = vi.fn().mockResolvedValue(undefined);
+    mockUseAuth.mockReturnValue(
+      authValue({
+        user: { uid: 'fb_1', phone: '+573001234567' },
+        profile: profile({ name: null }),
+        completeProfile,
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await requestQuote(user);
+    await user.click(screen.getByRole('button', { name: strings.request.confirm }));
 
     await user.type(
       await screen.findByLabelText(strings.completeProfile.nameLabel),
@@ -94,13 +134,19 @@ describe('RequestPage profile-completion gate (WEB-1)', () => {
     expect(completeProfile).toHaveBeenCalledWith('Ana Gómez');
   });
 
-  it('shows an error and re-enables the form if completeProfile fails', async () => {
+  it('shows an error and re-enables the completion form if completeProfile fails', async () => {
     const completeProfile = vi.fn().mockRejectedValue(new Error('network'));
     mockUseAuth.mockReturnValue(
-      authValue({ profile: profile({ name: null }), completeProfile }),
+      authValue({
+        user: { uid: 'fb_1', phone: '+573001234567' },
+        profile: profile({ name: null }),
+        completeProfile,
+      }),
     );
     const user = userEvent.setup();
     renderPage();
+    await requestQuote(user);
+    await user.click(screen.getByRole('button', { name: strings.request.confirm }));
 
     await user.type(
       await screen.findByLabelText(strings.completeProfile.nameLabel),
@@ -113,11 +159,19 @@ describe('RequestPage profile-completion gate (WEB-1)', () => {
     expect(saveButton).toBeEnabled();
   });
 
-  it('skips the gate entirely when the profile already has a name', () => {
-    mockUseAuth.mockReturnValue(authValue({ profile: profile({ name: 'Ana Gómez' }) }));
+  it('skips the gate entirely and books straight through when the profile already has a name', async () => {
+    mockUseAuth.mockReturnValue(
+      authValue({
+        user: { uid: 'fb_1', phone: '+573001234567' },
+        profile: profile({ name: 'Ana Gómez' }),
+      }),
+    );
+    const user = userEvent.setup();
     renderPage();
+    await requestQuote(user);
+    await user.click(screen.getByRole('button', { name: strings.request.confirm }));
 
+    expect(screen.queryByText(strings.auth.title)).not.toBeInTheDocument();
     expect(screen.queryByText(strings.completeProfile.title)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(strings.request.pickupLabel)).toBeInTheDocument();
   });
 });

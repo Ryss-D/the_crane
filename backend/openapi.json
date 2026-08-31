@@ -4678,7 +4678,7 @@
     },
     "/v1/jobs/quote": {
       "post": {
-        "description": "JOB-4: price a trip from live config; the quote is Redis-cached for 10 minutes.",
+        "description": "JOB-4: price a trip from live config; the quote is Redis-cached for 10 minutes.\n\nDeliberately public (no CurrentUser dependency) -- `build_quote` never\nused the caller's identity for anything, and letting a customer see a\nreal price before signing in (web-client's request flow, see the\nfollow-up note below) is the whole point. `create_job` right below\nthis, which actually commits to something, still requires auth --\nquoting is stateless/anonymous, booking isn't.",
         "operationId": "create_quote_v1_jobs_quote_post",
         "requestBody": {
           "content": {
@@ -4712,11 +4712,6 @@
             "description": "Validation Error"
           }
         },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
         "summary": "Create Quote",
         "tags": [
           "jobs"

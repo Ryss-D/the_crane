@@ -7,18 +7,35 @@ import { formatCOP } from '../../i18n/format';
 import { strings } from '../../i18n/strings';
 import { mockGeolocation } from '../../test/setup';
 
-/** Signs in AND completes the WEB-1 profile-completion gate (a fresh
- * FakeAuth/MockApi identity always has no name), landing on the request
- * form itself. */
-async function signIn(user: ReturnType<typeof userEvent.setup>, phone: string, name = 'Ana Gómez') {
-  await user.type(screen.getByLabelText(strings.auth.phoneLabel), phone);
+/** WEB-1 follow-up: quoting is public, so the request form is visible with
+ * no sign-in step at all -- fills it in and fetches a quote. */
+async function requestQuote(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(
+    screen.getByLabelText(strings.request.pickupLabel),
+    'Cra. 43A #1-50, El Poblado',
+  );
+  await user.type(screen.getByLabelText(strings.request.dropoffLabel), 'Cl. 10 #52-25, Guayabal');
+  await user.click(screen.getByRole('radio', { name: strings.vehicleTypes.car }));
+  await user.click(screen.getByRole('button', { name: strings.request.getQuote }));
+  await screen.findByTestId('quote-price');
+}
+
+/** Clicks Confirm on a rendered quote, then signs in AND completes the
+ * WEB-1 profile-completion gate (a fresh FakeAuth/MockApi identity always
+ * has no name) -- both only appear once Confirm is pressed without a
+ * usable identity yet, not up front. Booking proceeds automatically once
+ * the profile is complete. */
+async function confirmSigningIn(
+  user: ReturnType<typeof userEvent.setup>,
+  phone: string,
+  name = 'Ana Gómez',
+) {
+  await user.click(screen.getByRole('button', { name: strings.request.confirm }));
+  await user.type(await screen.findByLabelText(strings.auth.phoneLabel), phone);
   await user.click(screen.getByRole('button', { name: strings.auth.submit }));
   await user.type(await screen.findByLabelText(strings.auth.codeLabel), '123456');
   await user.click(screen.getByRole('button', { name: strings.auth.confirm }));
-  await user.type(
-    await screen.findByLabelText(strings.completeProfile.nameLabel),
-    name,
-  );
+  await user.type(await screen.findByLabelText(strings.completeProfile.nameLabel), name);
   await user.click(screen.getByRole('button', { name: strings.completeProfile.saveButton }));
 }
 
@@ -36,33 +53,26 @@ function renderApp() {
 }
 
 describe('request flow (WEB-2 skeleton)', () => {
-  it('signs in with any phone, quotes in COP, confirms and redirects to tracking', async () => {
+  it('quotes anonymously in COP, then signs in at confirm time and redirects to tracking', async () => {
     const user = userEvent.setup();
     renderApp();
 
-    // FakeAuth gate: any phone + any code → logged in. Then WEB-1's
-    // profile-completion gate (a fresh identity always has no name).
-    await signIn(user, '3001234567');
-
-    // Request form.
-    await user.type(
-      await screen.findByLabelText(strings.request.pickupLabel),
-      'Cra. 43A #1-50, El Poblado',
-    );
-    await user.type(screen.getByLabelText(strings.request.dropoffLabel), 'Cl. 10 #52-25, Guayabal');
-    await user.click(screen.getByRole('radio', { name: strings.vehicleTypes.car }));
-    await user.click(screen.getByRole('button', { name: strings.request.getQuote }));
+    // WEB-1 follow-up: no sign-in needed to see the form or get a quote —
+    // /v1/jobs/quote is public. The pickup field is visible immediately.
+    expect(screen.getByLabelText(strings.request.pickupLabel)).toBeInTheDocument();
+    await requestQuote(user);
 
     // Quote renders, formatted as es-CO COP.
-    const price = await screen.findByTestId('quote-price');
+    const price = screen.getByTestId('quote-price');
     const text = price.textContent ?? '';
     expect(text).toMatch(/^\$/);
     const amount = Number(text.replace(/[^\d]/g, ''));
     expect(amount).toBeGreaterThan(0);
     expect(text).toBe(formatCOP(amount)); // round-trips through Intl es-CO/COP
 
-    // Confirm → mock job created → redirected to /jobs/:id (tracking page).
-    await user.click(screen.getByRole('button', { name: strings.request.confirm }));
+    // Confirm without an identity yet → sign-in, then profile completion,
+    // appear inline; booking proceeds on its own once both are done.
+    await confirmSigningIn(user, '3001234567');
     expect(
       await screen.findByRole('heading', { name: strings.tracking.title }),
     ).toBeInTheDocument();
@@ -72,9 +82,7 @@ describe('request flow (WEB-2 skeleton)', () => {
     const user = userEvent.setup();
     renderApp();
 
-    await signIn(user, '3000000000');
-
-    const quoteBtn = await screen.findByRole('button', { name: strings.request.getQuote });
+    const quoteBtn = screen.getByRole('button', { name: strings.request.getQuote });
     expect(quoteBtn).toBeDisabled();
 
     await user.type(screen.getByLabelText(strings.request.pickupLabel), 'A');
@@ -95,9 +103,8 @@ describe('"usar mi ubicación actual" (WEB-2)', () => {
     );
     const user = userEvent.setup();
     renderApp();
-    await signIn(user, '3001234567');
 
-    await user.click(await screen.findByRole('button', { name: strings.request.useCurrentLocation }));
+    await user.click(screen.getByRole('button', { name: strings.request.useCurrentLocation }));
 
     expect(await screen.findByLabelText(strings.request.pickupLabel)).toHaveValue(
       strings.request.locationText(6.25184, -75.56359),
@@ -118,9 +125,8 @@ describe('"usar mi ubicación actual" (WEB-2)', () => {
     );
     const user = userEvent.setup();
     renderApp();
-    await signIn(user, '3009998888');
 
-    const pickupInput = await screen.findByLabelText(strings.request.pickupLabel);
+    const pickupInput = screen.getByLabelText(strings.request.pickupLabel);
     await user.click(screen.getByRole('button', { name: strings.request.useCurrentLocation }));
 
     expect(await screen.findByText(strings.request.locationUnavailable)).toBeInTheDocument();
@@ -135,10 +141,9 @@ describe('"usar mi ubicación actual" (WEB-2)', () => {
     );
     const user = userEvent.setup();
     renderApp();
-    await signIn(user, '3005554444');
 
-    await user.click(await screen.findByRole('button', { name: strings.request.useCurrentLocation }));
-    const pickupInput = await screen.findByLabelText(strings.request.pickupLabel);
+    await user.click(screen.getByRole('button', { name: strings.request.useCurrentLocation }));
+    const pickupInput = screen.getByLabelText(strings.request.pickupLabel);
     await user.clear(pickupInput);
     await user.type(pickupInput, 'Cra. 43A #1-50, El Poblado');
 
@@ -155,9 +160,8 @@ describe('map (FND-6 follow-up)', () => {
     );
     const user = userEvent.setup();
     renderApp();
-    await signIn(user, '3002221111');
 
-    expect(await screen.findByTestId('request-map')).toBeInTheDocument();
+    expect(screen.getByTestId('request-map')).toBeInTheDocument();
     // Neither pickup nor dropoff has a real coordinate yet (nothing typed,
     // no GPS fix taken) — RequestMap only renders a Marker once it has one.
     expect(screen.queryByTestId('map-marker')).not.toBeInTheDocument();
@@ -172,9 +176,7 @@ describe('map (FND-6 follow-up)', () => {
 
   it('shows the dashed placeholder instead when no Maps key is configured', async () => {
     vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', '');
-    const user = userEvent.setup();
     renderApp();
-    await signIn(user, '3004443333');
 
     expect(screen.getByText(`${strings.request.mapPlaceholder} — TODO(FND-6)`)).toBeInTheDocument();
     expect(screen.queryByTestId('request-map')).not.toBeInTheDocument();
