@@ -51,6 +51,34 @@ abstract interface class DriversRepository {
   /// `GET /v1/drivers/me/balance` (DRV-5/LED-1) — owed commission balance
   /// plus recent settlements.
   Future<DriverBalance> balance();
+
+  /// `POST /v1/drivers/me/settle` (PAY-3) — starts a Wompi checkout for
+  /// [amountCop] of the driver's owed balance via [method]. This only
+  /// *starts* the checkout — the balance itself doesn't move until Wompi's
+  /// webhook reports the payment approved, so callers shouldn't optimistically
+  /// update anything from the result beyond acting on
+  /// [SettlementCheckout.asyncPaymentUrl].
+  ///
+  /// Throws [SettlementRejectedException] for every rejection the backend
+  /// can produce: `amount` <= 0 or exceeding the owed balance (422), nothing
+  /// owed (409), or no Wompi key configured server-side yet (503, the
+  /// expected state today — no real Wompi account exists).
+  Future<SettlementCheckout> settleBalance({
+    required int amountCop,
+    SettlementPaymentMethod method = SettlementPaymentMethod.nequi,
+  });
+}
+
+/// Thrown by [DriversRepository.settleBalance] when the backend rejects the
+/// request rather than starting a checkout — carries its `detail` message
+/// verbatim, same convention as `JobsRepository.JobStatusRejectedException`.
+class SettlementRejectedException implements Exception {
+  SettlementRejectedException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }
 
 /// Dio-backed implementation hitting the FastAPI v1 endpoints.
@@ -155,5 +183,31 @@ class ApiDriversRepository implements DriversRepository {
   Future<DriverBalance> balance() async {
     final res = await _dio.get<Map<String, dynamic>>('/v1/drivers/me/balance');
     return DriverBalance.fromJson(res.data!);
+  }
+
+  @override
+  Future<SettlementCheckout> settleBalance({
+    required int amountCop,
+    SettlementPaymentMethod method = SettlementPaymentMethod.nequi,
+  }) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/v1/drivers/me/settle',
+        data: {'amount': amountCop, 'payment_method': method.wire},
+      );
+      final data = res.data!;
+      return SettlementCheckout(
+        paymentReference: data['payment_reference'] as String,
+        asyncPaymentUrl: data['async_payment_url'] as String?,
+      );
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 422 || code == 409 || code == 503) {
+        final data = e.response?.data;
+        final detail = data is Map ? data['detail']?.toString() : null;
+        throw SettlementRejectedException(detail ?? 'Settlement rejected');
+      }
+      rethrow;
+    }
   }
 }

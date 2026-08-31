@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/core/api/directions_repository.dart';
+import 'package:the_crane/core/api/fake_directions_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/api/jobs_repository.dart';
 import 'package:the_crane/core/models/job.dart';
@@ -15,12 +17,17 @@ import 'package:the_crane/l10n/app_localizations.dart';
 /// RAT-3 — `HistoryScreen`/`HistoryDetailScreen` don't need the full app
 /// shell (no GoRouter dependency: the row-tap push is a plain
 /// `Navigator.push`), just the localization delegates every screen needs
-/// and the `JobsRepository` `HistoryDetailScreen` reads from context for
-/// its ratings fetch. Lighter and faster than booting `TheCraneApp` and
+/// and the `JobsRepository`/`DirectionsRepository` (FND-6) `HistoryDetailScreen`
+/// reads from context. Lighter and faster than booting `TheCraneApp` and
 /// driving sign-in for a screen that's reachable without it.
 Widget _app({required HistoryCubit cubit, required JobsRepository jobs}) {
-  return RepositoryProvider<JobsRepository>.value(
-    value: jobs,
+  return MultiRepositoryProvider(
+    providers: [
+      RepositoryProvider<JobsRepository>.value(value: jobs),
+      RepositoryProvider<DirectionsRepository>.value(
+        value: FakeDirectionsRepository(delay: Duration.zero),
+      ),
+    ],
     child: BlocProvider<HistoryCubit>.value(
       value: cubit,
       child: MaterialApp(

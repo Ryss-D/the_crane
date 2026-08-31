@@ -7,10 +7,15 @@ import 'package:the_crane/core/api/fake_drivers_repository.dart';
 import 'package:the_crane/core/api/fake_fleet_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/api/fake_vehicles_repository.dart';
+import 'package:the_crane/core/api/fake_directions_repository.dart';
+import 'package:the_crane/core/api/fake_places_repository.dart';
 import 'package:the_crane/core/auth/fake_phone_auth_gateway.dart';
 import 'package:the_crane/core/auth/fake_push_token_gateway.dart';
 import 'package:the_crane/core/models/app_user.dart';
+import 'package:the_crane/core/storage/active_job_store.dart';
 import 'package:the_crane/features/auth/auth_cubit.dart';
+
+import 'in_memory_active_job_store.dart';
 
 /// Fast fake jobs repo for tests (delays measured in a few ms so widget
 /// tests can pump them deterministically).
@@ -39,9 +44,11 @@ AppDependencies testDependencies({
   FakeDriversRepository? drivers,
   FakeVehiclesRepository? vehicles,
   FakeFleetRepository? fleet,
+  ActiveJobStore? activeJobStore,
   UserRole authRole = UserRole.customer,
 }) {
   final jobsRepository = jobs ?? fastFakeJobs();
+  final store = activeJobStore ?? InMemoryActiveJobStore();
   final authRepository = FakeAuthRepository(
     delay: const Duration(milliseconds: 10),
     role: authRole,
@@ -72,13 +79,17 @@ AppDependencies testDependencies({
     vehiclesRepository:
         vehicles ?? FakeVehiclesRepository(delay: const Duration(milliseconds: 10)),
     fleetRepository: fleetRepository,
+    placesRepository: FakePlacesRepository(delay: Duration.zero),
+    directionsRepository: FakeDirectionsRepository(delay: Duration.zero),
     authCubit: AuthCubit(
       gateway: FakePhoneAuthGateway(
         sendDelay: const Duration(milliseconds: 10),
       ),
       authRepository: authRepository,
       pushTokenGateway: FakePushTokenGateway(),
+      activeJobStore: store,
     ),
+    activeJobStore: store,
   );
 }
 

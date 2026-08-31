@@ -4,14 +4,18 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../core/api/api_client.dart';
 import '../core/api/auth_repository.dart';
+import '../core/api/directions_repository.dart';
 import '../core/api/drivers_repository.dart';
 import '../core/api/fake_auth_repository.dart';
+import '../core/api/fake_directions_repository.dart';
 import '../core/api/fake_drivers_repository.dart';
 import '../core/api/fake_fleet_repository.dart';
 import '../core/api/fake_jobs_repository.dart';
+import '../core/api/fake_places_repository.dart';
 import '../core/api/fake_vehicles_repository.dart';
 import '../core/api/fleet_repository.dart';
 import '../core/api/jobs_repository.dart';
+import '../core/api/places_repository.dart';
 import '../core/api/vehicles_repository.dart';
 import '../core/auth/fake_phone_auth_gateway.dart';
 import '../core/auth/fake_push_token_gateway.dart';
@@ -21,12 +25,9 @@ import '../core/config/env.dart';
 import '../core/location/location_source.dart';
 import '../core/notifications/notification_permission_requester.dart';
 import '../core/notifications/push_notifications.dart';
+import '../core/storage/active_job_store.dart';
 import '../core/ws/crane_socket.dart';
 import '../features/auth/auth_cubit.dart';
-
-// TODO(FND-6): construct google_maps here once Maps keys and native setup
-// are in place. Driver location (TRK-5) is separate and already wired below
-// via GeolocatorLocationSource.
 
 Future<String?> _firebaseIdToken() =>
     FirebaseAuth.instance.currentUser?.getIdToken() ?? Future.value(null);
@@ -41,7 +42,10 @@ class AppDependencies {
     required this.driversRepository,
     required this.vehiclesRepository,
     required this.fleetRepository,
+    required this.placesRepository,
+    required this.directionsRepository,
     required this.authCubit,
+    required this.activeJobStore,
     this.socket,
     this.locationSource,
     this.notificationPermissionRequester,
@@ -65,7 +69,12 @@ class AppDependencies {
   /// under fakes (any phone + any code, always a fresh customer) or the real
   /// Firebase phone-auth gateway + `/auth/sync` otherwise — same flag as
   /// everything else, so dev iteration never needs real SMS.
-  factory AppDependencies.fromEnv() {
+  /// [activeJobStore] (CUS-4) is obtained by the caller (`main()`, which can
+  /// `await SharedPreferences.getInstance()` before this synchronous
+  /// factory runs) rather than by this factory itself — same reasoning as
+  /// `authCubit.bootstrap()` being a separate awaited step after
+  /// construction.
+  factory AppDependencies.fromEnv({required ActiveJobStore activeJobStore}) {
     final dio = createDio(baseUrl: Env.apiBaseUrl);
     if (Env.useFakeBackend) {
       final jobs = FakeJobsRepository();
@@ -87,22 +96,26 @@ class AppDependencies {
         ),
         vehiclesRepository: FakeVehiclesRepository(),
         fleetRepository: fleetRepository,
+        placesRepository: FakePlacesRepository(),
+        directionsRepository: FakeDirectionsRepository(),
         authCubit: AuthCubit(
           gateway: FakePhoneAuthGateway(),
           authRepository: authRepository,
           pushTokenGateway: FakePushTokenGateway(),
+          activeJobStore: activeJobStore,
         ),
+        activeJobStore: activeJobStore,
       );
     }
     final socket = CraneSocket(tokenProvider: _firebaseIdToken)..connect();
     // DRV-2: nudge the socket to reconnect right now (skipping whatever
     // backoff delay it's mid-wait on) whenever a data message arrives while
     // the app is foregrounded, rather than waiting out the backoff to
-    // notice a stale connection. Deliberately payload-agnostic: the backend
-    // doesn't send FCM pushes for job offers yet either (see
-    // `backend/app/services/realtime.py`'s `TODO(FCM)` — no Firebase Admin
-    // credentials configured server-side), so there is no message shape to
-    // key off yet; this only wires the client half for whenever that lands.
+    // notice a stale connection. Deliberately payload-agnostic: this just
+    // nudges the socket on *any* incoming data push, no matter its `type` —
+    // the backend does send real FCM pushes now (`realtime.py`'s
+    // `_push_to_user`/`send_push`), but there's no reason to special-case
+    // which ones trigger a reconnect check.
     // Deliberately scoped to foreground/resumed only — the killed-app/
     // backgrounded case is handled separately, by
     // `core/notifications/push_notifications.dart`'s
@@ -117,6 +130,8 @@ class AppDependencies {
       driversRepository: ApiDriversRepository(dio, socket),
       vehiclesRepository: ApiVehiclesRepository(dio),
       fleetRepository: ApiFleetRepository(dio),
+      placesRepository: ApiPlacesRepository(dio),
+      directionsRepository: ApiDirectionsRepository(dio),
       socket: socket,
       locationSource: GeolocatorLocationSource(),
       // TRK-3: the same singleton `main()` already called `init()` on
@@ -127,7 +142,9 @@ class AppDependencies {
         gateway: FirebasePhoneAuthGateway(),
         authRepository: ApiAuthRepository(dio),
         pushTokenGateway: FirebasePushTokenGateway(),
+        activeJobStore: activeJobStore,
       ),
+      activeJobStore: activeJobStore,
     );
   }
 
@@ -136,7 +153,15 @@ class AppDependencies {
   final DriversRepository driversRepository;
   final VehiclesRepository vehiclesRepository;
   final FleetRepository fleetRepository;
+  final PlacesRepository placesRepository;
+  final DirectionsRepository directionsRepository;
   final AuthCubit authCubit;
+
+  /// CUS-4: which job (if any) to resume on next launch — real in both fake-
+  /// and real-backend dev modes (rehydration is orthogonal to which backend
+  /// answers `getJob`), unlike [socket]/[locationSource]/
+  /// [notificationPermissionRequester] below, which only exist for real.
+  final ActiveJobStore activeJobStore;
 
   /// Null when [Env.useFakeBackend] is true — the fakes don't use a socket.
   final CraneSocket? socket;

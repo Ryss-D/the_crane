@@ -49,3 +49,30 @@ abstract class DriverBalance with _$DriverBalance {
   factory DriverBalance.fromJson(Map<String, dynamic> json) =>
       _$DriverBalanceFromJson(json);
 }
+
+/// PAY-3 — a digital-settlement method the driver's balance can be paid
+/// down with via `POST /v1/drivers/me/settle`. Mirrors the backend's
+/// `PaymentMethod` enum (`backend/app/models/job.py`), restricted to the
+/// three that make sense for a driver-initiated payout: `cash`/`wallet`
+/// aren't checkout-based, so they're not offered here.
+enum SettlementPaymentMethod {
+  nequi('nequi'),
+  pse('pse'),
+  card('card');
+
+  const SettlementPaymentMethod(this.wire);
+
+  final String wire;
+}
+
+/// What `POST /v1/drivers/me/settle` hands back — enough to complete the
+/// checkout, not a balance change (that only happens once Wompi's webhook
+/// reports the payment approved; poll [DriversRepository.balance]
+/// afterward to see it reflected).
+@freezed
+abstract class SettlementCheckout with _$SettlementCheckout {
+  const factory SettlementCheckout({
+    required String paymentReference,
+    String? asyncPaymentUrl,
+  }) = _SettlementCheckout;
+}

@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../core/api/drivers_repository.dart';
 import '../../../core/location/location_source.dart';
 import '../../../core/models/driver_profile.dart';
+import '../../../core/models/lat_lng.dart';
 import '../../../core/notifications/notification_permission_requester.dart';
 
 part 'driver_home_cubit.freezed.dart';
@@ -25,6 +26,13 @@ abstract class DriverHomeState with _$DriverHomeState {
     // moment a toggle attempt starts, same lifecycle as
     // `ActiveJobState.errorMessage` (DRV-3).
     @Default(DriverBlockReason.none) DriverBlockReason lastToggleFailureReason,
+    // FND-6: the fix taken when last going available (see
+    // toggleAvailability) — not a live stream (see that method's doc
+    // comment on why one doesn't run just for being available), just
+    // whatever one-shot position the driver was at then, shown on the map
+    // for context. Null until the driver has gone available at least once
+    // this session.
+    LatLng? selfPosition,
   }) = _DriverHomeState;
 
   /// Blocked from receiving offers (DRV-1 banner) — not yet verified
@@ -119,6 +127,13 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
         status: profile.status,
         profile: profile,
         isUpdating: false,
+        // FND-6: show the fix just taken (if any) on the home map — a
+        // denied/unavailable location keeps whatever was there before,
+        // same "don't erase good info over a failed retry" spirit as
+        // the rest of this method.
+        selfPosition: lat != null && lng != null
+            ? LatLng(lat: lat, lng: lng)
+            : state.selfPosition,
       ));
     } on DioException catch (e) {
       final data = e.response?.data;

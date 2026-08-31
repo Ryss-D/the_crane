@@ -5,6 +5,8 @@ import 'package:the_crane/core/api/fake_fleet_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/api/fake_vehicles_repository.dart';
 
+import '../support/in_memory_active_job_store.dart';
+
 /// `Env.useFakeBackend` is a compile-time constant (`bool.fromEnvironment`)
 /// that defaults to `true`; a plain `flutter test` run (no
 /// `--dart-define=USE_FAKE_BACKEND=false`) always takes that branch. The
@@ -16,7 +18,9 @@ import 'package:the_crane/core/api/fake_vehicles_repository.dart';
 void main() {
   group('AppDependencies.fromEnv (Env.useFakeBackend == true, the default)', () {
     test('wires every repository to its in-memory fake', () {
-      final deps = AppDependencies.fromEnv();
+      final deps = AppDependencies.fromEnv(
+        activeJobStore: InMemoryActiveJobStore(),
+      );
 
       expect(deps.jobsRepository, isA<FakeJobsRepository>());
       expect(deps.driversRepository, isA<FakeDriversRepository>());
@@ -25,7 +29,9 @@ void main() {
     });
 
     test('leaves the real-backend-only seams null', () {
-      final deps = AppDependencies.fromEnv();
+      final deps = AppDependencies.fromEnv(
+        activeJobStore: InMemoryActiveJobStore(),
+      );
 
       // Nothing under fakes needs a socket, real GPS, or a device
       // notification-permission prompt.
@@ -38,7 +44,9 @@ void main() {
         '(the constructor-level sharing of one FakeAuthRepository between '
         'them, per fromEnv\'s own comments, has no public seam to assert on '
         'directly)', () {
-      final deps = AppDependencies.fromEnv();
+      final deps = AppDependencies.fromEnv(
+        activeJobStore: InMemoryActiveJobStore(),
+      );
 
       expect(deps.driversRepository, isA<FakeDriversRepository>());
       expect(deps.fleetRepository, isA<FakeFleetRepository>());
@@ -46,7 +54,9 @@ void main() {
 
     test('authCubit starts unauthenticated (fresh customer) without '
         'touching real Firebase', () async {
-      final deps = AppDependencies.fromEnv();
+      final deps = AppDependencies.fromEnv(
+        activeJobStore: InMemoryActiveJobStore(),
+      );
 
       // FakePhoneAuthGateway.isSignedIn is always false, so bootstrap()
       // completes without emitting a signed-in state — proves the fake

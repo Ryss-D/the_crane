@@ -11,6 +11,7 @@ import '../core/api/vehicles_repository.dart';
 import '../core/location/location_source.dart';
 import '../core/models/app_user.dart';
 import '../core/notifications/notification_permission_requester.dart';
+import '../core/storage/active_job_store.dart';
 import '../core/ws/crane_socket.dart';
 import '../features/auth/auth_cubit.dart';
 import '../features/auth/auth_state.dart';
@@ -158,8 +159,11 @@ GoRouter createRouter(AuthCubit authCubit) {
       ),
       ShellRoute(
         builder: (context, state, child) => BlocProvider(
-          create: (context) =>
-              RequestBloc(jobsRepository: context.read<JobsRepository>()),
+          create: (context) => RequestBloc(
+            jobsRepository: context.read<JobsRepository>(),
+            activeJobStore: context.read<ActiveJobStore>(),
+            socket: context.read<CraneSocket?>(),
+          ),
           child: child,
         ),
         routes: [

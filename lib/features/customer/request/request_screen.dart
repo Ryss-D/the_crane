@@ -10,14 +10,17 @@ import '../../../core/models/saved_vehicle.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/labels.dart';
-import '../../shared/widgets/map_placeholder.dart';
+import '../../shared/widgets/crane_map.dart';
+import 'places_autocomplete_field.dart';
 import 'request_bloc.dart';
 import 'request_state.dart';
 
 /// CUS-1/2 — request a tow: pickup/dropoff, vehicle type, quote, confirm.
 ///
-/// TODO(FND-6): the text fields become a map with pin-drag + Places search
-/// once Google Maps is wired; [MapPlaceholder] marks the spot.
+/// FND-6: pickup/dropoff are backed by real Places autocomplete
+/// ([PlacesAutocompleteField]) with a real [CraneMap] showing the two
+/// points once set. Not built yet: pin-drag (settling a point by dragging
+/// a marker rather than searching) — see the CUS-1 doc note.
 class RequestScreen extends StatelessWidget {
   const RequestScreen({super.key});
 
@@ -55,29 +58,77 @@ class RequestScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 150, child: MapPlaceholder()),
+                BlocBuilder<RequestBloc, RequestState>(
+                  buildWhen: (previous, current) =>
+                      previous.pickupLatLng != current.pickupLatLng ||
+                      previous.dropoffLatLng != current.dropoffLatLng,
+                  builder: (context, state) => SizedBox(
+                    height: 150,
+                    child: CraneMap(
+                      markers: [
+                        if (state.pickupLatLng case final p?)
+                          CraneMapMarker(
+                            id: 'pickup',
+                            position: p,
+                            role: CraneMapMarkerRole.pickup,
+                            // FND-6: drag-to-refine once search has placed
+                            // this pin (see the CUS-1 doc note on why
+                            // there's no pin-only placement yet).
+                            onDragEnd: (position) =>
+                                bloc.add(RequestPickupPinMoved(position)),
+                          ),
+                        if (state.dropoffLatLng case final d?)
+                          CraneMapMarker(
+                            id: 'dropoff',
+                            position: d,
+                            role: CraneMapMarkerRole.dropoff,
+                            onDragEnd: (position) =>
+                                bloc.add(RequestDropoffPinMoved(position)),
+                          ),
+                      ],
+                      // FND-6: tapping the map places whichever of
+                      // pickup/dropoff isn't set yet — closes the "pin
+                      // alone, no prior search" gap the CUS-1 doc note
+                      // flagged. Once both are set, tapping is a no-op;
+                      // drag-to-refine (above) takes over from there.
+                      onTap: state.pickupLatLng == null
+                          ? (position) => bloc.add(RequestPickupPinMoved(position))
+                          : state.dropoffLatLng == null
+                              ? (position) => bloc.add(RequestDropoffPinMoved(position))
+                              : null,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
-                TextField(
-                  key: const Key('pickupField'),
-                  onChanged: (value) => bloc.add(RequestPickupChanged(value)),
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
+                BlocBuilder<RequestBloc, RequestState>(
+                  buildWhen: (previous, current) =>
+                      previous.pickupAddress != current.pickupAddress,
+                  builder: (context, state) => PlacesAutocompleteField(
+                    fieldKey: const Key('pickupField'),
+                    text: state.pickupAddress,
                     labelText: l10n.pickupFieldLabel,
                     hintText: l10n.pickupFieldHint,
-                    prefixIcon: const Icon(Icons.trip_origin),
-                    border: const OutlineInputBorder(),
+                    prefixIcon: Icons.trip_origin,
+                    textInputAction: TextInputAction.next,
+                    onTextChanged: (value) => bloc.add(RequestPickupChanged(value)),
+                    onPlaceSelected: (details) =>
+                        bloc.add(RequestPickupLocationSelected(details)),
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  key: const Key('dropoffField'),
-                  onChanged: (value) => bloc.add(RequestDropoffChanged(value)),
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
+                BlocBuilder<RequestBloc, RequestState>(
+                  buildWhen: (previous, current) =>
+                      previous.dropoffAddress != current.dropoffAddress,
+                  builder: (context, state) => PlacesAutocompleteField(
+                    fieldKey: const Key('dropoffField'),
+                    text: state.dropoffAddress,
                     labelText: l10n.dropoffFieldLabel,
                     hintText: l10n.dropoffFieldHint,
-                    prefixIcon: const Icon(Icons.place_outlined),
-                    border: const OutlineInputBorder(),
+                    prefixIcon: Icons.place_outlined,
+                    textInputAction: TextInputAction.done,
+                    onTextChanged: (value) => bloc.add(RequestDropoffChanged(value)),
+                    onPlaceSelected: (details) =>
+                        bloc.add(RequestDropoffLocationSelected(details)),
                   ),
                 ),
                 const SizedBox(height: 16),

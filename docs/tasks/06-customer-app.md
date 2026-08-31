@@ -12,6 +12,67 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   search, no reverse geocoding yet. Do not check this off once FND-6 lands
   without actually replacing the text fields with the real map/search flow.
 
+  Follow-up (2026-08-30, Android + Web keys now exist — see `01-foundations.md`
+  FND-6): real map + Places search built, not just wiring. A new
+  `CraneMap` (shared across every screen that needs one — see the FND-6
+  note) shows pickup/dropoff pins once set. `PlacesAutocompleteField`
+  (`lib/features/customer/request/places_autocomplete_field.dart`) replaces
+  the plain `TextField`s: queries the backend's `/v1/places/autocomplete`
+  proxy (not Google directly — an Android/iOS app-restricted key can't
+  authenticate a raw REST call from Dart; see the backend's JOB-4
+  follow-up note) on every keystroke (no debounce — a `Timer`-based one
+  risks leaving a pending timer behind in a widget test that doesn't pump
+  long enough; a real production nicety left for later, not a correctness
+  gap), shows a plain list of matches, and resolves a tap to real
+  coordinates via `/v1/places/details/{id}`.
+
+  `RequestState` gained `pickupLatLng`/`dropoffLatLng` (null = "no real fix
+  for the current address text yet"). `fakeGeocode` is now truly the
+  fallback, not the only path: `RequestBloc._pickupCoord`/`_dropoffCoord`
+  prefer the real coordinate and fall back to `fakeGeocode(address)` only
+  when there isn't one — typing over a selected suggestion by hand clears
+  it back to that fallback (mirrors the web client's identical
+  `pickupCoords`/`fakeGeocode` contract in `RequestPage.tsx`). This is the
+  same design both apps converged on independently.
+
+  Follow-up (2026-08-30): pin-drag built, fully this time. First pass only
+  let an *existing* marker (one a search had already placed) be dragged —
+  `CraneMap` gained `onTap` too, so tapping the map itself now places
+  whichever of pickup/dropoff isn't set yet (`RequestScreen`: pickup first,
+  then dropoff, then taps are a no-op — refining from there is drag-only).
+  Both `RequestPickupPinMoved`/`RequestDropoffPinMoved` handle either case
+  identically (place or refine, same event). AC's "both points settable via
+  pin and search" is now genuinely met; "addresses readable in es-CO" is
+  not, for a pin-placed point specifically — no reverse geocoding available
+  (the Geocoding API isn't enabled — see the FND-6 note in
+  `01-foundations.md`), so a pin shows a plain formatted coordinate instead
+  of a real address, same honest choice the web client makes for its own
+  un-geocoded GPS fix. Not checking this off for that reason.
+
+  Also found and fixed a real bug while wiring this: `PlacesAutocompleteField`
+  only updated its own text from typing/selecting *within* the field
+  itself — a pickup set externally (a map tap, or `RequestBloc` rehydrating
+  some other way) never reached the field's `TextEditingController` at all,
+  leaving it blank. Now a proper controlled field: `RequestScreen` passes
+  `RequestState.pickupAddress`/`dropoffAddress` in via a new `text` param,
+  and `didUpdateWidget` syncs the controller when that changes from
+  outside (guarded against clobbering the cursor mid-type when the change
+  came from this field's own input).
+
+  4 new `RequestBloc` tests (2 pin-drag, plus the bug fix is covered by the
+  new widget test below) and 1 new widget test (tap places pickup then
+  dropoff, drag refines pickup, asserting the field text itself — which is
+  exactly what would have caught the controlled-field bug). Full suite
+  green (398 passed).
+
+  Tests: 3 new `RequestBloc` tests (real-coordinate quoting, typing-clears-it,
+  job creation uses the real coordinate) + 1 new widget test (typing "poblado"
+  surfaces the fake backend's seeded prediction, tapping it fills the field
+  and shows the map's pickup marker). Full suite green (395 passed).
+  **Not verified**: no live pass against the real Places/Directions backend
+  proxy (which itself has no server-side Google key yet either — see
+  FND-6) or a real rendered map on a device/simulator.
+
 - [x] **CUS-2 — Vehicle type + quote sheet** *(deps: CUS-1, JOB-4)*
   Select moto / car / SUV (optionally pick a saved vehicle) → quote card with price (COP) + pickup ETA → confirm button.
   *AC: quote refreshes on any input change; stale quotes (>10 min) re-fetch.*
@@ -80,11 +141,74 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   prepped ahead of this task). Verified against the fakes (6 new widget
   tests). Not built, hard-blocked on FND-6 (no Google Maps yet): the live
   driver marker and route polyline — `MapPlaceholder` stands in wherever
-  the map would go, same as `ActiveJobScreen`. Also not verified: the
-  AC's "timeline matches backend state after app restart (rehydration)"
-  — no persistence/rehydration story exists yet for an in-progress job on
-  cold start; this task only renders whatever `RequestBloc`'s current
-  `activeJob` already is.
+  the map would go, same as `ActiveJobScreen`.
+
+  Follow-up: the rehydration half of the AC is built now. A new
+  `ActiveJobStore` (`lib/core/storage/active_job_store.dart`, disk-backed
+  via `shared_preferences` — this app's first real persistence dependency;
+  everything before this stored at most process-lifetime state, per
+  DRV-6's own note on why it didn't reach for one) persists just the active
+  job's id, not the job itself — `RequestBloc` always re-fetches the real
+  thing (`JobsRepository.getJob`) rather than trusting a cached snapshot.
+  `RequestBloc` now takes an optional `activeJobStore`: on construction it
+  reads the persisted id (if any), re-fetches that job, and — unless it's
+  gone terminal (`completed`/`cancelled`/`no_drivers`) or the fetch fails,
+  either of which just clears the stale id — feeds it through the exact
+  same `RequestJobUpdated` event `watchJob`'s stream already uses, so
+  `RequestScreen`'s existing `BlocListener` (pushes to `MatchingScreen` the
+  moment `activeJob` goes from null to non-null) picks it up with no new
+  navigation wiring needed. A single `onChange` override is the one place
+  that writes to the store — persists the job id while it's non-terminal,
+  clears it once it isn't (or once there's no job at all) — so none of
+  `RequestBloc`'s existing handlers needed a call site added. Also cleared
+  on `AuthCubit.signOut()` (a real gap this surfaced: an unscoped
+  device-level id would otherwise resume one user's job for whoever signs
+  in next on a shared device) — `AuthCubit` gained an optional
+  `activeJobStore` for exactly that one write. 15 new `RequestBloc` tests
+  (resume on construction incl. a live status update arriving after, skip +
+  clear on a terminal/nonexistent job, persist-on-confirm +
+  clear-on-abandon, clear-on-complete) plus 1 `AuthCubit` test
+  (sign-out clears it); full suite green (391 passed, up from 385).
+
+  Not verified: an actual app kill-and-relaunch on a device/simulator — the
+  above is proven at the bloc level (a fresh `RequestBloc` instance reading
+  a pre-populated store, which is what a real cold start does) but never
+  driven through an actual OS-level process restart.
+
+  Follow-up (2026-08-31): the live driver marker + route polyline are built
+  now too — not blocked on FND-6 alone the way the note above assumed;
+  discovered while wiring the web client's own tracking map in parallel
+  that `ServerMessage.driverLocation` (`lib/core/ws/server_message.dart`)
+  already parsed the backend's `driver_location` WS push correctly, it just
+  had no consumer anywhere in the app. `RequestBloc` now takes an optional
+  `socket` (mirrors `ActiveJobCubit`'s existing pattern, just receiving
+  instead of sending): `_watch(jobId)` also subscribes to
+  `socket.messages`, filters to `driver_location` events for that job, and
+  feeds them into a new `RequestState.driverPosition` (cleared on abandon,
+  null under fakes — no socket there). A new `_AssignedJobMap`
+  (`MatchingScreen`) shows pickup/dropoff pins, that live position once one
+  arrives, and a route polyline fetched once per job id from
+  `DirectionsRepository` (same "don't refetch on every rebuild" reasoning
+  as `ActiveJobScreen`'s `_ActiveJobMap`). "Marker updates ≤5s" depends on
+  how often the backend's `broadcast_job_event`/driver-location relay
+  actually pushes — not something this pass measured; the wiring itself
+  updates the instant a push arrives.
+
+  3 new `RequestBloc` tests (relay for the right job, ignore a mismatched
+  job id, clear on abandon) against a real `CraneSocket` + fake WS channel
+  — the fakes-only convention couldn't exercise this one, since it's
+  entirely a WS-transport concern. Also hit the by-now-familiar
+  `flutter_test` pitfall: a widget test reaching the assigned view mounts
+  `_AssignedJobMap`, whose `initState` kicks off a route fetch — a test
+  that doesn't pump a real (non-zero, non-bare) duration afterward leaves
+  that fetch's timer "pending" at teardown. Fixed the one existing test
+  this newly affected (`CUS-3: no-drivers state offers retry`); flagging
+  the pattern here since it'll bite any *future* test reaching this state
+  too. Full suite green (401 passed, up from 398).
+
+  Still not built: reverse geocoding anywhere (a pin/GPS point always
+  displays as a raw coordinate — see the CUS-1 note), and no live pass
+  against a real deployed backend/device for any of this.
 
 - [ ] **CUS-5 — Delivery confirmation + cash payment** *(deps: CUS-4, LED-1)*
   On `delivered`: fare summary, "paid in cash" confirmation → job `completed` → rating prompt.

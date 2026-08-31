@@ -698,6 +698,42 @@
   "@cashPaymentConfirmError": {
     "description": "CUS-5: shown when confirm-delivery fails"
   },
+  "payDigitallyButton": "Pagar con tarjeta, PSE o Nequi",
+  "@payDigitallyButton": {
+    "description": "PAY-4: opens the digital-payment method picker, alongside the cash-confirm button"
+  },
+  "digitalPaymentDialogTitle": "Elige un método de pago",
+  "@digitalPaymentDialogTitle": {
+    "description": "PAY-4: title of the payment-method picker dialog"
+  },
+  "paymentMethodNequi": "Nequi",
+  "@paymentMethodNequi": {
+    "description": "PAY-4: Nequi payment method option label"
+  },
+  "paymentMethodPse": "PSE",
+  "@paymentMethodPse": {
+    "description": "PAY-4: PSE payment method option label"
+  },
+  "paymentMethodCard": "Tarjeta",
+  "@paymentMethodCard": {
+    "description": "PAY-4: card payment method option label"
+  },
+  "paymentMethodNequiHint": "Recibirás una notificación en tu app Nequi para aprobar el pago.",
+  "@paymentMethodNequiHint": {
+    "description": "PAY-4: shown under the Nequi option in the payment-method picker"
+  },
+  "paymentMethodRedirectHint": "Se abrirá una página para completar el pago.",
+  "@paymentMethodRedirectHint": {
+    "description": "PAY-4: shown under the PSE/card options in the payment-method picker"
+  },
+  "digitalPaymentConfirmButton": "Continuar",
+  "@digitalPaymentConfirmButton": {
+    "description": "PAY-4: submits the chosen payment method from the picker dialog"
+  },
+  "digitalPaymentNotAvailableError": "Los pagos digitales no están disponibles todavía. Paga en efectivo.",
+  "@digitalPaymentNotAvailableError": {
+    "description": "PAY-4: shown when confirm-delivery rejects a digital method (422 -- the flag isn't enabled server-side)"
+  },
   "waitingCashConfirmationBody": "Esperando que el cliente confirme el pago en efectivo.",
   "@waitingCashConfirmationBody": {
     "description": "DRV-4: shown to the driver once a job is delivered, since only the customer can complete it"
@@ -782,6 +818,54 @@
   "@earningsLoadError": {
     "description": "DRV-5: shown when loading the balance fails"
   },
+  "earningsSettleButton": "Liquidar saldo",
+  "@earningsSettleButton": {
+    "description": "PAY-3: button that opens the settle-balance dialog, shown when the driver owes something"
+  },
+  "earningsSettleDialogTitle": "Liquidar saldo",
+  "@earningsSettleDialogTitle": {
+    "description": "PAY-3: settle-balance dialog title"
+  },
+  "earningsSettleAmountLabel": "Monto a liquidar (COP)",
+  "@earningsSettleAmountLabel": {
+    "description": "PAY-3: amount field label in the settle-balance dialog"
+  },
+  "earningsSettleMethodLabel": "Método de pago",
+  "@earningsSettleMethodLabel": {
+    "description": "PAY-3: payment-method selector label in the settle-balance dialog"
+  },
+  "earningsSettleMethodNequi": "Nequi",
+  "@earningsSettleMethodNequi": {
+    "description": "PAY-3: Nequi payment method option"
+  },
+  "earningsSettleMethodPse": "PSE",
+  "@earningsSettleMethodPse": {
+    "description": "PAY-3: PSE payment method option"
+  },
+  "earningsSettleMethodCard": "Tarjeta",
+  "@earningsSettleMethodCard": {
+    "description": "PAY-3: card payment method option"
+  },
+  "earningsSettleSubmitButton": "Solicitar liquidación",
+  "@earningsSettleSubmitButton": {
+    "description": "PAY-3: submit button in the settle-balance dialog"
+  },
+  "earningsSettleSentNequiBody": "Solicitud enviada. Revisa tu app de Nequi para aprobar el pago.",
+  "@earningsSettleSentNequiBody": {
+    "description": "PAY-3: confirmation shown after a Nequi settlement request (no redirect, driver approves in their own app)"
+  },
+  "earningsSettleSentRedirectBody": "Solicitud enviada. Abriendo la página de pago…",
+  "@earningsSettleSentRedirectBody": {
+    "description": "PAY-3: confirmation shown right before opening the PSE/card checkout URL"
+  },
+  "earningsSettleUnavailableError": "La liquidación digital no está disponible todavía. Intenta más tarde.",
+  "@earningsSettleUnavailableError": {
+    "description": "PAY-3: shown when the backend has no Wompi key configured yet (503)"
+  },
+  "earningsSettleGenericError": "No pudimos iniciar la liquidación. Intenta de nuevo.",
+  "@earningsSettleGenericError": {
+    "description": "PAY-3: shown for any other settle-request failure"
+  },
   "jobCommissionLabel": "Comisión de este servicio",
   "@jobCommissionLabel": {
     "description": "DRV-4: label for the commission accrued on a just-completed job"
@@ -842,6 +926,10 @@
   "callDriverButton": "Llamar al conductor",
   "@callDriverButton": {
     "description": "CUS-4: calls the assigned driver's phone number"
+  },
+  "callCustomerButton": "Llamar al cliente",
+  "@callCustomerButton": {
+    "description": "DRV-3: calls the job's customer phone number"
   },
   "shareTripButton": "Compartir viaje",
   "@shareTripButton": {

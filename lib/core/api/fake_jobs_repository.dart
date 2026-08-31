@@ -65,6 +65,14 @@ class FakeJobsRepository implements JobsRepository {
     ratingAvg: 4.8,
   );
 
+  /// DRV-3: matches `customerId: 'cus-001'` below — unconditional on every
+  /// seeded job, same as the real backend's `JobRead.customer`.
+  static const _seedCustomer = JobCustomerSummary(
+    id: 'cus-001',
+    name: 'Sofía Restrepo',
+    phone: '+573009998877',
+  );
+
   /// Test hook: overrides the driver assigned once matching resolves (or
   /// once `acceptJob` runs) — e.g. CUS-4 tests exercising the
   /// phone-conditional call button with a driver that has no phone.
@@ -112,6 +120,7 @@ class FakeJobsRepository implements JobsRepository {
     final job = Job(
       id: 'job-${++_seq}',
       customerId: 'cus-001',
+      customer: _seedCustomer,
       status: JobStatus.matching,
       vehicleType: vehicleType,
       pickup: pickup,
@@ -259,8 +268,15 @@ class FakeJobsRepository implements JobsRepository {
     return updated;
   }
 
+  /// PAY-4 test control: set false to simulate `payments.digital_fares_enabled`
+  /// being off server-side — a real 422 the app has no way to predict ahead
+  /// of time (there's no public config-read endpoint; see the PAY-4 doc
+  /// note). True by default so fake-mode demos show the full digital-fare
+  /// path working.
+  bool digitalFaresEnabled = true;
+
   @override
-  Future<Job> confirmDelivery(String id) async {
+  Future<Job> confirmDelivery(String id, {String? paymentMethod}) async {
     await Future<void>.delayed(actionDelay);
     final job = _jobs[id];
     if (job == null) throw StateError('Unknown job: $id');
@@ -269,14 +285,23 @@ class FakeJobsRepository implements JobsRepository {
         'Illegal transition ${job.status.wire} → ${JobStatus.completed.wire}',
       );
     }
+    final isDigital = paymentMethod != null && paymentMethod != 'cash';
+    if (isDigital && !digitalFaresEnabled) {
+      throw JobStatusRejectedException('Digital fares are not enabled');
+    }
     final fare = job.finalPrice ?? job.quotedPrice;
     final completed = job.copyWith(
       status: JobStatus.completed,
       completedAt: DateTime.now(),
       // Mirrors the real backend's commission_for_fare (flat 15% in dev
       // config) so DRV-4's commission display has something real-looking
-      // to show against the fake backend too.
-      driverCommission: (fare * 0.15 / 100).round() * 100,
+      // to show against the fake backend too. Null for a digital fare,
+      // matching the real backend deferring the ledger entry until a
+      // (here, never-arriving) webhook reports the payment approved.
+      driverCommission: isDigital ? null : (fare * 0.15 / 100).round() * 100,
+      // Mirrors the real backend: Nequi has no redirect step, PSE/card do.
+      asyncPaymentUrl:
+          isDigital && paymentMethod != 'nequi' ? 'https://checkout.wompi.co/fake/$id' : null,
     );
     _put(completed);
     return completed;
@@ -340,6 +365,14 @@ class FakeJobsRepository implements JobsRepository {
     final job = Job(
       id: 'job-${++_seq}',
       customerId: 'cus-042',
+      // DRV-3: a distinct customer from `_seedCustomer` (this is the "some
+      // other customer" the driver offer flow is about) so the call-customer
+      // button has a real name/phone to show on the driver side too.
+      customer: const JobCustomerSummary(
+        id: 'cus-042',
+        name: 'Andrés Gómez',
+        phone: '+573007776655',
+      ),
       status: JobStatus.matching,
       vehicleType: VehicleType.car,
       pickup: const LatLng(lat: 6.2088, lng: -75.5679),

@@ -49,6 +49,13 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        // FND-6: from local.properties (gitignored) locally, or the
+        // MAPS_API_KEY_ANDROID env var in CI -- never hardcoded/committed.
+        // Empty string if neither is set, so a build without it still
+        // succeeds (just without a working map at runtime).
+        manifestPlaceholders += [
+            mapsApiKey: localProperties.getProperty('maps.apiKey') ?: (System.getenv('MAPS_API_KEY_ANDROID') ?: "")
+        ]
     }
 
     buildTypes {

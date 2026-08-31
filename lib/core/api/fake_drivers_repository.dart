@@ -206,6 +206,45 @@ class FakeDriversRepository implements DriversRepository {
     );
   }
 
+  /// PAY-3 test hook: the *next* [settleBalance] call throws the same
+  /// `SettlementRejectedException` a real backend with no Wompi key
+  /// configured would (503) — the actual, common state today, since no
+  /// real Wompi account exists yet.
+  bool rejectNextSettleAsUnavailable = false;
+
+  @override
+  Future<SettlementCheckout> settleBalance({
+    required int amountCop,
+    SettlementPaymentMethod method = SettlementPaymentMethod.nequi,
+  }) async {
+    await Future<void>.delayed(actionDelay);
+    if (rejectNextSettleAsUnavailable) {
+      rejectNextSettleAsUnavailable = false;
+      throw SettlementRejectedException('wompi_private_key is not configured');
+    }
+    if (amountCop <= 0) {
+      throw SettlementRejectedException('amount must be positive');
+    }
+    final owed = (await balance()).owedCents;
+    if (owed <= 0) {
+      throw SettlementRejectedException('No balance owed');
+    }
+    if (amountCop > owed) {
+      throw SettlementRejectedException('amount exceeds the owed balance');
+    }
+    // Deliberately doesn't touch `_settlements` -- a real settlement only
+    // applies once Wompi's webhook reports the payment approved (PAY-1),
+    // which this fake has no equivalent of simulating. `balance()` stays
+    // unchanged until a caller re-seeds it directly, same honesty the real
+    // backend has (the balance genuinely doesn't move at checkout time).
+    return SettlementCheckout(
+      paymentReference: 'fake_settlement_${DateTime.now().millisecondsSinceEpoch}',
+      asyncPaymentUrl: method == SettlementPaymentMethod.nequi
+          ? null
+          : 'https://checkout.wompi.co/fake/$method',
+    );
+  }
+
   int _commission(Job job) {
     final fare = job.finalPrice ?? job.quotedPrice;
     return (fare * _commissionRate / 100).round() * 100;

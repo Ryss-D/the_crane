@@ -91,6 +91,23 @@ abstract class JobDriverSummary with _$JobDriverSummary {
       _$JobDriverSummaryFromJson(json);
 }
 
+/// DRV-3: the symmetric customer summary `JobDriverSummary` never had a
+/// counterpart for — backs the driver app's call-customer button. Matches
+/// the backend's `JobCustomerInfo` (`backend/app/schemas/job.py`)
+/// field-for-field: deliberately minimal, no rating/photo (there's no
+/// equivalent for a customer the way there is for a driver).
+@freezed
+abstract class JobCustomerSummary with _$JobCustomerSummary {
+  const factory JobCustomerSummary({
+    required String id,
+    String? name,
+    String? phone,
+  }) = _JobCustomerSummary;
+
+  factory JobCustomerSummary.fromJson(Map<String, dynamic> json) =>
+      _$JobCustomerSummaryFromJson(json);
+}
+
 /// A tow job, as returned by `GET /v1/jobs/{id}` (JOB-1 / PLAN §2.2).
 @freezed
 abstract class Job with _$Job {
@@ -109,6 +126,10 @@ abstract class Job with _$Job {
     int? finalPrice,
     @Default('cash') String paymentMethod,
     JobDriverSummary? driver,
+    // DRV-3: symmetric to `driver` above — backs the call-customer button
+    // on the driver's active-job screen. Optional for the same reason
+    // `shareToken` is: older fake seed data predates this field.
+    JobCustomerSummary? customer,
     required DateTime requestedAt,
     DateTime? assignedAt,
     DateTime? pickedUpAt,
@@ -124,6 +145,13 @@ abstract class Job with _$Job {
     // job is actually completed. ActiveJobScreen falls back to a client-side
     // flat-15% approximation only when this is null.
     int? driverCommission,
+    // PAY-4: the Wompi checkout URL to redirect the customer to, present
+    // only on the exact `confirmDelivery` response that just started a
+    // digital-fare payment (PSE/card -- null for Nequi, and for every other
+    // response, including a re-fetch of the same job afterward). Not a
+    // real job field on the backend -- see `JobRead.async_payment_url`'s
+    // doc comment (`backend/app/schemas/job.py`).
+    String? asyncPaymentUrl,
   }) = _Job;
 
   factory Job.fromJson(Map<String, dynamic> json) => _$JobFromJson(json);

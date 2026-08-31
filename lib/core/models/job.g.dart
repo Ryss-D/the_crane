@@ -34,6 +34,20 @@ const _$TruckTypeEnumMap = {
   TruckType.flatbed: 'flatbed',
 };
 
+_JobCustomerSummary _$JobCustomerSummaryFromJson(Map<String, dynamic> json) =>
+    _JobCustomerSummary(
+      id: json['id'] as String,
+      name: json['name'] as String?,
+      phone: json['phone'] as String?,
+    );
+
+Map<String, dynamic> _$JobCustomerSummaryToJson(_JobCustomerSummary instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'phone': instance.phone,
+    };
+
 _Job _$JobFromJson(Map<String, dynamic> json) => _Job(
   id: json['id'] as String,
   customerId: json['customer_id'] as String,
@@ -51,6 +65,9 @@ _Job _$JobFromJson(Map<String, dynamic> json) => _Job(
   driver: json['driver'] == null
       ? null
       : JobDriverSummary.fromJson(json['driver'] as Map<String, dynamic>),
+  customer: json['customer'] == null
+      ? null
+      : JobCustomerSummary.fromJson(json['customer'] as Map<String, dynamic>),
   requestedAt: DateTime.parse(json['requested_at'] as String),
   assignedAt: json['assigned_at'] == null
       ? null
@@ -67,6 +84,7 @@ _Job _$JobFromJson(Map<String, dynamic> json) => _Job(
   cancelReason: json['cancel_reason'] as String?,
   shareToken: json['share_token'] as String?,
   driverCommission: (json['driver_commission'] as num?)?.toInt(),
+  asyncPaymentUrl: json['async_payment_url'] as String?,
 );
 
 Map<String, dynamic> _$JobToJson(_Job instance) => <String, dynamic>{
@@ -84,6 +102,7 @@ Map<String, dynamic> _$JobToJson(_Job instance) => <String, dynamic>{
   'final_price': instance.finalPrice,
   'payment_method': instance.paymentMethod,
   'driver': instance.driver?.toJson(),
+  'customer': instance.customer?.toJson(),
   'requested_at': instance.requestedAt.toIso8601String(),
   'assigned_at': instance.assignedAt?.toIso8601String(),
   'picked_up_at': instance.pickedUpAt?.toIso8601String(),
@@ -92,6 +111,7 @@ Map<String, dynamic> _$JobToJson(_Job instance) => <String, dynamic>{
   'cancel_reason': instance.cancelReason,
   'share_token': instance.shareToken,
   'driver_commission': instance.driverCommission,
+  'async_payment_url': instance.asyncPaymentUrl,
 };
 
 const _$JobStatusEnumMap = {

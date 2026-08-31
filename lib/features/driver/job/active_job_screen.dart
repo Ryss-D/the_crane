@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/api/directions_repository.dart';
 import '../../../core/api/drivers_repository.dart';
 import '../../../core/models/driver_balance.dart';
 import '../../../core/models/job.dart';
@@ -11,7 +14,7 @@ import '../../../core/utils/money_format.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/labels.dart';
 import '../../shared/rating/rating_dialog.dart';
-import '../../shared/widgets/map_placeholder.dart';
+import '../../shared/widgets/crane_map.dart';
 import 'active_job_cubit.dart';
 
 /// Statuses a driver may still bail out of (mirrors `DRIVER_CANCELLABLE` in
@@ -35,18 +38,18 @@ LatLng _navigationTarget(Job job) => switch (job.status) {
       _ => job.pickup,
     };
 
-/// DRV-3 skeleton — active job: route summary, current status, and the
+/// DRV-3 — active job: route summary, current status, and the
 /// status-advance button cycling the JOB-3 machine.
 ///
-/// TODO(DRV-3/FND-6): map with route stays blocked on Google Maps. The
-/// navigation deep-link, and driver cancel below are built; a call-customer
-/// button is NOT -- `JobRead`/`Job` carry no customer phone number anywhere
-/// (checked `backend/app/schemas/job.py`'s `JobRead`/`JobDriverInfo`: only
-/// the *driver's* phone is ever exposed, to the customer, via
-/// `JobDriverSummary` -- there is no symmetric "customer summary" on the
-/// job at all). That's a real gap, not a wiring gap: without a backend
-/// change, there is no legitimate customer phone number for this button to
-/// call.
+/// FND-6: real map with pickup/dropoff pins + route polyline
+/// ([_ActiveJobMap]) — the navigation deep-link and driver cancel below are
+/// also built. A call-customer button is NOT -- `JobRead`/`Job` carry no
+/// customer phone number anywhere (checked `backend/app/schemas/job.py`'s
+/// `JobRead`/`JobDriverInfo`: only the *driver's* phone is ever exposed, to
+/// the customer, via `JobDriverSummary` -- there is no symmetric "customer
+/// summary" on the job at all). That's a real gap, not a wiring gap:
+/// without a backend change, there is no legitimate customer phone number
+/// for this button to call.
 class ActiveJobScreen extends StatelessWidget {
   const ActiveJobScreen({super.key});
 
@@ -99,7 +102,7 @@ class _ActiveJobView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 140, child: MapPlaceholder()),
+              SizedBox(height: 140, child: _ActiveJobMap(job: job)),
               const SizedBox(height: 16),
               Center(
                 child: Chip(
@@ -153,6 +156,15 @@ class _ActiveJobView extends StatelessWidget {
                   icon: const Icon(Icons.navigation_outlined),
                   label: Text(l10n.navigateButton),
                 ),
+                if (job.customer?.phone != null) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    key: const Key('callCustomerButton'),
+                    onPressed: () => _callCustomer(job.customer!.phone!),
+                    icon: const Icon(Icons.call),
+                    label: Text(l10n.callCustomerButton),
+                  ),
+                ],
               ],
               const SizedBox(height: 32),
               if (done) ...[
@@ -232,6 +244,11 @@ Future<void> _openNavigation(LatLng target) {
   return launchUrl(uri, mode: LaunchMode.externalApplication);
 }
 
+/// DRV-3 — mirrors the customer app's call-driver button
+/// (`matching_screen.dart`'s `_callDriver`) exactly, just the other
+/// direction.
+Future<void> _callCustomer(String phone) => launchUrl(Uri(scheme: 'tel', path: phone));
+
 /// DRV-3 — confirm-then-cancel, mirrors `FleetTruckDetailScreen`'s
 /// `_confirmDetach` dialog pattern.
 Future<void> _confirmCancel(
@@ -258,6 +275,80 @@ Future<void> _confirmCancel(
     ),
   );
   if (confirmed == true) await cubit.cancel();
+}
+
+/// FND-6 — pickup/dropoff pins + route polyline for the active job. A small
+/// stateful wrapper around [CraneMap] rather than a plain `FutureBuilder`
+/// because [ActiveJobCubit]'s job rebuilds this screen far more often than
+/// the route itself changes (every status advance, every location-socket
+/// tick) — re-fetching the route on every one of those would spam the
+/// backend for no reason. Only re-fetches when [job]'s id actually changes.
+class _ActiveJobMap extends StatefulWidget {
+  const _ActiveJobMap({required this.job});
+
+  final Job job;
+
+  @override
+  State<_ActiveJobMap> createState() => _ActiveJobMapState();
+}
+
+class _ActiveJobMapState extends State<_ActiveJobMap> {
+  String? _fetchedForJobId;
+  List<LatLng>? _routePoints;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeFetchRoute();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ActiveJobMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _maybeFetchRoute();
+  }
+
+  void _maybeFetchRoute() {
+    if (_fetchedForJobId == widget.job.id) return;
+    _fetchedForJobId = widget.job.id;
+    unawaited(_fetch(widget.job.id));
+  }
+
+  Future<void> _fetch(String jobId) async {
+    try {
+      final points = await context.read<DirectionsRepository>().route(
+            origin: widget.job.pickup,
+            destination: widget.job.dropoff,
+          );
+      // The job could have changed again (a new job started) by the time
+      // this resolves -- a route for the *previous* job would be wrong to
+      // show now.
+      if (!mounted || _fetchedForJobId != jobId) return;
+      setState(() => _routePoints = points);
+    } catch (_) {
+      // Best-effort -- the map still shows pickup/dropoff pins without a
+      // line rather than an error.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CraneMap(
+      markers: [
+        CraneMapMarker(
+          id: 'pickup',
+          position: widget.job.pickup,
+          role: CraneMapMarkerRole.pickup,
+        ),
+        CraneMapMarker(
+          id: 'dropoff',
+          position: widget.job.dropoff,
+          role: CraneMapMarkerRole.dropoff,
+        ),
+      ],
+      routePoints: _fetchedForJobId == widget.job.id ? _routePoints : null,
+    );
+  }
 }
 
 /// DRV-4 — once a job is `completed`, shows the commission earned on it

@@ -46,12 +46,12 @@ class _RejectingOnceDeliveryJobsRepository extends FakeJobsRepository {
   bool rejectNext = false;
 
   @override
-  Future<Job> confirmDelivery(String id) {
+  Future<Job> confirmDelivery(String id, {String? paymentMethod}) {
     if (rejectNext) {
       rejectNext = false;
       return Future.error(StateError('boom'));
     }
-    return super.confirmDelivery(id);
+    return super.confirmDelivery(id, paymentMethod: paymentMethod);
   }
 }
 
@@ -119,6 +119,64 @@ void main() {
   });
 
   testWidgets(
+      'FND-6: picking a Places suggestion fills the field and shows a pickup '
+      'marker on the map', (tester) async {
+    await pumpToRequestScreen(tester, fastFakeJobs());
+
+    await tester.enterText(find.byKey(const Key('pickupField')), 'poblado');
+    await tester.pump(const Duration(milliseconds: 50)); // FakePlacesRepository (zero delay)
+
+    final prediction = find.byKey(const Key('placePrediction_place-poblado'));
+    expect(prediction, findsOneWidget);
+    expect(find.byKey(const Key('craneMapMarker_pickup')), findsNothing);
+
+    await tester.tap(prediction);
+    await tester.pump(const Duration(milliseconds: 50)); // placeDetails resolves
+
+    expect(
+      tester.widget<TextField>(find.byKey(const Key('pickupField'))).controller!.text,
+      'El Poblado, Medellín, Antioquia',
+    );
+    expect(find.byKey(const Key('placePrediction_place-poblado')), findsNothing);
+    expect(find.byKey(const Key('craneMapMarker_pickup')), findsOneWidget);
+  });
+
+  testWidgets(
+      'FND-6: tapping the map places pickup first, then dropoff, and dragging '
+      'refines whichever pin already exists', (tester) async {
+    await pumpToRequestScreen(tester, fastFakeJobs());
+
+    expect(find.byKey(const Key('craneMapMarker_pickup')), findsNothing);
+    await tester.tap(find.byKey(const Key('craneMapTapArea')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('craneMapMarker_pickup')), findsOneWidget);
+    expect(find.byKey(const Key('craneMapMarker_dropoff')), findsNothing);
+    expect(
+      tester.widget<TextField>(find.byKey(const Key('pickupField'))).controller!.text,
+      '6.30000, -75.60000', // craneMapStubTapPosition
+    );
+
+    // A second tap places dropoff -- pickup already exists. Both fields are
+    // now set, so this also fires a real (fake) quote request -- pump past
+    // its quoteDelay (20ms) so the request doesn't outlive the test.
+    await tester.tap(find.byKey(const Key('craneMapTapArea')));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.byKey(const Key('craneMapMarker_dropoff')), findsOneWidget);
+
+    // Both set -- the map itself no longer has a tap handler; refining
+    // happens via dragging the existing pin instead.
+    expect(find.byKey(const Key('craneMapTapArea')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('craneMapMarkerDrag_pickup')));
+    await tester.pump(const Duration(milliseconds: 50)); // re-quotes again
+    expect(
+      tester.widget<TextField>(find.byKey(const Key('pickupField'))).controller!.text,
+      '6.31000, -75.61000', // craneMapStubDragPosition
+    );
+  });
+
+  testWidgets(
       'CUS-6: picking a saved vehicle preselects its type in the quote step',
       (tester) async {
     await pumpToRequestScreen(tester, fastFakeJobs());
@@ -180,6 +238,12 @@ void main() {
     expect(find.text('Buscando tu grúa'), findsWidgets);
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('¡Grúa asignada!'), findsOneWidget);
+    // The assigned view just mounted its map, which kicks off a (fake,
+    // zero-delay) route fetch in initState -- a bare `pump()` (no duration)
+    // doesn't advance FakeAsync's clock at all, so it never fires; a real
+    // elapsed duration is needed to let it resolve before the test ends,
+    // or its underlying Timer is still "pending" at teardown.
+    await tester.pump(const Duration(milliseconds: 10));
   });
 
   testWidgets(
@@ -225,6 +289,83 @@ void main() {
 
     expect(find.byKey(const Key('confirmCashPaymentButton')), findsNothing);
     expect(find.byKey(const Key('rateTripButton')), findsOneWidget);
+  });
+
+  testWidgets(
+      'PAY-4: choosing PSE opens the payment-method dialog, confirms, and '
+      'launches the checkout redirect', (tester) async {
+    final launcher = _FakeUrlLauncher();
+    UrlLauncherPlatform.instance = launcher;
+    final jobs = fastFakeJobs();
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+
+    await tester.runAsync(() async {
+      final page = await jobs.listHistory(role: JobHistoryRole.customer);
+      var job = page.items.single;
+      while (job.status != JobStatus.delivered) {
+        job = await jobs.updateJobStatus(job.id, job.status.nextDriverStatus!);
+      }
+    });
+    await tester.pump(const Duration(milliseconds: 10)); // watch stream
+
+    await tester.ensureVisible(find.byKey(const Key('payDigitallyButton')));
+    await tester.tap(find.byKey(const Key('payDigitallyButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('paymentMethodPseOption')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('paymentMethodPseOption')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('digitalPaymentDialogConfirmButton')));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 10)); // confirmDelivery
+
+    expect(find.byKey(const Key('rateTripButton')), findsOneWidget);
+    expect(launcher.lastLaunchedUrl, isNotNull);
+    expect(launcher.lastLaunchedUrl, contains('checkout.wompi.co'));
+  });
+
+  testWidgets(
+      'PAY-4: a rejected digital confirmation shows an inline error and '
+      'stays on the delivered state', (tester) async {
+    final jobs = fastFakeJobs();
+    jobs.digitalFaresEnabled = false;
+    await pumpToRequestScreen(tester, jobs);
+    await enterAddressesAndQuote(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('confirmRequestButton')));
+    await tester.tap(find.byKey(const Key('confirmRequestButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400)); // matching resolves
+
+    await tester.runAsync(() async {
+      final page = await jobs.listHistory(role: JobHistoryRole.customer);
+      var job = page.items.single;
+      while (job.status != JobStatus.delivered) {
+        job = await jobs.updateJobStatus(job.id, job.status.nextDriverStatus!);
+      }
+    });
+    await tester.pump(const Duration(milliseconds: 10)); // watch stream
+
+    await tester.ensureVisible(find.byKey(const Key('payDigitallyButton')));
+    await tester.tap(find.byKey(const Key('payDigitallyButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('digitalPaymentDialogConfirmButton')));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 10)); // confirmDelivery
+
+    expect(
+      find.text('Los pagos digitales no están disponibles todavía. Paga en efectivo.'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('confirmCashPaymentButton')), findsOneWidget);
   });
 
   testWidgets(

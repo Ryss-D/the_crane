@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/api/directions_repository.dart';
 import '../../../core/api/jobs_repository.dart';
 import '../../../core/models/job.dart';
+import '../../../core/models/lat_lng.dart';
 import '../../../core/models/rating.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../l10n/app_localizations.dart';
 import '../labels.dart';
-import '../widgets/map_placeholder.dart';
+import '../widgets/crane_map.dart';
 
 /// RAT-3 detail view for one history row: fuller job info plus any ratings
-/// either side left. No live map — [MapPlaceholder] stands in until FND-6
-/// (a past trip has no live position to show anyway, only a static route
-/// would ever make sense here).
+/// either side left. FND-6: a real static map (a past trip has no live
+/// position to show, so pickup/dropoff pins + the route it took is all
+/// that ever makes sense here).
 class HistoryDetailScreen extends StatefulWidget {
   const HistoryDetailScreen({super.key, required this.job});
 
@@ -27,6 +29,11 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   late final Future<List<Rating>> _ratingsFuture =
       context.read<JobsRepository>().getRatings(widget.job.id);
 
+  late final Future<List<LatLng>> _routeFuture = context.read<DirectionsRepository>().route(
+        origin: widget.job.pickup,
+        destination: widget.job.dropoff,
+      );
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -39,7 +46,27 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const SizedBox(height: 140, child: MapPlaceholder()),
+            FutureBuilder<List<LatLng>>(
+              future: _routeFuture,
+              builder: (context, snapshot) => SizedBox(
+                height: 140,
+                child: CraneMap(
+                  markers: [
+                    CraneMapMarker(
+                      id: 'pickup',
+                      position: job.pickup,
+                      role: CraneMapMarkerRole.pickup,
+                    ),
+                    CraneMapMarker(
+                      id: 'dropoff',
+                      position: job.dropoff,
+                      role: CraneMapMarkerRole.dropoff,
+                    ),
+                  ],
+                  routePoints: snapshot.data,
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             Center(
               child: Chip(

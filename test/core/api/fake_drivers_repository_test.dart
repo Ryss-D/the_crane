@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/core/api/drivers_repository.dart';
 import 'package:the_crane/core/api/fake_auth_repository.dart';
 import 'package:the_crane/core/api/fake_drivers_repository.dart';
 import 'package:the_crane/core/api/fake_fleet_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/models/app_user.dart';
+import 'package:the_crane/core/models/driver_balance.dart';
 import 'package:the_crane/core/models/driver_profile.dart';
 import 'package:the_crane/core/models/job.dart';
 import 'package:the_crane/core/models/lat_lng.dart';
@@ -166,6 +168,125 @@ void main() {
       final expectedCommission =
           (job.quotedPrice * 0.15 / 100).round() * 100;
       expect(after.owedCents, before.owedCents + expectedCommission);
+    });
+  });
+
+  group('FakeDriversRepository.settleBalance (PAY-3)', () {
+    /// Seed data alone owes nothing (negative of the seeded settlement) --
+    /// every test in this group needs a real positive balance first. The
+    /// seed settlement (180000) starts the balance well negative, and one
+    /// job's commission alone doesn't clear it -- completes jobs one at a
+    /// time until it does (capped, so a real regression fails fast instead
+    /// of hanging).
+    Future<(FakeDriversRepository, int owedCents)> driversWithOwedBalance() async {
+      final jobs = FakeJobsRepository(
+        quoteDelay: Duration.zero,
+        createDelay: Duration.zero,
+        actionDelay: Duration.zero,
+        matchingDelay: Duration.zero,
+      );
+      final drivers = FakeDriversRepository(jobs: jobs, actionDelay: Duration.zero);
+
+      Future<void> completeOneJob() async {
+        final quote = await jobs.requestQuote(
+          pickup: const LatLng(lat: 6.2088, lng: -75.5679),
+          dropoff: const LatLng(lat: 6.1450, lng: -75.6169),
+          vehicleType: VehicleType.car,
+        );
+        var job = await jobs.createJob(
+          quoteId: quote.quoteId,
+          vehicleType: VehicleType.car,
+          pickup: const LatLng(lat: 6.2088, lng: -75.5679),
+          pickupAddress: 'Origin',
+          dropoff: const LatLng(lat: 6.1450, lng: -75.6169),
+          dropoffAddress: 'Destination',
+        );
+        // matchingDelay is zero but still a Timer -- needs a real
+        // event-loop turn, and `job` here is still the `matching`-status
+        // snapshot `createJob` returned, not the `assigned` one the watch
+        // stream produces after -- re-fetch before advancing it (see the
+        // fake-timing gotcha this suite's other tests flag the same way).
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        job = await jobs.getJob(job.id);
+        while (job.status != JobStatus.delivered) {
+          job = await jobs.updateJobStatus(job.id, job.status.nextDriverStatus!);
+        }
+        await jobs.confirmDelivery(job.id);
+      }
+
+      var owed = (await drivers.balance()).owedCents;
+      var guard = 0;
+      while (owed <= 0 && guard < 20) {
+        await completeOneJob();
+        owed = (await drivers.balance()).owedCents;
+        guard++;
+      }
+      return (drivers, owed);
+    }
+
+    test('nequi has no redirect url, pse/card do', () async {
+      final (drivers, owed) = await driversWithOwedBalance();
+      expect(owed, greaterThan(0));
+
+      final nequi = await drivers.settleBalance(amountCop: owed);
+      expect(nequi.asyncPaymentUrl, isNull);
+
+      final pse = await drivers.settleBalance(
+        amountCop: owed,
+        method: SettlementPaymentMethod.pse,
+      );
+      expect(pse.asyncPaymentUrl, isNotNull);
+    });
+
+    test('never moves the balance itself -- only a real webhook does',
+        () async {
+      final (drivers, owed) = await driversWithOwedBalance();
+
+      await drivers.settleBalance(amountCop: owed);
+
+      expect((await drivers.balance()).owedCents, owed);
+    });
+
+    test('rejects nothing owed', () async {
+      final jobs = FakeJobsRepository(actionDelay: Duration.zero);
+      final drivers = FakeDriversRepository(jobs: jobs, actionDelay: Duration.zero);
+      // Seed data alone owes a negative amount (a past settlement with no
+      // completed jobs since) -- <= 0 either way.
+      expect(
+        () => drivers.settleBalance(amountCop: 1000),
+        throwsA(isA<SettlementRejectedException>()),
+      );
+    });
+
+    test('rejects a non-positive amount', () async {
+      final jobs = FakeJobsRepository(actionDelay: Duration.zero);
+      final drivers = FakeDriversRepository(jobs: jobs, actionDelay: Duration.zero);
+
+      expect(
+        () => drivers.settleBalance(amountCop: 0),
+        throwsA(isA<SettlementRejectedException>()),
+      );
+    });
+
+    test('rejects an amount exceeding the owed balance', () async {
+      final (drivers, owed) = await driversWithOwedBalance();
+
+      expect(
+        () => drivers.settleBalance(amountCop: owed + 100000),
+        throwsA(isA<SettlementRejectedException>()),
+      );
+    });
+
+    test('rejectNextSettleAsUnavailable simulates the no-key 503 once',
+        () async {
+      final jobs = FakeJobsRepository(actionDelay: Duration.zero);
+      final drivers = FakeDriversRepository(jobs: jobs, actionDelay: Duration.zero)
+        ..rejectNextSettleAsUnavailable = true;
+
+      expect(
+        () => drivers.settleBalance(amountCop: 1000),
+        throwsA(isA<SettlementRejectedException>()),
+      );
     });
   });
 }

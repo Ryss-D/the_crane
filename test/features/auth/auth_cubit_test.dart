@@ -8,6 +8,8 @@ import 'package:the_crane/core/models/app_user.dart';
 import 'package:the_crane/features/auth/auth_cubit.dart';
 import 'package:the_crane/features/auth/auth_state.dart';
 
+import '../../support/in_memory_active_job_store.dart';
+
 /// Always fails to send — exercises the error path
 /// [FakePhoneAuthGateway] can't (it never fails on its own).
 class _FailingSendGateway implements PhoneAuthGateway {
@@ -191,6 +193,22 @@ void main() {
 
       await cubit.signOut();
       expect(authRepository.lastFcmToken, isNull);
+    });
+
+    test('CUS-4: sign-out clears any persisted active job, so it never '
+        'leaks into whoever signs in next on this device', () async {
+      final store = InMemoryActiveJobStore();
+      await store.write('some-job-id');
+      final cubit = AuthCubit(
+        gateway: FakePhoneAuthGateway(sendDelay: Duration.zero),
+        authRepository: FakeAuthRepository(delay: Duration.zero),
+        pushTokenGateway: FakePushTokenGateway(),
+        activeJobStore: store,
+      );
+
+      await cubit.signOut();
+
+      expect(await store.read(), isNull);
     });
 
     test('AUTH-6: a refreshed token re-registers only while authenticated', () async {

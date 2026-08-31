@@ -14,7 +14,22 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RequestState {
 
- String get pickupAddress; String get dropoffAddress; VehicleType get vehicleType; Quote? get quote; bool get isQuoting; bool get quoteFailed; bool get isCreatingJob; bool get createJobFailed; Job? get activeJob; bool get isConfirmingDelivery; bool get confirmDeliveryFailed;
+ String get pickupAddress; String get dropoffAddress;// FND-6: real coordinates once resolved via Places search or pin-drag.
+// Null means "no real fix yet for whatever's currently in the matching
+// *Address field" — `fakeGeocode` stands in for that address text until
+// a real one arrives, same "explicit coords win, typed text falls back
+// to fakeGeocode" contract the web client already ships
+// (`RequestPage.tsx`'s `pickupCoords`).
+ LatLng? get pickupLatLng; LatLng? get dropoffLatLng; VehicleType get vehicleType; Quote? get quote; bool get isQuoting; bool get quoteFailed; bool get isCreatingJob; bool get createJobFailed; Job? get activeJob; bool get isConfirmingDelivery; bool get confirmDeliveryFailed;// PAY-4: the backend's own rejection detail (e.g. "Digital fares are
+// not enabled") when confirmDelivery's failure was a typed
+// JobStatusRejectedException — null for any other failure (network,
+// etc.), which still just flips confirmDeliveryFailed with no message
+// of its own, same as before this field existed.
+ String? get confirmDeliveryErrorMessage;// FND-6/CUS-4: the assigned driver's live position, from the WS
+// `driver_location` push (`ServerMessage.driverLocation`) — was already
+// parsed but never consumed anywhere before this. Null under fakes (no
+// socket) and until the first push for the active job arrives.
+ LatLng? get driverPosition;
 /// Create a copy of RequestState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +40,16 @@ $RequestStateCopyWith<RequestState> get copyWith => _$RequestStateCopyWithImpl<R
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RequestState&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.quote, quote) || other.quote == quote)&&(identical(other.isQuoting, isQuoting) || other.isQuoting == isQuoting)&&(identical(other.quoteFailed, quoteFailed) || other.quoteFailed == quoteFailed)&&(identical(other.isCreatingJob, isCreatingJob) || other.isCreatingJob == isCreatingJob)&&(identical(other.createJobFailed, createJobFailed) || other.createJobFailed == createJobFailed)&&(identical(other.activeJob, activeJob) || other.activeJob == activeJob)&&(identical(other.isConfirmingDelivery, isConfirmingDelivery) || other.isConfirmingDelivery == isConfirmingDelivery)&&(identical(other.confirmDeliveryFailed, confirmDeliveryFailed) || other.confirmDeliveryFailed == confirmDeliveryFailed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RequestState&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.pickupLatLng, pickupLatLng) || other.pickupLatLng == pickupLatLng)&&(identical(other.dropoffLatLng, dropoffLatLng) || other.dropoffLatLng == dropoffLatLng)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.quote, quote) || other.quote == quote)&&(identical(other.isQuoting, isQuoting) || other.isQuoting == isQuoting)&&(identical(other.quoteFailed, quoteFailed) || other.quoteFailed == quoteFailed)&&(identical(other.isCreatingJob, isCreatingJob) || other.isCreatingJob == isCreatingJob)&&(identical(other.createJobFailed, createJobFailed) || other.createJobFailed == createJobFailed)&&(identical(other.activeJob, activeJob) || other.activeJob == activeJob)&&(identical(other.isConfirmingDelivery, isConfirmingDelivery) || other.isConfirmingDelivery == isConfirmingDelivery)&&(identical(other.confirmDeliveryFailed, confirmDeliveryFailed) || other.confirmDeliveryFailed == confirmDeliveryFailed)&&(identical(other.confirmDeliveryErrorMessage, confirmDeliveryErrorMessage) || other.confirmDeliveryErrorMessage == confirmDeliveryErrorMessage)&&(identical(other.driverPosition, driverPosition) || other.driverPosition == driverPosition));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,pickupAddress,dropoffAddress,vehicleType,quote,isQuoting,quoteFailed,isCreatingJob,createJobFailed,activeJob,isConfirmingDelivery,confirmDeliveryFailed);
+int get hashCode => Object.hash(runtimeType,pickupAddress,dropoffAddress,pickupLatLng,dropoffLatLng,vehicleType,quote,isQuoting,quoteFailed,isCreatingJob,createJobFailed,activeJob,isConfirmingDelivery,confirmDeliveryFailed,confirmDeliveryErrorMessage,driverPosition);
 
 @override
 String toString() {
-  return 'RequestState(pickupAddress: $pickupAddress, dropoffAddress: $dropoffAddress, vehicleType: $vehicleType, quote: $quote, isQuoting: $isQuoting, quoteFailed: $quoteFailed, isCreatingJob: $isCreatingJob, createJobFailed: $createJobFailed, activeJob: $activeJob, isConfirmingDelivery: $isConfirmingDelivery, confirmDeliveryFailed: $confirmDeliveryFailed)';
+  return 'RequestState(pickupAddress: $pickupAddress, dropoffAddress: $dropoffAddress, pickupLatLng: $pickupLatLng, dropoffLatLng: $dropoffLatLng, vehicleType: $vehicleType, quote: $quote, isQuoting: $isQuoting, quoteFailed: $quoteFailed, isCreatingJob: $isCreatingJob, createJobFailed: $createJobFailed, activeJob: $activeJob, isConfirmingDelivery: $isConfirmingDelivery, confirmDeliveryFailed: $confirmDeliveryFailed, confirmDeliveryErrorMessage: $confirmDeliveryErrorMessage, driverPosition: $driverPosition)';
 }
 
 
@@ -45,11 +60,11 @@ abstract mixin class $RequestStateCopyWith<$Res>  {
   factory $RequestStateCopyWith(RequestState value, $Res Function(RequestState) _then) = _$RequestStateCopyWithImpl;
 @useResult
 $Res call({
- String pickupAddress, String dropoffAddress, VehicleType vehicleType, Quote? quote, bool isQuoting, bool quoteFailed, bool isCreatingJob, bool createJobFailed, Job? activeJob, bool isConfirmingDelivery, bool confirmDeliveryFailed
+ String pickupAddress, String dropoffAddress, LatLng? pickupLatLng, LatLng? dropoffLatLng, VehicleType vehicleType, Quote? quote, bool isQuoting, bool quoteFailed, bool isCreatingJob, bool createJobFailed, Job? activeJob, bool isConfirmingDelivery, bool confirmDeliveryFailed, String? confirmDeliveryErrorMessage, LatLng? driverPosition
 });
 
 
-$QuoteCopyWith<$Res>? get quote;$JobCopyWith<$Res>? get activeJob;
+$LatLngCopyWith<$Res>? get pickupLatLng;$LatLngCopyWith<$Res>? get dropoffLatLng;$QuoteCopyWith<$Res>? get quote;$JobCopyWith<$Res>? get activeJob;$LatLngCopyWith<$Res>? get driverPosition;
 
 }
 /// @nodoc
@@ -62,11 +77,13 @@ class _$RequestStateCopyWithImpl<$Res>
 
 /// Create a copy of RequestState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? pickupAddress = null,Object? dropoffAddress = null,Object? vehicleType = null,Object? quote = freezed,Object? isQuoting = null,Object? quoteFailed = null,Object? isCreatingJob = null,Object? createJobFailed = null,Object? activeJob = freezed,Object? isConfirmingDelivery = null,Object? confirmDeliveryFailed = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? pickupAddress = null,Object? dropoffAddress = null,Object? pickupLatLng = freezed,Object? dropoffLatLng = freezed,Object? vehicleType = null,Object? quote = freezed,Object? isQuoting = null,Object? quoteFailed = null,Object? isCreatingJob = null,Object? createJobFailed = null,Object? activeJob = freezed,Object? isConfirmingDelivery = null,Object? confirmDeliveryFailed = null,Object? confirmDeliveryErrorMessage = freezed,Object? driverPosition = freezed,}) {
   return _then(_self.copyWith(
 pickupAddress: null == pickupAddress ? _self.pickupAddress : pickupAddress // ignore: cast_nullable_to_non_nullable
 as String,dropoffAddress: null == dropoffAddress ? _self.dropoffAddress : dropoffAddress // ignore: cast_nullable_to_non_nullable
-as String,vehicleType: null == vehicleType ? _self.vehicleType : vehicleType // ignore: cast_nullable_to_non_nullable
+as String,pickupLatLng: freezed == pickupLatLng ? _self.pickupLatLng : pickupLatLng // ignore: cast_nullable_to_non_nullable
+as LatLng?,dropoffLatLng: freezed == dropoffLatLng ? _self.dropoffLatLng : dropoffLatLng // ignore: cast_nullable_to_non_nullable
+as LatLng?,vehicleType: null == vehicleType ? _self.vehicleType : vehicleType // ignore: cast_nullable_to_non_nullable
 as VehicleType,quote: freezed == quote ? _self.quote : quote // ignore: cast_nullable_to_non_nullable
 as Quote?,isQuoting: null == isQuoting ? _self.isQuoting : isQuoting // ignore: cast_nullable_to_non_nullable
 as bool,quoteFailed: null == quoteFailed ? _self.quoteFailed : quoteFailed // ignore: cast_nullable_to_non_nullable
@@ -75,10 +92,36 @@ as bool,createJobFailed: null == createJobFailed ? _self.createJobFailed : creat
 as bool,activeJob: freezed == activeJob ? _self.activeJob : activeJob // ignore: cast_nullable_to_non_nullable
 as Job?,isConfirmingDelivery: null == isConfirmingDelivery ? _self.isConfirmingDelivery : isConfirmingDelivery // ignore: cast_nullable_to_non_nullable
 as bool,confirmDeliveryFailed: null == confirmDeliveryFailed ? _self.confirmDeliveryFailed : confirmDeliveryFailed // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,confirmDeliveryErrorMessage: freezed == confirmDeliveryErrorMessage ? _self.confirmDeliveryErrorMessage : confirmDeliveryErrorMessage // ignore: cast_nullable_to_non_nullable
+as String?,driverPosition: freezed == driverPosition ? _self.driverPosition : driverPosition // ignore: cast_nullable_to_non_nullable
+as LatLng?,
   ));
 }
 /// Create a copy of RequestState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngCopyWith<$Res>? get pickupLatLng {
+    if (_self.pickupLatLng == null) {
+    return null;
+  }
+
+  return $LatLngCopyWith<$Res>(_self.pickupLatLng!, (value) {
+    return _then(_self.copyWith(pickupLatLng: value));
+  });
+}/// Create a copy of RequestState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngCopyWith<$Res>? get dropoffLatLng {
+    if (_self.dropoffLatLng == null) {
+    return null;
+  }
+
+  return $LatLngCopyWith<$Res>(_self.dropoffLatLng!, (value) {
+    return _then(_self.copyWith(dropoffLatLng: value));
+  });
+}/// Create a copy of RequestState
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -101,6 +144,18 @@ $JobCopyWith<$Res>? get activeJob {
 
   return $JobCopyWith<$Res>(_self.activeJob!, (value) {
     return _then(_self.copyWith(activeJob: value));
+  });
+}/// Create a copy of RequestState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngCopyWith<$Res>? get driverPosition {
+    if (_self.driverPosition == null) {
+    return null;
+  }
+
+  return $LatLngCopyWith<$Res>(_self.driverPosition!, (value) {
+    return _then(_self.copyWith(driverPosition: value));
   });
 }
 }
@@ -184,10 +239,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String pickupAddress,  String dropoffAddress,  VehicleType vehicleType,  Quote? quote,  bool isQuoting,  bool quoteFailed,  bool isCreatingJob,  bool createJobFailed,  Job? activeJob,  bool isConfirmingDelivery,  bool confirmDeliveryFailed)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String pickupAddress,  String dropoffAddress,  LatLng? pickupLatLng,  LatLng? dropoffLatLng,  VehicleType vehicleType,  Quote? quote,  bool isQuoting,  bool quoteFailed,  bool isCreatingJob,  bool createJobFailed,  Job? activeJob,  bool isConfirmingDelivery,  bool confirmDeliveryFailed,  String? confirmDeliveryErrorMessage,  LatLng? driverPosition)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RequestState() when $default != null:
-return $default(_that.pickupAddress,_that.dropoffAddress,_that.vehicleType,_that.quote,_that.isQuoting,_that.quoteFailed,_that.isCreatingJob,_that.createJobFailed,_that.activeJob,_that.isConfirmingDelivery,_that.confirmDeliveryFailed);case _:
+return $default(_that.pickupAddress,_that.dropoffAddress,_that.pickupLatLng,_that.dropoffLatLng,_that.vehicleType,_that.quote,_that.isQuoting,_that.quoteFailed,_that.isCreatingJob,_that.createJobFailed,_that.activeJob,_that.isConfirmingDelivery,_that.confirmDeliveryFailed,_that.confirmDeliveryErrorMessage,_that.driverPosition);case _:
   return orElse();
 
 }
@@ -205,10 +260,10 @@ return $default(_that.pickupAddress,_that.dropoffAddress,_that.vehicleType,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String pickupAddress,  String dropoffAddress,  VehicleType vehicleType,  Quote? quote,  bool isQuoting,  bool quoteFailed,  bool isCreatingJob,  bool createJobFailed,  Job? activeJob,  bool isConfirmingDelivery,  bool confirmDeliveryFailed)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String pickupAddress,  String dropoffAddress,  LatLng? pickupLatLng,  LatLng? dropoffLatLng,  VehicleType vehicleType,  Quote? quote,  bool isQuoting,  bool quoteFailed,  bool isCreatingJob,  bool createJobFailed,  Job? activeJob,  bool isConfirmingDelivery,  bool confirmDeliveryFailed,  String? confirmDeliveryErrorMessage,  LatLng? driverPosition)  $default,) {final _that = this;
 switch (_that) {
 case _RequestState():
-return $default(_that.pickupAddress,_that.dropoffAddress,_that.vehicleType,_that.quote,_that.isQuoting,_that.quoteFailed,_that.isCreatingJob,_that.createJobFailed,_that.activeJob,_that.isConfirmingDelivery,_that.confirmDeliveryFailed);case _:
+return $default(_that.pickupAddress,_that.dropoffAddress,_that.pickupLatLng,_that.dropoffLatLng,_that.vehicleType,_that.quote,_that.isQuoting,_that.quoteFailed,_that.isCreatingJob,_that.createJobFailed,_that.activeJob,_that.isConfirmingDelivery,_that.confirmDeliveryFailed,_that.confirmDeliveryErrorMessage,_that.driverPosition);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -225,10 +280,10 @@ return $default(_that.pickupAddress,_that.dropoffAddress,_that.vehicleType,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String pickupAddress,  String dropoffAddress,  VehicleType vehicleType,  Quote? quote,  bool isQuoting,  bool quoteFailed,  bool isCreatingJob,  bool createJobFailed,  Job? activeJob,  bool isConfirmingDelivery,  bool confirmDeliveryFailed)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String pickupAddress,  String dropoffAddress,  LatLng? pickupLatLng,  LatLng? dropoffLatLng,  VehicleType vehicleType,  Quote? quote,  bool isQuoting,  bool quoteFailed,  bool isCreatingJob,  bool createJobFailed,  Job? activeJob,  bool isConfirmingDelivery,  bool confirmDeliveryFailed,  String? confirmDeliveryErrorMessage,  LatLng? driverPosition)?  $default,) {final _that = this;
 switch (_that) {
 case _RequestState() when $default != null:
-return $default(_that.pickupAddress,_that.dropoffAddress,_that.vehicleType,_that.quote,_that.isQuoting,_that.quoteFailed,_that.isCreatingJob,_that.createJobFailed,_that.activeJob,_that.isConfirmingDelivery,_that.confirmDeliveryFailed);case _:
+return $default(_that.pickupAddress,_that.dropoffAddress,_that.pickupLatLng,_that.dropoffLatLng,_that.vehicleType,_that.quote,_that.isQuoting,_that.quoteFailed,_that.isCreatingJob,_that.createJobFailed,_that.activeJob,_that.isConfirmingDelivery,_that.confirmDeliveryFailed,_that.confirmDeliveryErrorMessage,_that.driverPosition);case _:
   return null;
 
 }
@@ -240,11 +295,19 @@ return $default(_that.pickupAddress,_that.dropoffAddress,_that.vehicleType,_that
 
 
 class _RequestState extends RequestState {
-  const _RequestState({this.pickupAddress = '', this.dropoffAddress = '', this.vehicleType = VehicleType.car, this.quote, this.isQuoting = false, this.quoteFailed = false, this.isCreatingJob = false, this.createJobFailed = false, this.activeJob, this.isConfirmingDelivery = false, this.confirmDeliveryFailed = false}): super._();
+  const _RequestState({this.pickupAddress = '', this.dropoffAddress = '', this.pickupLatLng, this.dropoffLatLng, this.vehicleType = VehicleType.car, this.quote, this.isQuoting = false, this.quoteFailed = false, this.isCreatingJob = false, this.createJobFailed = false, this.activeJob, this.isConfirmingDelivery = false, this.confirmDeliveryFailed = false, this.confirmDeliveryErrorMessage, this.driverPosition}): super._();
   
 
 @override@JsonKey() final  String pickupAddress;
 @override@JsonKey() final  String dropoffAddress;
+// FND-6: real coordinates once resolved via Places search or pin-drag.
+// Null means "no real fix yet for whatever's currently in the matching
+// *Address field" — `fakeGeocode` stands in for that address text until
+// a real one arrives, same "explicit coords win, typed text falls back
+// to fakeGeocode" contract the web client already ships
+// (`RequestPage.tsx`'s `pickupCoords`).
+@override final  LatLng? pickupLatLng;
+@override final  LatLng? dropoffLatLng;
 @override@JsonKey() final  VehicleType vehicleType;
 @override final  Quote? quote;
 @override@JsonKey() final  bool isQuoting;
@@ -254,6 +317,17 @@ class _RequestState extends RequestState {
 @override final  Job? activeJob;
 @override@JsonKey() final  bool isConfirmingDelivery;
 @override@JsonKey() final  bool confirmDeliveryFailed;
+// PAY-4: the backend's own rejection detail (e.g. "Digital fares are
+// not enabled") when confirmDelivery's failure was a typed
+// JobStatusRejectedException — null for any other failure (network,
+// etc.), which still just flips confirmDeliveryFailed with no message
+// of its own, same as before this field existed.
+@override final  String? confirmDeliveryErrorMessage;
+// FND-6/CUS-4: the assigned driver's live position, from the WS
+// `driver_location` push (`ServerMessage.driverLocation`) — was already
+// parsed but never consumed anywhere before this. Null under fakes (no
+// socket) and until the first push for the active job arrives.
+@override final  LatLng? driverPosition;
 
 /// Create a copy of RequestState
 /// with the given fields replaced by the non-null parameter values.
@@ -265,16 +339,16 @@ _$RequestStateCopyWith<_RequestState> get copyWith => __$RequestStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RequestState&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.quote, quote) || other.quote == quote)&&(identical(other.isQuoting, isQuoting) || other.isQuoting == isQuoting)&&(identical(other.quoteFailed, quoteFailed) || other.quoteFailed == quoteFailed)&&(identical(other.isCreatingJob, isCreatingJob) || other.isCreatingJob == isCreatingJob)&&(identical(other.createJobFailed, createJobFailed) || other.createJobFailed == createJobFailed)&&(identical(other.activeJob, activeJob) || other.activeJob == activeJob)&&(identical(other.isConfirmingDelivery, isConfirmingDelivery) || other.isConfirmingDelivery == isConfirmingDelivery)&&(identical(other.confirmDeliveryFailed, confirmDeliveryFailed) || other.confirmDeliveryFailed == confirmDeliveryFailed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RequestState&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.pickupLatLng, pickupLatLng) || other.pickupLatLng == pickupLatLng)&&(identical(other.dropoffLatLng, dropoffLatLng) || other.dropoffLatLng == dropoffLatLng)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.quote, quote) || other.quote == quote)&&(identical(other.isQuoting, isQuoting) || other.isQuoting == isQuoting)&&(identical(other.quoteFailed, quoteFailed) || other.quoteFailed == quoteFailed)&&(identical(other.isCreatingJob, isCreatingJob) || other.isCreatingJob == isCreatingJob)&&(identical(other.createJobFailed, createJobFailed) || other.createJobFailed == createJobFailed)&&(identical(other.activeJob, activeJob) || other.activeJob == activeJob)&&(identical(other.isConfirmingDelivery, isConfirmingDelivery) || other.isConfirmingDelivery == isConfirmingDelivery)&&(identical(other.confirmDeliveryFailed, confirmDeliveryFailed) || other.confirmDeliveryFailed == confirmDeliveryFailed)&&(identical(other.confirmDeliveryErrorMessage, confirmDeliveryErrorMessage) || other.confirmDeliveryErrorMessage == confirmDeliveryErrorMessage)&&(identical(other.driverPosition, driverPosition) || other.driverPosition == driverPosition));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,pickupAddress,dropoffAddress,vehicleType,quote,isQuoting,quoteFailed,isCreatingJob,createJobFailed,activeJob,isConfirmingDelivery,confirmDeliveryFailed);
+int get hashCode => Object.hash(runtimeType,pickupAddress,dropoffAddress,pickupLatLng,dropoffLatLng,vehicleType,quote,isQuoting,quoteFailed,isCreatingJob,createJobFailed,activeJob,isConfirmingDelivery,confirmDeliveryFailed,confirmDeliveryErrorMessage,driverPosition);
 
 @override
 String toString() {
-  return 'RequestState(pickupAddress: $pickupAddress, dropoffAddress: $dropoffAddress, vehicleType: $vehicleType, quote: $quote, isQuoting: $isQuoting, quoteFailed: $quoteFailed, isCreatingJob: $isCreatingJob, createJobFailed: $createJobFailed, activeJob: $activeJob, isConfirmingDelivery: $isConfirmingDelivery, confirmDeliveryFailed: $confirmDeliveryFailed)';
+  return 'RequestState(pickupAddress: $pickupAddress, dropoffAddress: $dropoffAddress, pickupLatLng: $pickupLatLng, dropoffLatLng: $dropoffLatLng, vehicleType: $vehicleType, quote: $quote, isQuoting: $isQuoting, quoteFailed: $quoteFailed, isCreatingJob: $isCreatingJob, createJobFailed: $createJobFailed, activeJob: $activeJob, isConfirmingDelivery: $isConfirmingDelivery, confirmDeliveryFailed: $confirmDeliveryFailed, confirmDeliveryErrorMessage: $confirmDeliveryErrorMessage, driverPosition: $driverPosition)';
 }
 
 
@@ -285,11 +359,11 @@ abstract mixin class _$RequestStateCopyWith<$Res> implements $RequestStateCopyWi
   factory _$RequestStateCopyWith(_RequestState value, $Res Function(_RequestState) _then) = __$RequestStateCopyWithImpl;
 @override @useResult
 $Res call({
- String pickupAddress, String dropoffAddress, VehicleType vehicleType, Quote? quote, bool isQuoting, bool quoteFailed, bool isCreatingJob, bool createJobFailed, Job? activeJob, bool isConfirmingDelivery, bool confirmDeliveryFailed
+ String pickupAddress, String dropoffAddress, LatLng? pickupLatLng, LatLng? dropoffLatLng, VehicleType vehicleType, Quote? quote, bool isQuoting, bool quoteFailed, bool isCreatingJob, bool createJobFailed, Job? activeJob, bool isConfirmingDelivery, bool confirmDeliveryFailed, String? confirmDeliveryErrorMessage, LatLng? driverPosition
 });
 
 
-@override $QuoteCopyWith<$Res>? get quote;@override $JobCopyWith<$Res>? get activeJob;
+@override $LatLngCopyWith<$Res>? get pickupLatLng;@override $LatLngCopyWith<$Res>? get dropoffLatLng;@override $QuoteCopyWith<$Res>? get quote;@override $JobCopyWith<$Res>? get activeJob;@override $LatLngCopyWith<$Res>? get driverPosition;
 
 }
 /// @nodoc
@@ -302,11 +376,13 @@ class __$RequestStateCopyWithImpl<$Res>
 
 /// Create a copy of RequestState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? pickupAddress = null,Object? dropoffAddress = null,Object? vehicleType = null,Object? quote = freezed,Object? isQuoting = null,Object? quoteFailed = null,Object? isCreatingJob = null,Object? createJobFailed = null,Object? activeJob = freezed,Object? isConfirmingDelivery = null,Object? confirmDeliveryFailed = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? pickupAddress = null,Object? dropoffAddress = null,Object? pickupLatLng = freezed,Object? dropoffLatLng = freezed,Object? vehicleType = null,Object? quote = freezed,Object? isQuoting = null,Object? quoteFailed = null,Object? isCreatingJob = null,Object? createJobFailed = null,Object? activeJob = freezed,Object? isConfirmingDelivery = null,Object? confirmDeliveryFailed = null,Object? confirmDeliveryErrorMessage = freezed,Object? driverPosition = freezed,}) {
   return _then(_RequestState(
 pickupAddress: null == pickupAddress ? _self.pickupAddress : pickupAddress // ignore: cast_nullable_to_non_nullable
 as String,dropoffAddress: null == dropoffAddress ? _self.dropoffAddress : dropoffAddress // ignore: cast_nullable_to_non_nullable
-as String,vehicleType: null == vehicleType ? _self.vehicleType : vehicleType // ignore: cast_nullable_to_non_nullable
+as String,pickupLatLng: freezed == pickupLatLng ? _self.pickupLatLng : pickupLatLng // ignore: cast_nullable_to_non_nullable
+as LatLng?,dropoffLatLng: freezed == dropoffLatLng ? _self.dropoffLatLng : dropoffLatLng // ignore: cast_nullable_to_non_nullable
+as LatLng?,vehicleType: null == vehicleType ? _self.vehicleType : vehicleType // ignore: cast_nullable_to_non_nullable
 as VehicleType,quote: freezed == quote ? _self.quote : quote // ignore: cast_nullable_to_non_nullable
 as Quote?,isQuoting: null == isQuoting ? _self.isQuoting : isQuoting // ignore: cast_nullable_to_non_nullable
 as bool,quoteFailed: null == quoteFailed ? _self.quoteFailed : quoteFailed // ignore: cast_nullable_to_non_nullable
@@ -315,11 +391,37 @@ as bool,createJobFailed: null == createJobFailed ? _self.createJobFailed : creat
 as bool,activeJob: freezed == activeJob ? _self.activeJob : activeJob // ignore: cast_nullable_to_non_nullable
 as Job?,isConfirmingDelivery: null == isConfirmingDelivery ? _self.isConfirmingDelivery : isConfirmingDelivery // ignore: cast_nullable_to_non_nullable
 as bool,confirmDeliveryFailed: null == confirmDeliveryFailed ? _self.confirmDeliveryFailed : confirmDeliveryFailed // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,confirmDeliveryErrorMessage: freezed == confirmDeliveryErrorMessage ? _self.confirmDeliveryErrorMessage : confirmDeliveryErrorMessage // ignore: cast_nullable_to_non_nullable
+as String?,driverPosition: freezed == driverPosition ? _self.driverPosition : driverPosition // ignore: cast_nullable_to_non_nullable
+as LatLng?,
   ));
 }
 
 /// Create a copy of RequestState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngCopyWith<$Res>? get pickupLatLng {
+    if (_self.pickupLatLng == null) {
+    return null;
+  }
+
+  return $LatLngCopyWith<$Res>(_self.pickupLatLng!, (value) {
+    return _then(_self.copyWith(pickupLatLng: value));
+  });
+}/// Create a copy of RequestState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngCopyWith<$Res>? get dropoffLatLng {
+    if (_self.dropoffLatLng == null) {
+    return null;
+  }
+
+  return $LatLngCopyWith<$Res>(_self.dropoffLatLng!, (value) {
+    return _then(_self.copyWith(dropoffLatLng: value));
+  });
+}/// Create a copy of RequestState
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -342,6 +444,18 @@ $JobCopyWith<$Res>? get activeJob {
 
   return $JobCopyWith<$Res>(_self.activeJob!, (value) {
     return _then(_self.copyWith(activeJob: value));
+  });
+}/// Create a copy of RequestState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngCopyWith<$Res>? get driverPosition {
+    if (_self.driverPosition == null) {
+    return null;
+  }
+
+  return $LatLngCopyWith<$Res>(_self.driverPosition!, (value) {
+    return _then(_self.copyWith(driverPosition: value));
   });
 }
 }

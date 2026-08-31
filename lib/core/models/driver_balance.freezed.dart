@@ -558,4 +558,264 @@ as List<Settlement>,
 
 }
 
+/// @nodoc
+mixin _$SettlementCheckout {
+
+ String get paymentReference; String? get asyncPaymentUrl;
+/// Create a copy of SettlementCheckout
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SettlementCheckoutCopyWith<SettlementCheckout> get copyWith => _$SettlementCheckoutCopyWithImpl<SettlementCheckout>(this as SettlementCheckout, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SettlementCheckout&&(identical(other.paymentReference, paymentReference) || other.paymentReference == paymentReference)&&(identical(other.asyncPaymentUrl, asyncPaymentUrl) || other.asyncPaymentUrl == asyncPaymentUrl));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,paymentReference,asyncPaymentUrl);
+
+@override
+String toString() {
+  return 'SettlementCheckout(paymentReference: $paymentReference, asyncPaymentUrl: $asyncPaymentUrl)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SettlementCheckoutCopyWith<$Res>  {
+  factory $SettlementCheckoutCopyWith(SettlementCheckout value, $Res Function(SettlementCheckout) _then) = _$SettlementCheckoutCopyWithImpl;
+@useResult
+$Res call({
+ String paymentReference, String? asyncPaymentUrl
+});
+
+
+
+
+}
+/// @nodoc
+class _$SettlementCheckoutCopyWithImpl<$Res>
+    implements $SettlementCheckoutCopyWith<$Res> {
+  _$SettlementCheckoutCopyWithImpl(this._self, this._then);
+
+  final SettlementCheckout _self;
+  final $Res Function(SettlementCheckout) _then;
+
+/// Create a copy of SettlementCheckout
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? paymentReference = null,Object? asyncPaymentUrl = freezed,}) {
+  return _then(_self.copyWith(
+paymentReference: null == paymentReference ? _self.paymentReference : paymentReference // ignore: cast_nullable_to_non_nullable
+as String,asyncPaymentUrl: freezed == asyncPaymentUrl ? _self.asyncPaymentUrl : asyncPaymentUrl // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SettlementCheckout].
+extension SettlementCheckoutPatterns on SettlementCheckout {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SettlementCheckout value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SettlementCheckout() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SettlementCheckout value)  $default,){
+final _that = this;
+switch (_that) {
+case _SettlementCheckout():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SettlementCheckout value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SettlementCheckout() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String paymentReference,  String? asyncPaymentUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SettlementCheckout() when $default != null:
+return $default(_that.paymentReference,_that.asyncPaymentUrl);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String paymentReference,  String? asyncPaymentUrl)  $default,) {final _that = this;
+switch (_that) {
+case _SettlementCheckout():
+return $default(_that.paymentReference,_that.asyncPaymentUrl);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String paymentReference,  String? asyncPaymentUrl)?  $default,) {final _that = this;
+switch (_that) {
+case _SettlementCheckout() when $default != null:
+return $default(_that.paymentReference,_that.asyncPaymentUrl);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _SettlementCheckout implements SettlementCheckout {
+  const _SettlementCheckout({required this.paymentReference, this.asyncPaymentUrl});
+  
+
+@override final  String paymentReference;
+@override final  String? asyncPaymentUrl;
+
+/// Create a copy of SettlementCheckout
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SettlementCheckoutCopyWith<_SettlementCheckout> get copyWith => __$SettlementCheckoutCopyWithImpl<_SettlementCheckout>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SettlementCheckout&&(identical(other.paymentReference, paymentReference) || other.paymentReference == paymentReference)&&(identical(other.asyncPaymentUrl, asyncPaymentUrl) || other.asyncPaymentUrl == asyncPaymentUrl));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,paymentReference,asyncPaymentUrl);
+
+@override
+String toString() {
+  return 'SettlementCheckout(paymentReference: $paymentReference, asyncPaymentUrl: $asyncPaymentUrl)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SettlementCheckoutCopyWith<$Res> implements $SettlementCheckoutCopyWith<$Res> {
+  factory _$SettlementCheckoutCopyWith(_SettlementCheckout value, $Res Function(_SettlementCheckout) _then) = __$SettlementCheckoutCopyWithImpl;
+@override @useResult
+$Res call({
+ String paymentReference, String? asyncPaymentUrl
+});
+
+
+
+
+}
+/// @nodoc
+class __$SettlementCheckoutCopyWithImpl<$Res>
+    implements _$SettlementCheckoutCopyWith<$Res> {
+  __$SettlementCheckoutCopyWithImpl(this._self, this._then);
+
+  final _SettlementCheckout _self;
+  final $Res Function(_SettlementCheckout) _then;
+
+/// Create a copy of SettlementCheckout
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? paymentReference = null,Object? asyncPaymentUrl = freezed,}) {
+  return _then(_SettlementCheckout(
+paymentReference: null == paymentReference ? _self.paymentReference : paymentReference // ignore: cast_nullable_to_non_nullable
+as String,asyncPaymentUrl: freezed == asyncPaymentUrl ? _self.asyncPaymentUrl : asyncPaymentUrl // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
 // dart format on

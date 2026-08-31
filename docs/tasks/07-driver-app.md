@@ -45,6 +45,12 @@ Flutter driver shell: go available, receive offers, execute the job.
   any of DRV-1, so "toggle drives the Redis geo presence end to end" (the
   formal AC) remains unverified beyond the fakes.
 
+  Follow-up (2026-08-30): `DriverHomeScreen`'s map area is a real `CraneMap`
+  now, not `MapPlaceholder` — see the FND-6 note in `01-foundations.md`.
+  Centered on Medellín only; no live self-position marker (`DriverHomeState`
+  has no position field to feed one — a separate, small follow-up, not
+  attempted this pass).
+
 - [ ] **DRV-2 — Incoming offer sheet** *(deps: DSP-2, TRK-4)*
   Bottom sheet on offer (WS or FCM tap-through): pickup distance, route summary, vehicle type, fare, commission preview, countdown timer from config TTL; accept / reject.
   Design: «Oferta entrante» (`docs/design/screen-references.md`)
@@ -180,6 +186,41 @@ Flutter driver shell: go available, receive offers, execute the job.
   `matching`, local state cleared) and rejection-past-`arrived_pickup`,
   against the fakes.
 
+  Follow-up (2026-08-30): map route built. A new `_ActiveJobMap` (real
+  `CraneMap` + pickup/dropoff pins + a route polyline from the backend's
+  `/v1/directions/route` proxy — see the FND-6 note in `01-foundations.md`)
+  replaces `MapPlaceholder`, fetching the route once per job id (not on
+  every rebuild — this screen rebuilds on every status advance and every
+  location-socket tick, which would otherwise spam the backend).
+
+  Follow-up (2026-08-31): call-customer built too — closes the AC's last
+  gap. Backend gained a symmetric `JobCustomerInfo` (`id`/`name`/`phone`) on
+  `JobRead.customer`, populated in `_job_read` unconditionally (a job always
+  has a customer, unlike `driver`) — safe: `JobRead` is only ever returned
+  to the job's own customer, its assigned driver, or an admin
+  (`get_job`'s `_require_view_access`), the same three parties who could
+  already see this via `AdminJobListItem.customer_phone` or by being the
+  customer themself, so this adds no new exposure — matches `driver`'s own
+  precedent exactly rather than inventing a narrower rule. `Job`
+  (`lib/core/models/job.dart`) gained a symmetric `JobCustomerSummary`;
+  `ActiveJobScreen` gained a call-customer button next to "Navegar",
+  mirroring the customer app's call-driver button exactly (same
+  `url_launcher` `tel:` scheme, same phone-conditional guard). 2 new
+  backend tests (`test_jobs_api.py`), 1 new Flutter widget test. Also fixed
+  a real, unrelated widget-test regression this surfaced: the new button
+  pushed `advanceStatusButton`/`navigateButton` further down
+  `_ActiveJobView`'s `SingleChildScrollView`, past what `flutter_test`'s
+  fixed-size test surface renders as visible — `tester.tap` on an
+  off-screen target silently no-ops (no exception, the tap just lands
+  nowhere), which made every multi-advance test in
+  `driver_flow_widget_test.dart` fail as "stuck on `assigned`" with zero
+  error surfaced. Fixed with `tester.ensureVisible(...)` before each
+  affected tap, matching the pattern this same file already used for
+  `backToHomeButton`/`cancelJobButton`/`rateTripButton`. Full suite green
+  (402 passed, backend 337 passed). This AC is now fully met at the
+  fakes/mocked-backend level; not yet verified against a live device or
+  real backend deploy.
+
 - [x] **DRV-4 — Cash collection + completion** *(deps: DRV-3, LED-1)*
   On delivered: fare + "collected in cash" confirmation; shows commission accrued for this job and new running balance.
   Design: «Cobro en efectivo» (`docs/design/screen-references.md`)
@@ -257,6 +298,35 @@ Flutter driver shell: go available, receive offers, execute the job.
   "cash totals per day/week" part of this AC's grouping — that's DRV-6's
   services-per-period view, built separately. Verified against the fake
   (84 tests, later 88 once DRV-6 landed).
+
+  Follow-up (2026-08-31): "settlement instructions (static text until
+  PAY-* lands)" is real now, not static text — PAY-3's `POST
+  /v1/drivers/me/settle` (already built and tested) is wired up.
+  `DriversRepository` gained `settleBalance({amountCop, method})` (real dio
+  + fake — the fake validates the same rules the backend does (amount > 0,
+  amount <= owed, something actually owed) but deliberately never touches
+  `_settlements`, since a real settlement only applies once Wompi's webhook
+  reports the payment approved; optimistically decrementing it here would
+  be dishonest). Throws a new `SettlementRejectedException` for every
+  backend rejection (422/409/503), same convention as
+  `JobStatusRejectedException`.
+
+  `EarningsScreen` gained a "Liquidar saldo" button (shown only when
+  something is owed) opening a dialog to pick an amount (prefilled with
+  the full owed balance) and a method (Nequi/PSE/tarjeta). `DriverBalanceCubit`
+  drives it (`settle`/`clearSettlementResult`), and the screen reacts via a
+  `BlocListener`: Nequi shows a "check your app" message, PSE/card opens
+  the returned `async_payment_url` via `url_launcher`. The shown balance
+  itself is deliberately never updated optimistically after a request —
+  same "only a real webhook moves it" honesty as the fake.
+
+  6 new repository tests, 4 new widget tests (button hidden at zero
+  balance, Nequi happy path, over-balance disables submit, the 503
+  "not available yet" path). Full Flutter suite green. **Not checked
+  off**: DRV-5's full AC (completed-jobs list / day-week totals, covered by
+  DRV-6, plus this settlement piece) still has no live pass against a real
+  Wompi account — none exists yet (see the PAY-1..5 note in
+  `12-payments-wompi.md`).
 
 - [x] **DRV-6 — Services-per-period view** *(deps: DRV-5)* · Phase 3
   Period selector (Today / Week / Month / Custom range) over completed services: count, chart, and list for the selected range.

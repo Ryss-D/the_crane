@@ -14,7 +14,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DriverBalanceState {
 
- DriverBalance? get balance; bool get isLoading; bool get loadFailed;
+ DriverBalance? get balance; bool get isLoading; bool get loadFailed; bool get isSettling;// Transient: the UI consumes these once (open the URL / show the
+// message) and calls `clearSettlementResult` — they don't persist
+// across rebuilds the way `balance` does.
+ SettlementCheckout? get lastCheckout; String? get settlementError;
 /// Create a copy of DriverBalanceState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +28,16 @@ $DriverBalanceStateCopyWith<DriverBalanceState> get copyWith => _$DriverBalanceS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DriverBalanceState&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.loadFailed, loadFailed) || other.loadFailed == loadFailed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DriverBalanceState&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.loadFailed, loadFailed) || other.loadFailed == loadFailed)&&(identical(other.isSettling, isSettling) || other.isSettling == isSettling)&&(identical(other.lastCheckout, lastCheckout) || other.lastCheckout == lastCheckout)&&(identical(other.settlementError, settlementError) || other.settlementError == settlementError));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,balance,isLoading,loadFailed);
+int get hashCode => Object.hash(runtimeType,balance,isLoading,loadFailed,isSettling,lastCheckout,settlementError);
 
 @override
 String toString() {
-  return 'DriverBalanceState(balance: $balance, isLoading: $isLoading, loadFailed: $loadFailed)';
+  return 'DriverBalanceState(balance: $balance, isLoading: $isLoading, loadFailed: $loadFailed, isSettling: $isSettling, lastCheckout: $lastCheckout, settlementError: $settlementError)';
 }
 
 
@@ -45,11 +48,11 @@ abstract mixin class $DriverBalanceStateCopyWith<$Res>  {
   factory $DriverBalanceStateCopyWith(DriverBalanceState value, $Res Function(DriverBalanceState) _then) = _$DriverBalanceStateCopyWithImpl;
 @useResult
 $Res call({
- DriverBalance? balance, bool isLoading, bool loadFailed
+ DriverBalance? balance, bool isLoading, bool loadFailed, bool isSettling, SettlementCheckout? lastCheckout, String? settlementError
 });
 
 
-$DriverBalanceCopyWith<$Res>? get balance;
+$DriverBalanceCopyWith<$Res>? get balance;$SettlementCheckoutCopyWith<$Res>? get lastCheckout;
 
 }
 /// @nodoc
@@ -62,12 +65,15 @@ class _$DriverBalanceStateCopyWithImpl<$Res>
 
 /// Create a copy of DriverBalanceState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? balance = freezed,Object? isLoading = null,Object? loadFailed = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? balance = freezed,Object? isLoading = null,Object? loadFailed = null,Object? isSettling = null,Object? lastCheckout = freezed,Object? settlementError = freezed,}) {
   return _then(_self.copyWith(
 balance: freezed == balance ? _self.balance : balance // ignore: cast_nullable_to_non_nullable
 as DriverBalance?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,loadFailed: null == loadFailed ? _self.loadFailed : loadFailed // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,isSettling: null == isSettling ? _self.isSettling : isSettling // ignore: cast_nullable_to_non_nullable
+as bool,lastCheckout: freezed == lastCheckout ? _self.lastCheckout : lastCheckout // ignore: cast_nullable_to_non_nullable
+as SettlementCheckout?,settlementError: freezed == settlementError ? _self.settlementError : settlementError // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of DriverBalanceState
@@ -81,6 +87,18 @@ $DriverBalanceCopyWith<$Res>? get balance {
 
   return $DriverBalanceCopyWith<$Res>(_self.balance!, (value) {
     return _then(_self.copyWith(balance: value));
+  });
+}/// Create a copy of DriverBalanceState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SettlementCheckoutCopyWith<$Res>? get lastCheckout {
+    if (_self.lastCheckout == null) {
+    return null;
+  }
+
+  return $SettlementCheckoutCopyWith<$Res>(_self.lastCheckout!, (value) {
+    return _then(_self.copyWith(lastCheckout: value));
   });
 }
 }
@@ -164,10 +182,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DriverBalance? balance,  bool isLoading,  bool loadFailed)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DriverBalance? balance,  bool isLoading,  bool loadFailed,  bool isSettling,  SettlementCheckout? lastCheckout,  String? settlementError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DriverBalanceState() when $default != null:
-return $default(_that.balance,_that.isLoading,_that.loadFailed);case _:
+return $default(_that.balance,_that.isLoading,_that.loadFailed,_that.isSettling,_that.lastCheckout,_that.settlementError);case _:
   return orElse();
 
 }
@@ -185,10 +203,10 @@ return $default(_that.balance,_that.isLoading,_that.loadFailed);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DriverBalance? balance,  bool isLoading,  bool loadFailed)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DriverBalance? balance,  bool isLoading,  bool loadFailed,  bool isSettling,  SettlementCheckout? lastCheckout,  String? settlementError)  $default,) {final _that = this;
 switch (_that) {
 case _DriverBalanceState():
-return $default(_that.balance,_that.isLoading,_that.loadFailed);case _:
+return $default(_that.balance,_that.isLoading,_that.loadFailed,_that.isSettling,_that.lastCheckout,_that.settlementError);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +223,10 @@ return $default(_that.balance,_that.isLoading,_that.loadFailed);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DriverBalance? balance,  bool isLoading,  bool loadFailed)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DriverBalance? balance,  bool isLoading,  bool loadFailed,  bool isSettling,  SettlementCheckout? lastCheckout,  String? settlementError)?  $default,) {final _that = this;
 switch (_that) {
 case _DriverBalanceState() when $default != null:
-return $default(_that.balance,_that.isLoading,_that.loadFailed);case _:
+return $default(_that.balance,_that.isLoading,_that.loadFailed,_that.isSettling,_that.lastCheckout,_that.settlementError);case _:
   return null;
 
 }
@@ -220,12 +238,18 @@ return $default(_that.balance,_that.isLoading,_that.loadFailed);case _:
 
 
 class _DriverBalanceState implements DriverBalanceState {
-  const _DriverBalanceState({this.balance, this.isLoading = true, this.loadFailed = false});
+  const _DriverBalanceState({this.balance, this.isLoading = true, this.loadFailed = false, this.isSettling = false, this.lastCheckout, this.settlementError});
   
 
 @override final  DriverBalance? balance;
 @override@JsonKey() final  bool isLoading;
 @override@JsonKey() final  bool loadFailed;
+@override@JsonKey() final  bool isSettling;
+// Transient: the UI consumes these once (open the URL / show the
+// message) and calls `clearSettlementResult` — they don't persist
+// across rebuilds the way `balance` does.
+@override final  SettlementCheckout? lastCheckout;
+@override final  String? settlementError;
 
 /// Create a copy of DriverBalanceState
 /// with the given fields replaced by the non-null parameter values.
@@ -237,16 +261,16 @@ _$DriverBalanceStateCopyWith<_DriverBalanceState> get copyWith => __$DriverBalan
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DriverBalanceState&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.loadFailed, loadFailed) || other.loadFailed == loadFailed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DriverBalanceState&&(identical(other.balance, balance) || other.balance == balance)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.loadFailed, loadFailed) || other.loadFailed == loadFailed)&&(identical(other.isSettling, isSettling) || other.isSettling == isSettling)&&(identical(other.lastCheckout, lastCheckout) || other.lastCheckout == lastCheckout)&&(identical(other.settlementError, settlementError) || other.settlementError == settlementError));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,balance,isLoading,loadFailed);
+int get hashCode => Object.hash(runtimeType,balance,isLoading,loadFailed,isSettling,lastCheckout,settlementError);
 
 @override
 String toString() {
-  return 'DriverBalanceState(balance: $balance, isLoading: $isLoading, loadFailed: $loadFailed)';
+  return 'DriverBalanceState(balance: $balance, isLoading: $isLoading, loadFailed: $loadFailed, isSettling: $isSettling, lastCheckout: $lastCheckout, settlementError: $settlementError)';
 }
 
 
@@ -257,11 +281,11 @@ abstract mixin class _$DriverBalanceStateCopyWith<$Res> implements $DriverBalanc
   factory _$DriverBalanceStateCopyWith(_DriverBalanceState value, $Res Function(_DriverBalanceState) _then) = __$DriverBalanceStateCopyWithImpl;
 @override @useResult
 $Res call({
- DriverBalance? balance, bool isLoading, bool loadFailed
+ DriverBalance? balance, bool isLoading, bool loadFailed, bool isSettling, SettlementCheckout? lastCheckout, String? settlementError
 });
 
 
-@override $DriverBalanceCopyWith<$Res>? get balance;
+@override $DriverBalanceCopyWith<$Res>? get balance;@override $SettlementCheckoutCopyWith<$Res>? get lastCheckout;
 
 }
 /// @nodoc
@@ -274,12 +298,15 @@ class __$DriverBalanceStateCopyWithImpl<$Res>
 
 /// Create a copy of DriverBalanceState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? balance = freezed,Object? isLoading = null,Object? loadFailed = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? balance = freezed,Object? isLoading = null,Object? loadFailed = null,Object? isSettling = null,Object? lastCheckout = freezed,Object? settlementError = freezed,}) {
   return _then(_DriverBalanceState(
 balance: freezed == balance ? _self.balance : balance // ignore: cast_nullable_to_non_nullable
 as DriverBalance?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,loadFailed: null == loadFailed ? _self.loadFailed : loadFailed // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,isSettling: null == isSettling ? _self.isSettling : isSettling // ignore: cast_nullable_to_non_nullable
+as bool,lastCheckout: freezed == lastCheckout ? _self.lastCheckout : lastCheckout // ignore: cast_nullable_to_non_nullable
+as SettlementCheckout?,settlementError: freezed == settlementError ? _self.settlementError : settlementError // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -294,6 +321,18 @@ $DriverBalanceCopyWith<$Res>? get balance {
 
   return $DriverBalanceCopyWith<$Res>(_self.balance!, (value) {
     return _then(_self.copyWith(balance: value));
+  });
+}/// Create a copy of DriverBalanceState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SettlementCheckoutCopyWith<$Res>? get lastCheckout {
+    if (_self.lastCheckout == null) {
+    return null;
+  }
+
+  return $SettlementCheckoutCopyWith<$Res>(_self.lastCheckout!, (value) {
+    return _then(_self.copyWith(lastCheckout: value));
   });
 }
 }

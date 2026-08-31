@@ -4,17 +4,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/di.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
+import 'core/api/directions_repository.dart';
 import 'core/api/drivers_repository.dart';
 import 'core/api/fleet_repository.dart';
 import 'core/api/jobs_repository.dart';
+import 'core/api/places_repository.dart';
 import 'core/api/vehicles_repository.dart';
 import 'core/location/location_source.dart';
 import 'core/notifications/notification_permission_requester.dart';
 import 'core/notifications/push_notifications.dart';
+import 'core/storage/active_job_store.dart';
 import 'core/ws/crane_socket.dart';
 import 'features/auth/auth_cubit.dart';
 import 'l10n/app_localizations.dart';
@@ -35,7 +39,10 @@ Future<void> main() async {
   // what the backend sends) is otherwise delivered with no UI at all.
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await PushNotifications.instance.init();
-  final dependencies = AppDependencies.fromEnv();
+  final prefs = await SharedPreferences.getInstance();
+  final dependencies = AppDependencies.fromEnv(
+    activeJobStore: SharedPreferencesActiveJobStore(prefs),
+  );
   // Settle auth state (already-signed-in check + profile sync) before the
   // first frame, so the router's very first redirect doesn't flash the
   // sign-in screen for a returning user.
@@ -108,6 +115,15 @@ class _TheCraneAppState extends State<TheCraneApp> with WidgetsBindingObserver {
         ),
         RepositoryProvider<FleetRepository>.value(
           value: widget.dependencies.fleetRepository,
+        ),
+        RepositoryProvider<ActiveJobStore>.value(
+          value: widget.dependencies.activeJobStore,
+        ),
+        RepositoryProvider<PlacesRepository>.value(
+          value: widget.dependencies.placesRepository,
+        ),
+        RepositoryProvider<DirectionsRepository>.value(
+          value: widget.dependencies.directionsRepository,
         ),
         // Null under `Env.useFakeBackend` (see `AppDependencies.fromEnv`);
         // `ActiveJobCubit` treats a null socket as "no location push".

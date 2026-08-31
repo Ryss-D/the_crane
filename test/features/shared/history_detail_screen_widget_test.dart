@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_crane/core/api/directions_repository.dart';
+import 'package:the_crane/core/api/fake_directions_repository.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
 import 'package:the_crane/core/api/jobs_repository.dart';
 import 'package:the_crane/core/models/job.dart';
@@ -12,11 +14,16 @@ import 'package:the_crane/l10n/app_localizations.dart';
 
 /// RAT-3 — no GoRouter dependency (it's just pushed via `Navigator.push` by
 /// `HistoryScreen`), so it's exercised standalone here with only the
-/// localization delegates and the `JobsRepository` it reads from context
-/// for its ratings fetch.
+/// localization delegates and the `JobsRepository`/`DirectionsRepository`
+/// (FND-6, the map's route line) it reads from context.
 Widget _app({required Job job, required JobsRepository jobs}) {
-  return RepositoryProvider<JobsRepository>.value(
-    value: jobs,
+  return MultiRepositoryProvider(
+    providers: [
+      RepositoryProvider<JobsRepository>.value(value: jobs),
+      RepositoryProvider<DirectionsRepository>.value(
+        value: FakeDirectionsRepository(delay: Duration.zero),
+      ),
+    ],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

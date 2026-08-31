@@ -551,6 +551,36 @@ class AppLocalizationsEs extends AppLocalizations {
       'No pudimos confirmar el pago. Intenta de nuevo.';
 
   @override
+  String get payDigitallyButton => 'Pagar con tarjeta, PSE o Nequi';
+
+  @override
+  String get digitalPaymentDialogTitle => 'Elige un método de pago';
+
+  @override
+  String get paymentMethodNequi => 'Nequi';
+
+  @override
+  String get paymentMethodPse => 'PSE';
+
+  @override
+  String get paymentMethodCard => 'Tarjeta';
+
+  @override
+  String get paymentMethodNequiHint =>
+      'Recibirás una notificación en tu app Nequi para aprobar el pago.';
+
+  @override
+  String get paymentMethodRedirectHint =>
+      'Se abrirá una página para completar el pago.';
+
+  @override
+  String get digitalPaymentConfirmButton => 'Continuar';
+
+  @override
+  String get digitalPaymentNotAvailableError =>
+      'Los pagos digitales no están disponibles todavía. Paga en efectivo.';
+
+  @override
   String get waitingCashConfirmationBody =>
       'Esperando que el cliente confirme el pago en efectivo.';
 
@@ -619,6 +649,46 @@ class AppLocalizationsEs extends AppLocalizations {
       'No pudimos cargar tus ganancias. Intenta de nuevo.';
 
   @override
+  String get earningsSettleButton => 'Liquidar saldo';
+
+  @override
+  String get earningsSettleDialogTitle => 'Liquidar saldo';
+
+  @override
+  String get earningsSettleAmountLabel => 'Monto a liquidar (COP)';
+
+  @override
+  String get earningsSettleMethodLabel => 'Método de pago';
+
+  @override
+  String get earningsSettleMethodNequi => 'Nequi';
+
+  @override
+  String get earningsSettleMethodPse => 'PSE';
+
+  @override
+  String get earningsSettleMethodCard => 'Tarjeta';
+
+  @override
+  String get earningsSettleSubmitButton => 'Solicitar liquidación';
+
+  @override
+  String get earningsSettleSentNequiBody =>
+      'Solicitud enviada. Revisa tu app de Nequi para aprobar el pago.';
+
+  @override
+  String get earningsSettleSentRedirectBody =>
+      'Solicitud enviada. Abriendo la página de pago…';
+
+  @override
+  String get earningsSettleUnavailableError =>
+      'La liquidación digital no está disponible todavía. Intenta más tarde.';
+
+  @override
+  String get earningsSettleGenericError =>
+      'No pudimos iniciar la liquidación. Intenta de nuevo.';
+
+  @override
   String get jobCommissionLabel => 'Comisión de este servicio';
 
   @override
@@ -662,6 +732,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get callDriverButton => 'Llamar al conductor';
+
+  @override
+  String get callCustomerButton => 'Llamar al cliente';
 
   @override
   String get shareTripButton => 'Compartir viaje';

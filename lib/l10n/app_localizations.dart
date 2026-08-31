@@ -1100,6 +1100,60 @@ abstract class AppLocalizations {
   /// **'No pudimos confirmar el pago. Intenta de nuevo.'**
   String get cashPaymentConfirmError;
 
+  /// PAY-4: opens the digital-payment method picker, alongside the cash-confirm button
+  ///
+  /// In es, this message translates to:
+  /// **'Pagar con tarjeta, PSE o Nequi'**
+  String get payDigitallyButton;
+
+  /// PAY-4: title of the payment-method picker dialog
+  ///
+  /// In es, this message translates to:
+  /// **'Elige un método de pago'**
+  String get digitalPaymentDialogTitle;
+
+  /// PAY-4: Nequi payment method option label
+  ///
+  /// In es, this message translates to:
+  /// **'Nequi'**
+  String get paymentMethodNequi;
+
+  /// PAY-4: PSE payment method option label
+  ///
+  /// In es, this message translates to:
+  /// **'PSE'**
+  String get paymentMethodPse;
+
+  /// PAY-4: card payment method option label
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjeta'**
+  String get paymentMethodCard;
+
+  /// PAY-4: shown under the Nequi option in the payment-method picker
+  ///
+  /// In es, this message translates to:
+  /// **'Recibirás una notificación en tu app Nequi para aprobar el pago.'**
+  String get paymentMethodNequiHint;
+
+  /// PAY-4: shown under the PSE/card options in the payment-method picker
+  ///
+  /// In es, this message translates to:
+  /// **'Se abrirá una página para completar el pago.'**
+  String get paymentMethodRedirectHint;
+
+  /// PAY-4: submits the chosen payment method from the picker dialog
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get digitalPaymentConfirmButton;
+
+  /// PAY-4: shown when confirm-delivery rejects a digital method (422 -- the flag isn't enabled server-side)
+  ///
+  /// In es, this message translates to:
+  /// **'Los pagos digitales no están disponibles todavía. Paga en efectivo.'**
+  String get digitalPaymentNotAvailableError;
+
   /// DRV-4: shown to the driver once a job is delivered, since only the customer can complete it
   ///
   /// In es, this message translates to:
@@ -1226,6 +1280,78 @@ abstract class AppLocalizations {
   /// **'No pudimos cargar tus ganancias. Intenta de nuevo.'**
   String get earningsLoadError;
 
+  /// PAY-3: button that opens the settle-balance dialog, shown when the driver owes something
+  ///
+  /// In es, this message translates to:
+  /// **'Liquidar saldo'**
+  String get earningsSettleButton;
+
+  /// PAY-3: settle-balance dialog title
+  ///
+  /// In es, this message translates to:
+  /// **'Liquidar saldo'**
+  String get earningsSettleDialogTitle;
+
+  /// PAY-3: amount field label in the settle-balance dialog
+  ///
+  /// In es, this message translates to:
+  /// **'Monto a liquidar (COP)'**
+  String get earningsSettleAmountLabel;
+
+  /// PAY-3: payment-method selector label in the settle-balance dialog
+  ///
+  /// In es, this message translates to:
+  /// **'Método de pago'**
+  String get earningsSettleMethodLabel;
+
+  /// PAY-3: Nequi payment method option
+  ///
+  /// In es, this message translates to:
+  /// **'Nequi'**
+  String get earningsSettleMethodNequi;
+
+  /// PAY-3: PSE payment method option
+  ///
+  /// In es, this message translates to:
+  /// **'PSE'**
+  String get earningsSettleMethodPse;
+
+  /// PAY-3: card payment method option
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjeta'**
+  String get earningsSettleMethodCard;
+
+  /// PAY-3: submit button in the settle-balance dialog
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitar liquidación'**
+  String get earningsSettleSubmitButton;
+
+  /// PAY-3: confirmation shown after a Nequi settlement request (no redirect, driver approves in their own app)
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud enviada. Revisa tu app de Nequi para aprobar el pago.'**
+  String get earningsSettleSentNequiBody;
+
+  /// PAY-3: confirmation shown right before opening the PSE/card checkout URL
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud enviada. Abriendo la página de pago…'**
+  String get earningsSettleSentRedirectBody;
+
+  /// PAY-3: shown when the backend has no Wompi key configured yet (503)
+  ///
+  /// In es, this message translates to:
+  /// **'La liquidación digital no está disponible todavía. Intenta más tarde.'**
+  String get earningsSettleUnavailableError;
+
+  /// PAY-3: shown for any other settle-request failure
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos iniciar la liquidación. Intenta de nuevo.'**
+  String get earningsSettleGenericError;
+
   /// DRV-4: label for the commission accrued on a just-completed job
   ///
   /// In es, this message translates to:
@@ -1309,6 +1435,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Llamar al conductor'**
   String get callDriverButton;
+
+  /// DRV-3: calls the job's customer phone number
+  ///
+  /// In es, this message translates to:
+  /// **'Llamar al cliente'**
+  String get callCustomerButton;
 
   /// CUS-4: copies the TRK-6 share-trip link to the clipboard
   ///

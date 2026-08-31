@@ -1,15 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/api/directions_repository.dart';
 import '../../../core/config/env.dart';
 import '../../../core/models/job.dart';
+import '../../../core/models/lat_lng.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/labels.dart';
 import '../../shared/rating/rating_dialog.dart';
+import '../../shared/widgets/crane_map.dart';
 import 'request_bloc.dart';
 import 'request_state.dart';
 
@@ -157,8 +162,11 @@ class _AssignedView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        // CUS-4: happy-path status timeline (marker + polyline are BLOCKED
-        // on FND-6 — see `MapPlaceholder`).
+        // FND-6: live driver marker + route, once a real backend socket
+        // relays `driver_location` pushes (null/no marker under fakes).
+        SizedBox(height: 140, child: _AssignedJobMap(job: job)),
+        const SizedBox(height: 16),
+        // CUS-4: happy-path status timeline.
         _StatusTimeline(status: job.status),
         const SizedBox(height: 16),
         if (driver?.phone != null || job.shareToken != null)
@@ -193,36 +201,77 @@ class _AssignedView extends StatelessWidget {
           // server-side) — the driver has no equivalent button.
           Text(l10n.cashPaymentPendingBody, textAlign: TextAlign.center),
           const SizedBox(height: 12),
-          BlocBuilder<RequestBloc, RequestState>(
-            buildWhen: (previous, current) =>
-                previous.isConfirmingDelivery != current.isConfirmingDelivery ||
-                previous.confirmDeliveryFailed != current.confirmDeliveryFailed,
-            builder: (context, state) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (state.confirmDeliveryFailed) ...[
-                  Text(
-                    l10n.cashPaymentConfirmError,
-                    style: TextStyle(color: theme.colorScheme.error),
-                    textAlign: TextAlign.center,
+          // PAY-4: launches the Wompi checkout redirect the instant one
+          // appears on the active job — `asyncPaymentUrl` is only ever
+          // non-null on the exact confirmDelivery response that just
+          // started a PSE/card checkout (see `JobRead`'s doc comment), so
+          // this fires at most once per digital confirmation, never on an
+          // unrelated rebuild.
+          BlocListener<RequestBloc, RequestState>(
+            listenWhen: (previous, current) =>
+                current.activeJob?.asyncPaymentUrl != null &&
+                previous.activeJob?.asyncPaymentUrl != current.activeJob?.asyncPaymentUrl,
+            listener: (context, state) {
+              final url = state.activeJob?.asyncPaymentUrl;
+              if (url != null) unawaited(launchUrl(Uri.parse(url)));
+            },
+            child: BlocBuilder<RequestBloc, RequestState>(
+              buildWhen: (previous, current) =>
+                  previous.isConfirmingDelivery != current.isConfirmingDelivery ||
+                  previous.confirmDeliveryFailed != current.confirmDeliveryFailed,
+              builder: (context, state) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (state.confirmDeliveryFailed) ...[
+                    Text(
+                      // PAY-4: a typed rejection here today only ever means
+                      // "digital fares aren't enabled" (the 422 case) — the
+                      // backend's own detail string is in English and not
+                      // meant for direct display, so this maps to the
+                      // localized equivalent rather than showing it raw.
+                      state.confirmDeliveryErrorMessage != null
+                          ? l10n.digitalPaymentNotAvailableError
+                          : l10n.cashPaymentConfirmError,
+                      style: TextStyle(color: theme.colorScheme.error),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  FilledButton(
+                    key: const Key('confirmCashPaymentButton'),
+                    onPressed: state.isConfirmingDelivery
+                        ? null
+                        : () => context
+                            .read<RequestBloc>()
+                            .add(const RequestDeliveryConfirmed()),
+                    child: state.isConfirmingDelivery
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(l10n.cashConfirmButton),
                   ),
                   const SizedBox(height: 8),
+                  // PAY-4: no public endpoint tells the app whether
+                  // `payments.digital_fares_enabled` is on server-side (see
+                  // the doc note) -- shown unconditionally, a disabled flag
+                  // surfaces as the 422 handled above rather than being
+                  // predicted ahead of time.
+                  OutlinedButton(
+                    key: const Key('payDigitallyButton'),
+                    onPressed: state.isConfirmingDelivery
+                        ? null
+                        : () async {
+                            final method = await _showDigitalPaymentDialog(context, l10n);
+                            if (method == null || !context.mounted) return;
+                            context
+                                .read<RequestBloc>()
+                                .add(RequestDeliveryConfirmed(paymentMethod: method));
+                          },
+                    child: Text(l10n.payDigitallyButton),
+                  ),
                 ],
-                FilledButton(
-                  key: const Key('confirmCashPaymentButton'),
-                  onPressed: state.isConfirmingDelivery
-                      ? null
-                      : () => context
-                          .read<RequestBloc>()
-                          .add(const RequestDeliveryConfirmed()),
-                  child: state.isConfirmingDelivery
-                      ? const SizedBox.square(
-                          dimension: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(l10n.cashConfirmButton),
-                ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -255,13 +304,140 @@ class _AssignedView extends StatelessWidget {
   }
 }
 
+/// PAY-4 — lets the customer pick a digital payment method before confirming
+/// delivery non-cash. Returns the chosen wire value ("nequi"/"pse"/"card")
+/// or null if dismissed without choosing.
+Future<String?> _showDigitalPaymentDialog(BuildContext context, AppLocalizations l10n) {
+  var selected = 'nequi';
+  return showDialog<String>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (dialogContext, setState) => AlertDialog(
+        title: Text(l10n.digitalPaymentDialogTitle),
+        content: RadioGroup<String>(
+          groupValue: selected,
+          onChanged: (value) => setState(() => selected = value!),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                key: const Key('paymentMethodNequiOption'),
+                value: 'nequi',
+                title: Text(l10n.paymentMethodNequi),
+                subtitle: Text(l10n.paymentMethodNequiHint),
+              ),
+              RadioListTile<String>(
+                key: const Key('paymentMethodPseOption'),
+                value: 'pse',
+                title: Text(l10n.paymentMethodPse),
+                subtitle: Text(l10n.paymentMethodRedirectHint),
+              ),
+              RadioListTile<String>(
+                key: const Key('paymentMethodCardOption'),
+                value: 'card',
+                title: Text(l10n.paymentMethodCard),
+                subtitle: Text(l10n.paymentMethodRedirectHint),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(MaterialLocalizations.of(dialogContext).cancelButtonLabel),
+          ),
+          FilledButton(
+            key: const Key('digitalPaymentDialogConfirmButton'),
+            onPressed: () => Navigator.of(dialogContext).pop(selected),
+            child: Text(l10n.digitalPaymentConfirmButton),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// FND-6/CUS-4 — pickup/dropoff pins, a route polyline, and (once a real
+/// backend socket relays one) the assigned driver's live position. Same
+/// "fetch the route once per job id, not on every rebuild" reasoning as
+/// `ActiveJobScreen`'s `_ActiveJobMap` — this screen rebuilds on every
+/// driver-location tick too.
+class _AssignedJobMap extends StatefulWidget {
+  const _AssignedJobMap({required this.job});
+
+  final Job job;
+
+  @override
+  State<_AssignedJobMap> createState() => _AssignedJobMapState();
+}
+
+class _AssignedJobMapState extends State<_AssignedJobMap> {
+  String? _fetchedForJobId;
+  List<LatLng>? _routePoints;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeFetchRoute();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AssignedJobMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _maybeFetchRoute();
+  }
+
+  void _maybeFetchRoute() {
+    if (_fetchedForJobId == widget.job.id) return;
+    _fetchedForJobId = widget.job.id;
+    unawaited(_fetch(widget.job.id));
+  }
+
+  Future<void> _fetch(String jobId) async {
+    try {
+      final points = await context.read<DirectionsRepository>().route(
+            origin: widget.job.pickup,
+            destination: widget.job.dropoff,
+          );
+      if (!mounted || _fetchedForJobId != jobId) return;
+      setState(() => _routePoints = points);
+    } catch (_) {
+      // Best-effort -- the map still shows pins without a line.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final driverPosition = context.select<RequestBloc, LatLng?>(
+      (bloc) => bloc.state.driverPosition,
+    );
+    return CraneMap(
+      markers: [
+        CraneMapMarker(
+          id: 'pickup',
+          position: widget.job.pickup,
+          role: CraneMapMarkerRole.pickup,
+        ),
+        CraneMapMarker(
+          id: 'dropoff',
+          position: widget.job.dropoff,
+          role: CraneMapMarkerRole.dropoff,
+        ),
+        if (driverPosition != null)
+          CraneMapMarker(
+            id: 'driver',
+            position: driverPosition,
+            role: CraneMapMarkerRole.driver,
+          ),
+      ],
+      routePoints: _fetchedForJobId == widget.job.id ? _routePoints : null,
+    );
+  }
+}
+
 /// CUS-4 happy-path status timeline. `cancelled`/`no_drivers` are
 /// terminal-failure statuses, not steps in this sequence — they render as a
 /// banner instead (mirrors `web-client`'s `StatusTimeline.tsx`).
-///
-/// Driver marker + route polyline are BLOCKED on FND-6 (`MapPlaceholder`
-/// stands in for the map itself, elsewhere on this screen once TRK-4 wires
-/// live position).
 class _StatusTimeline extends StatelessWidget {
   const _StatusTimeline({required this.status});
 

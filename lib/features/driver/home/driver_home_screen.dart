@@ -8,7 +8,7 @@ import '../../../core/api/fake_drivers_repository.dart';
 import '../../../core/models/driver_profile.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/labels.dart';
-import '../../shared/widgets/map_placeholder.dart';
+import '../../shared/widgets/crane_map.dart';
 import '../job/active_job_cubit.dart';
 import 'driver_home_cubit.dart';
 import 'offer_cubit.dart';
@@ -135,7 +135,28 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                           ),
                         ),
                       ),
-                    const Expanded(child: MapPlaceholder()),
+                    // FND-6: shows the one-shot fix taken when last going
+                    // available (DriverHomeState.selfPosition) — not a live
+                    // stream (see toggleAvailability's doc comment on why
+                    // one doesn't run just for being available). Centers on
+                    // Medellín until the driver has gone available at least
+                    // once this session.
+                    Expanded(
+                      child: BlocBuilder<DriverHomeCubit, DriverHomeState>(
+                        buildWhen: (previous, current) =>
+                            previous.selfPosition != current.selfPosition,
+                        builder: (context, state) => CraneMap(
+                          markers: [
+                            if (state.selfPosition case final p?)
+                              CraneMapMarker(
+                                id: 'self',
+                                position: p,
+                                role: CraneMapMarkerRole.self,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

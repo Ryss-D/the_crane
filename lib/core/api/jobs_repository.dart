@@ -104,10 +104,21 @@ abstract interface class JobsRepository {
   Future<Job> updateJobStatus(String id, JobStatus status);
 
   /// `POST /v1/jobs/{id}/confirm-delivery` (CUS-5/LED-1) — the job's
-  /// customer confirms cash payment on a `delivered` job, completing it and
+  /// customer confirms delivery on a `delivered` job, completing it and
   /// (server-side) writing the driver's commission ledger entry. Only the
   /// job's customer may call this (`backend/app/services/jobs.py`).
-  Future<Job> confirmDelivery(String id);
+  ///
+  /// PAY-4: [paymentMethod] null (the default) is the original cash path,
+  /// unchanged — the job completes immediately with the commission accrued
+  /// synchronously. A non-null digital method (`"nequi"`/`"pse"`/`"card"`)
+  /// opts into a Wompi checkout instead: the job still completes
+  /// immediately (the AC's "flag on = both paths write correct ledger
+  /// entries" — completion isn't gated on payment), but the ledger entry
+  /// itself is deferred until Wompi's webhook reports the payment
+  /// `approved`. The returned [Job.asyncPaymentUrl] is the checkout
+  /// redirect for an async method (PSE/card) — null for Nequi (no redirect
+  /// step) and for the cash path.
+  Future<Job> confirmDelivery(String id, {String? paymentMethod});
 
   /// `POST /v1/jobs/{id}/rating` (RAT-1) — rate the other side of a
   /// completed job. `stars` is 1-5; each side may rate once per job.
@@ -339,10 +350,28 @@ class ApiJobsRepository implements JobsRepository {
   }
 
   @override
-  Future<Job> confirmDelivery(String id) async {
-    final res =
-        await _dio.post<Map<String, dynamic>>('/v1/jobs/$id/confirm-delivery');
-    return _jobFromApiJson(res.data!);
+  Future<Job> confirmDelivery(String id, {String? paymentMethod}) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/v1/jobs/$id/confirm-delivery',
+        data: paymentMethod == null ? null : {'payment_method': paymentMethod},
+      );
+      return _jobFromApiJson(res.data!);
+    } on DioException catch (e) {
+      // PAY-4: 422 means digital fares aren't enabled server-side right now
+      // (`payments.digital_fares_enabled` off in platform_config) -- there's
+      // no public endpoint for the app to check that ahead of time (see the
+      // PAY-4 doc note), so a rejected attempt is the only signal it gets.
+      // Reusing `JobStatusRejectedException` rather than adding a
+      // payment-specific type: both are exactly "a backend rejection with a
+      // message worth showing," which is all any caller does with either.
+      if (e.response?.statusCode == 422 && paymentMethod != null) {
+        final data = e.response?.data;
+        final detail = data is Map ? data['detail']?.toString() : null;
+        throw JobStatusRejectedException(detail ?? 'Digital payment rejected');
+      }
+      rethrow;
+    }
   }
 
   @override

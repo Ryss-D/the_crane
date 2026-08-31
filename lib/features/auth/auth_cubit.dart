@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/api/auth_repository.dart';
 import '../../core/auth/phone_auth_gateway.dart';
 import '../../core/auth/push_token_gateway.dart';
+import '../../core/storage/active_job_store.dart';
 import 'auth_state.dart';
 
 /// Drives phone-OTP sign-in end to end: send code, confirm code, sync the
@@ -16,9 +17,11 @@ class AuthCubit extends Cubit<AuthState> {
     required PhoneAuthGateway gateway,
     required AuthRepository authRepository,
     required PushTokenGateway pushTokenGateway,
+    ActiveJobStore? activeJobStore,
   })  : _gateway = gateway,
         _authRepository = authRepository,
         _pushTokenGateway = pushTokenGateway,
+        _activeJobStore = activeJobStore,
         super(const AuthState()) {
     _refreshSub = _pushTokenGateway.onTokenRefresh.listen((token) {
       if (state.isAuthenticated) {
@@ -30,6 +33,12 @@ class AuthCubit extends Cubit<AuthState> {
   final PhoneAuthGateway _gateway;
   final AuthRepository _authRepository;
   final PushTokenGateway _pushTokenGateway;
+
+  /// CUS-4: cleared on [signOut] so a persisted job never leaks from one
+  /// signed-in user into whoever signs in next on the same device. Null in
+  /// tests that don't care about this (mirrors every other optional
+  /// dependency in this app).
+  final ActiveJobStore? _activeJobStore;
   late final StreamSubscription<String> _refreshSub;
 
   /// Call once at startup (before the first frame) — if a Firebase session
@@ -119,6 +128,10 @@ class AuthCubit extends Cubit<AuthState> {
       await _authRepository.updateFcmToken(null);
     }
     await _gateway.signOut();
+    // CUS-4: a persisted job id is otherwise a device-scoped record with no
+    // owner check on read — leaving it here would resume this user's job
+    // for whoever signs in next.
+    await _activeJobStore?.write(null);
     emit(const AuthState());
   }
 

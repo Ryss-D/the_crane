@@ -26,6 +26,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- FND-6: empty until the iOS Maps key exists (deferred -- Android and
+	     Web are wired, iOS isn't yet). AppDelegate.swift reads this via
+	     Bundle.main and calls GMSServices.provideAPIKey with it; an empty
+	     string there is a no-op (google_maps_flutter_ios just won't render
+	     tiles on iOS until this is filled in), not a crash. TODO(FND-6):
+	     paste the real key here once it's created. -->
+	<key>GMSApiKey</key>
+	<string></string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>La Grúa usa tu ubicación para guiarte hacia el cliente y compartir tu posición durante un servicio activo.</string>
 	<!-- TRK-5 (this pass): plist-only prep for true background/locked-screen

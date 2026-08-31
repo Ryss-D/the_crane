@@ -30,6 +30,12 @@
         android:label="the_crane"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- FND-6: value injected by android/app/build.gradle's
+             manifestPlaceholders (android/local.properties locally,
+             MAPS_API_KEY_ANDROID in CI) -- never hardcoded here. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${mapsApiKey}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

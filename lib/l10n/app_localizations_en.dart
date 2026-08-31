@@ -553,6 +553,36 @@ class AppLocalizationsEn extends AppLocalizations {
       'We could not confirm the payment. Please try again.';
 
   @override
+  String get payDigitallyButton => 'Pay with card, PSE or Nequi';
+
+  @override
+  String get digitalPaymentDialogTitle => 'Choose a payment method';
+
+  @override
+  String get paymentMethodNequi => 'Nequi';
+
+  @override
+  String get paymentMethodPse => 'PSE';
+
+  @override
+  String get paymentMethodCard => 'Card';
+
+  @override
+  String get paymentMethodNequiHint =>
+      'You\'ll get a notification in your Nequi app to approve the payment.';
+
+  @override
+  String get paymentMethodRedirectHint =>
+      'A page will open to finish the payment.';
+
+  @override
+  String get digitalPaymentConfirmButton => 'Continue';
+
+  @override
+  String get digitalPaymentNotAvailableError =>
+      'Digital payments aren\'t available yet. Please pay in cash.';
+
+  @override
   String get waitingCashConfirmationBody =>
       'Waiting for the customer to confirm the cash payment.';
 
@@ -620,6 +650,46 @@ class AppLocalizationsEn extends AppLocalizations {
       'We could not load your earnings. Please try again.';
 
   @override
+  String get earningsSettleButton => 'Settle balance';
+
+  @override
+  String get earningsSettleDialogTitle => 'Settle balance';
+
+  @override
+  String get earningsSettleAmountLabel => 'Amount to settle (COP)';
+
+  @override
+  String get earningsSettleMethodLabel => 'Payment method';
+
+  @override
+  String get earningsSettleMethodNequi => 'Nequi';
+
+  @override
+  String get earningsSettleMethodPse => 'PSE';
+
+  @override
+  String get earningsSettleMethodCard => 'Card';
+
+  @override
+  String get earningsSettleSubmitButton => 'Request settlement';
+
+  @override
+  String get earningsSettleSentNequiBody =>
+      'Request sent. Check your Nequi app to approve the payment.';
+
+  @override
+  String get earningsSettleSentRedirectBody =>
+      'Request sent. Opening the payment page…';
+
+  @override
+  String get earningsSettleUnavailableError =>
+      'Digital settlement isn\'t available yet. Please try again later.';
+
+  @override
+  String get earningsSettleGenericError =>
+      'We could not start the settlement. Please try again.';
+
+  @override
   String get jobCommissionLabel => 'Commission for this job';
 
   @override
@@ -663,6 +733,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get callDriverButton => 'Call driver';
+
+  @override
+  String get callCustomerButton => 'Call customer';
 
   @override
   String get shareTripButton => 'Share trip';

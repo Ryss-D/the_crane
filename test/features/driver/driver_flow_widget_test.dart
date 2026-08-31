@@ -160,6 +160,7 @@ void main() {
     ];
     for (final label in expectedButtonLabels) {
       expect(find.text(label), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('advanceStatusButton')));
       await tester.tap(find.byKey(const Key('advanceStatusButton')));
       await tester.pump(const Duration(milliseconds: 50)); // actionDelay
     }
@@ -239,6 +240,7 @@ void main() {
     expect(find.text('Asignada'), findsOneWidget);
 
     jobs.rejectNext = true;
+    await tester.ensureVisible(find.byKey(const Key('advanceStatusButton')));
     await tester.tap(find.byKey(const Key('advanceStatusButton')));
     await tester.pump(const Duration(milliseconds: 20)); // actionDelay
     await tester.pump(); // SnackBar animation
@@ -253,6 +255,7 @@ void main() {
     expect(find.text('En camino'), findsOneWidget);
 
     // A later, non-rejected advance still works normally.
+    await tester.ensureVisible(find.byKey(const Key('advanceStatusButton')));
     await tester.tap(find.byKey(const Key('advanceStatusButton')));
     await tester.pump(const Duration(milliseconds: 20));
     expect(find.text('En camino a la recogida'), findsOneWidget);
@@ -297,13 +300,17 @@ void main() {
 
     // Advance past `arrived_pickup`: once loading starts, the leg (and the
     // navigate target) flips to the dropoff point.
+    await tester.ensureVisible(find.byKey(const Key('advanceStatusButton')));
     await tester.tap(find.byKey(const Key('advanceStatusButton'))); // en_route
     await tester.pump(const Duration(milliseconds: 50));
+    await tester.ensureVisible(find.byKey(const Key('advanceStatusButton')));
     await tester.tap(find.byKey(const Key('advanceStatusButton'))); // arrived
     await tester.pump(const Duration(milliseconds: 50));
+    await tester.ensureVisible(find.byKey(const Key('advanceStatusButton')));
     await tester.tap(find.byKey(const Key('advanceStatusButton'))); // loading
     await tester.pump(const Duration(milliseconds: 50));
 
+    await tester.ensureVisible(find.byKey(const Key('navigateButton')));
     await tester.tap(find.byKey(const Key('navigateButton')));
     await tester.pump();
     expect(
@@ -311,6 +318,38 @@ void main() {
       'https://www.google.com/maps/dir/?api=1&destination='
       '${job.dropoff.lat},${job.dropoff.lng}',
     );
+  });
+
+  testWidgets('DRV-3: the call-customer button actually dials the customer\'s '
+      'phone', (tester) async {
+    final launcher = _FakeUrlLauncher();
+    UrlLauncherPlatform.instance = launcher;
+    final jobs = fastFakeJobs();
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(jobs: jobs, authRole: UserRole.driver),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await goAvailable(tester);
+
+    await tester.tap(find.byKey(const Key('devTriggerOfferButton')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const Key('acceptOfferButton')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(ActiveJobScreen), findsOneWidget);
+
+    final job = await tester.runAsync(
+      () async => (await jobs.listHistory(role: JobHistoryRole.driver))
+          .items
+          .single,
+    );
+    await tester.ensureVisible(find.byKey(const Key('callCustomerButton')));
+    await tester.tap(find.byKey(const Key('callCustomerButton')));
+    await tester.pump();
+
+    expect(launcher.lastLaunchedUrl, 'tel:${job!.customer!.phone}');
   });
 
   testWidgets(

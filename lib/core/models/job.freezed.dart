@@ -294,16 +294,294 @@ as String?,
 
 
 /// @nodoc
+mixin _$JobCustomerSummary {
+
+ String get id; String? get name; String? get phone;
+/// Create a copy of JobCustomerSummary
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$JobCustomerSummaryCopyWith<JobCustomerSummary> get copyWith => _$JobCustomerSummaryCopyWithImpl<JobCustomerSummary>(this as JobCustomerSummary, _$identity);
+
+  /// Serializes this JobCustomerSummary to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JobCustomerSummary&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,phone);
+
+@override
+String toString() {
+  return 'JobCustomerSummary(id: $id, name: $name, phone: $phone)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $JobCustomerSummaryCopyWith<$Res>  {
+  factory $JobCustomerSummaryCopyWith(JobCustomerSummary value, $Res Function(JobCustomerSummary) _then) = _$JobCustomerSummaryCopyWithImpl;
+@useResult
+$Res call({
+ String id, String? name, String? phone
+});
+
+
+
+
+}
+/// @nodoc
+class _$JobCustomerSummaryCopyWithImpl<$Res>
+    implements $JobCustomerSummaryCopyWith<$Res> {
+  _$JobCustomerSummaryCopyWithImpl(this._self, this._then);
+
+  final JobCustomerSummary _self;
+  final $Res Function(JobCustomerSummary) _then;
+
+/// Create a copy of JobCustomerSummary
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,Object? phone = freezed,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [JobCustomerSummary].
+extension JobCustomerSummaryPatterns on JobCustomerSummary {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _JobCustomerSummary value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _JobCustomerSummary() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _JobCustomerSummary value)  $default,){
+final _that = this;
+switch (_that) {
+case _JobCustomerSummary():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _JobCustomerSummary value)?  $default,){
+final _that = this;
+switch (_that) {
+case _JobCustomerSummary() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? name,  String? phone)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _JobCustomerSummary() when $default != null:
+return $default(_that.id,_that.name,_that.phone);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? name,  String? phone)  $default,) {final _that = this;
+switch (_that) {
+case _JobCustomerSummary():
+return $default(_that.id,_that.name,_that.phone);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? name,  String? phone)?  $default,) {final _that = this;
+switch (_that) {
+case _JobCustomerSummary() when $default != null:
+return $default(_that.id,_that.name,_that.phone);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _JobCustomerSummary implements JobCustomerSummary {
+  const _JobCustomerSummary({required this.id, this.name, this.phone});
+  factory _JobCustomerSummary.fromJson(Map<String, dynamic> json) => _$JobCustomerSummaryFromJson(json);
+
+@override final  String id;
+@override final  String? name;
+@override final  String? phone;
+
+/// Create a copy of JobCustomerSummary
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$JobCustomerSummaryCopyWith<_JobCustomerSummary> get copyWith => __$JobCustomerSummaryCopyWithImpl<_JobCustomerSummary>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$JobCustomerSummaryToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JobCustomerSummary&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,phone);
+
+@override
+String toString() {
+  return 'JobCustomerSummary(id: $id, name: $name, phone: $phone)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$JobCustomerSummaryCopyWith<$Res> implements $JobCustomerSummaryCopyWith<$Res> {
+  factory _$JobCustomerSummaryCopyWith(_JobCustomerSummary value, $Res Function(_JobCustomerSummary) _then) = __$JobCustomerSummaryCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String? name, String? phone
+});
+
+
+
+
+}
+/// @nodoc
+class __$JobCustomerSummaryCopyWithImpl<$Res>
+    implements _$JobCustomerSummaryCopyWith<$Res> {
+  __$JobCustomerSummaryCopyWithImpl(this._self, this._then);
+
+  final _JobCustomerSummary _self;
+  final $Res Function(_JobCustomerSummary) _then;
+
+/// Create a copy of JobCustomerSummary
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = freezed,Object? phone = freezed,}) {
+  return _then(_JobCustomerSummary(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$Job {
 
- String get id; String get customerId; String? get driverId; JobStatus get status; VehicleType get vehicleType; LatLng get pickup; String get pickupAddress; LatLng get dropoff; String get dropoffAddress; double get distanceKm; int get quotedPrice; int? get finalPrice; String get paymentMethod; JobDriverSummary? get driver; DateTime get requestedAt; DateTime? get assignedAt; DateTime? get pickedUpAt; DateTime? get completedAt; DateTime? get cancelledAt; String? get cancelReason;// CUS-4: backs the "share trip" button (TRK-6's GET /v1/track/{token}).
+ String get id; String get customerId; String? get driverId; JobStatus get status; VehicleType get vehicleType; LatLng get pickup; String get pickupAddress; LatLng get dropoff; String get dropoffAddress; double get distanceKm; int get quotedPrice; int? get finalPrice; String get paymentMethod; JobDriverSummary? get driver;// DRV-3: symmetric to `driver` above — backs the call-customer button
+// on the driver's active-job screen. Optional for the same reason
+// `shareToken` is: older fake seed data predates this field.
+ JobCustomerSummary? get customer; DateTime get requestedAt; DateTime? get assignedAt; DateTime? get pickedUpAt; DateTime? get completedAt; DateTime? get cancelledAt; String? get cancelReason;// CUS-4: backs the "share trip" button (TRK-6's GET /v1/track/{token}).
 // Optional because the fake job history's older seed data predates this
 // field — real jobs always have one (the backend defaults it at creation).
  String? get shareToken;// DRV-4: the real commission accrued at completion (backend's
 // JobRead.driver_commission, LED-1's DriverLedgerEntry) -- null until the
 // job is actually completed. ActiveJobScreen falls back to a client-side
 // flat-15% approximation only when this is null.
- int? get driverCommission;
+ int? get driverCommission;// PAY-4: the Wompi checkout URL to redirect the customer to, present
+// only on the exact `confirmDelivery` response that just started a
+// digital-fare payment (PSE/card -- null for Nequi, and for every other
+// response, including a re-fetch of the same job afterward). Not a
+// real job field on the backend -- see `JobRead.async_payment_url`'s
+// doc comment (`backend/app/schemas/job.py`).
+ String? get asyncPaymentUrl;
 /// Create a copy of Job
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -316,16 +594,16 @@ $JobCopyWith<Job> get copyWith => _$JobCopyWithImpl<Job>(this as Job, _$identity
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Job&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.finalPrice, finalPrice) || other.finalPrice == finalPrice)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.driver, driver) || other.driver == driver)&&(identical(other.requestedAt, requestedAt) || other.requestedAt == requestedAt)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&(identical(other.pickedUpAt, pickedUpAt) || other.pickedUpAt == pickedUpAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.shareToken, shareToken) || other.shareToken == shareToken)&&(identical(other.driverCommission, driverCommission) || other.driverCommission == driverCommission));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Job&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.finalPrice, finalPrice) || other.finalPrice == finalPrice)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.driver, driver) || other.driver == driver)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.requestedAt, requestedAt) || other.requestedAt == requestedAt)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&(identical(other.pickedUpAt, pickedUpAt) || other.pickedUpAt == pickedUpAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.shareToken, shareToken) || other.shareToken == shareToken)&&(identical(other.driverCommission, driverCommission) || other.driverCommission == driverCommission)&&(identical(other.asyncPaymentUrl, asyncPaymentUrl) || other.asyncPaymentUrl == asyncPaymentUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,customerId,driverId,status,vehicleType,pickup,pickupAddress,dropoff,dropoffAddress,distanceKm,quotedPrice,finalPrice,paymentMethod,driver,requestedAt,assignedAt,pickedUpAt,completedAt,cancelledAt,cancelReason,shareToken,driverCommission]);
+int get hashCode => Object.hashAll([runtimeType,id,customerId,driverId,status,vehicleType,pickup,pickupAddress,dropoff,dropoffAddress,distanceKm,quotedPrice,finalPrice,paymentMethod,driver,customer,requestedAt,assignedAt,pickedUpAt,completedAt,cancelledAt,cancelReason,shareToken,driverCommission,asyncPaymentUrl]);
 
 @override
 String toString() {
-  return 'Job(id: $id, customerId: $customerId, driverId: $driverId, status: $status, vehicleType: $vehicleType, pickup: $pickup, pickupAddress: $pickupAddress, dropoff: $dropoff, dropoffAddress: $dropoffAddress, distanceKm: $distanceKm, quotedPrice: $quotedPrice, finalPrice: $finalPrice, paymentMethod: $paymentMethod, driver: $driver, requestedAt: $requestedAt, assignedAt: $assignedAt, pickedUpAt: $pickedUpAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelReason: $cancelReason, shareToken: $shareToken, driverCommission: $driverCommission)';
+  return 'Job(id: $id, customerId: $customerId, driverId: $driverId, status: $status, vehicleType: $vehicleType, pickup: $pickup, pickupAddress: $pickupAddress, dropoff: $dropoff, dropoffAddress: $dropoffAddress, distanceKm: $distanceKm, quotedPrice: $quotedPrice, finalPrice: $finalPrice, paymentMethod: $paymentMethod, driver: $driver, customer: $customer, requestedAt: $requestedAt, assignedAt: $assignedAt, pickedUpAt: $pickedUpAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelReason: $cancelReason, shareToken: $shareToken, driverCommission: $driverCommission, asyncPaymentUrl: $asyncPaymentUrl)';
 }
 
 
@@ -336,11 +614,11 @@ abstract mixin class $JobCopyWith<$Res>  {
   factory $JobCopyWith(Job value, $Res Function(Job) _then) = _$JobCopyWithImpl;
 @useResult
 $Res call({
- String id, String customerId, String? driverId, JobStatus status, VehicleType vehicleType, LatLng pickup, String pickupAddress, LatLng dropoff, String dropoffAddress, double distanceKm, int quotedPrice, int? finalPrice, String paymentMethod, JobDriverSummary? driver, DateTime requestedAt, DateTime? assignedAt, DateTime? pickedUpAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelReason, String? shareToken, int? driverCommission
+ String id, String customerId, String? driverId, JobStatus status, VehicleType vehicleType, LatLng pickup, String pickupAddress, LatLng dropoff, String dropoffAddress, double distanceKm, int quotedPrice, int? finalPrice, String paymentMethod, JobDriverSummary? driver, JobCustomerSummary? customer, DateTime requestedAt, DateTime? assignedAt, DateTime? pickedUpAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelReason, String? shareToken, int? driverCommission, String? asyncPaymentUrl
 });
 
 
-$LatLngCopyWith<$Res> get pickup;$LatLngCopyWith<$Res> get dropoff;$JobDriverSummaryCopyWith<$Res>? get driver;
+$LatLngCopyWith<$Res> get pickup;$LatLngCopyWith<$Res> get dropoff;$JobDriverSummaryCopyWith<$Res>? get driver;$JobCustomerSummaryCopyWith<$Res>? get customer;
 
 }
 /// @nodoc
@@ -353,7 +631,7 @@ class _$JobCopyWithImpl<$Res>
 
 /// Create a copy of Job
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? customerId = null,Object? driverId = freezed,Object? status = null,Object? vehicleType = null,Object? pickup = null,Object? pickupAddress = null,Object? dropoff = null,Object? dropoffAddress = null,Object? distanceKm = null,Object? quotedPrice = null,Object? finalPrice = freezed,Object? paymentMethod = null,Object? driver = freezed,Object? requestedAt = null,Object? assignedAt = freezed,Object? pickedUpAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelReason = freezed,Object? shareToken = freezed,Object? driverCommission = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? customerId = null,Object? driverId = freezed,Object? status = null,Object? vehicleType = null,Object? pickup = null,Object? pickupAddress = null,Object? dropoff = null,Object? dropoffAddress = null,Object? distanceKm = null,Object? quotedPrice = null,Object? finalPrice = freezed,Object? paymentMethod = null,Object? driver = freezed,Object? customer = freezed,Object? requestedAt = null,Object? assignedAt = freezed,Object? pickedUpAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelReason = freezed,Object? shareToken = freezed,Object? driverCommission = freezed,Object? asyncPaymentUrl = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
@@ -369,7 +647,8 @@ as double,quotedPrice: null == quotedPrice ? _self.quotedPrice : quotedPrice // 
 as int,finalPrice: freezed == finalPrice ? _self.finalPrice : finalPrice // ignore: cast_nullable_to_non_nullable
 as int?,paymentMethod: null == paymentMethod ? _self.paymentMethod : paymentMethod // ignore: cast_nullable_to_non_nullable
 as String,driver: freezed == driver ? _self.driver : driver // ignore: cast_nullable_to_non_nullable
-as JobDriverSummary?,requestedAt: null == requestedAt ? _self.requestedAt : requestedAt // ignore: cast_nullable_to_non_nullable
+as JobDriverSummary?,customer: freezed == customer ? _self.customer : customer // ignore: cast_nullable_to_non_nullable
+as JobCustomerSummary?,requestedAt: null == requestedAt ? _self.requestedAt : requestedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,assignedAt: freezed == assignedAt ? _self.assignedAt : assignedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,pickedUpAt: freezed == pickedUpAt ? _self.pickedUpAt : pickedUpAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
@@ -377,7 +656,8 @@ as DateTime?,cancelledAt: freezed == cancelledAt ? _self.cancelledAt : cancelled
 as DateTime?,cancelReason: freezed == cancelReason ? _self.cancelReason : cancelReason // ignore: cast_nullable_to_non_nullable
 as String?,shareToken: freezed == shareToken ? _self.shareToken : shareToken // ignore: cast_nullable_to_non_nullable
 as String?,driverCommission: freezed == driverCommission ? _self.driverCommission : driverCommission // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,asyncPaymentUrl: freezed == asyncPaymentUrl ? _self.asyncPaymentUrl : asyncPaymentUrl // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of Job
@@ -409,6 +689,18 @@ $JobDriverSummaryCopyWith<$Res>? get driver {
 
   return $JobDriverSummaryCopyWith<$Res>(_self.driver!, (value) {
     return _then(_self.copyWith(driver: value));
+  });
+}/// Create a copy of Job
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$JobCustomerSummaryCopyWith<$Res>? get customer {
+    if (_self.customer == null) {
+    return null;
+  }
+
+  return $JobCustomerSummaryCopyWith<$Res>(_self.customer!, (value) {
+    return _then(_self.copyWith(customer: value));
   });
 }
 }
@@ -492,10 +784,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken,  int? driverCommission)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  JobCustomerSummary? customer,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken,  int? driverCommission,  String? asyncPaymentUrl)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Job() when $default != null:
-return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken,_that.driverCommission);case _:
+return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.customer,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken,_that.driverCommission,_that.asyncPaymentUrl);case _:
   return orElse();
 
 }
@@ -513,10 +805,10 @@ return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken,  int? driverCommission)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  JobCustomerSummary? customer,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken,  int? driverCommission,  String? asyncPaymentUrl)  $default,) {final _that = this;
 switch (_that) {
 case _Job():
-return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken,_that.driverCommission);case _:
+return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.customer,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken,_that.driverCommission,_that.asyncPaymentUrl);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -533,10 +825,10 @@ return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken,  int? driverCommission)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String customerId,  String? driverId,  JobStatus status,  VehicleType vehicleType,  LatLng pickup,  String pickupAddress,  LatLng dropoff,  String dropoffAddress,  double distanceKm,  int quotedPrice,  int? finalPrice,  String paymentMethod,  JobDriverSummary? driver,  JobCustomerSummary? customer,  DateTime requestedAt,  DateTime? assignedAt,  DateTime? pickedUpAt,  DateTime? completedAt,  DateTime? cancelledAt,  String? cancelReason,  String? shareToken,  int? driverCommission,  String? asyncPaymentUrl)?  $default,) {final _that = this;
 switch (_that) {
 case _Job() when $default != null:
-return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken,_that.driverCommission);case _:
+return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehicleType,_that.pickup,_that.pickupAddress,_that.dropoff,_that.dropoffAddress,_that.distanceKm,_that.quotedPrice,_that.finalPrice,_that.paymentMethod,_that.driver,_that.customer,_that.requestedAt,_that.assignedAt,_that.pickedUpAt,_that.completedAt,_that.cancelledAt,_that.cancelReason,_that.shareToken,_that.driverCommission,_that.asyncPaymentUrl);case _:
   return null;
 
 }
@@ -548,7 +840,7 @@ return $default(_that.id,_that.customerId,_that.driverId,_that.status,_that.vehi
 @JsonSerializable()
 
 class _Job implements Job {
-  const _Job({required this.id, required this.customerId, this.driverId, required this.status, required this.vehicleType, required this.pickup, required this.pickupAddress, required this.dropoff, required this.dropoffAddress, required this.distanceKm, required this.quotedPrice, this.finalPrice, this.paymentMethod = 'cash', this.driver, required this.requestedAt, this.assignedAt, this.pickedUpAt, this.completedAt, this.cancelledAt, this.cancelReason, this.shareToken, this.driverCommission});
+  const _Job({required this.id, required this.customerId, this.driverId, required this.status, required this.vehicleType, required this.pickup, required this.pickupAddress, required this.dropoff, required this.dropoffAddress, required this.distanceKm, required this.quotedPrice, this.finalPrice, this.paymentMethod = 'cash', this.driver, this.customer, required this.requestedAt, this.assignedAt, this.pickedUpAt, this.completedAt, this.cancelledAt, this.cancelReason, this.shareToken, this.driverCommission, this.asyncPaymentUrl});
   factory _Job.fromJson(Map<String, dynamic> json) => _$JobFromJson(json);
 
 @override final  String id;
@@ -565,6 +857,10 @@ class _Job implements Job {
 @override final  int? finalPrice;
 @override@JsonKey() final  String paymentMethod;
 @override final  JobDriverSummary? driver;
+// DRV-3: symmetric to `driver` above — backs the call-customer button
+// on the driver's active-job screen. Optional for the same reason
+// `shareToken` is: older fake seed data predates this field.
+@override final  JobCustomerSummary? customer;
 @override final  DateTime requestedAt;
 @override final  DateTime? assignedAt;
 @override final  DateTime? pickedUpAt;
@@ -580,6 +876,13 @@ class _Job implements Job {
 // job is actually completed. ActiveJobScreen falls back to a client-side
 // flat-15% approximation only when this is null.
 @override final  int? driverCommission;
+// PAY-4: the Wompi checkout URL to redirect the customer to, present
+// only on the exact `confirmDelivery` response that just started a
+// digital-fare payment (PSE/card -- null for Nequi, and for every other
+// response, including a re-fetch of the same job afterward). Not a
+// real job field on the backend -- see `JobRead.async_payment_url`'s
+// doc comment (`backend/app/schemas/job.py`).
+@override final  String? asyncPaymentUrl;
 
 /// Create a copy of Job
 /// with the given fields replaced by the non-null parameter values.
@@ -594,16 +897,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Job&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.finalPrice, finalPrice) || other.finalPrice == finalPrice)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.driver, driver) || other.driver == driver)&&(identical(other.requestedAt, requestedAt) || other.requestedAt == requestedAt)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&(identical(other.pickedUpAt, pickedUpAt) || other.pickedUpAt == pickedUpAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.shareToken, shareToken) || other.shareToken == shareToken)&&(identical(other.driverCommission, driverCommission) || other.driverCommission == driverCommission));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Job&&(identical(other.id, id) || other.id == id)&&(identical(other.customerId, customerId) || other.customerId == customerId)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.status, status) || other.status == status)&&(identical(other.vehicleType, vehicleType) || other.vehicleType == vehicleType)&&(identical(other.pickup, pickup) || other.pickup == pickup)&&(identical(other.pickupAddress, pickupAddress) || other.pickupAddress == pickupAddress)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.dropoffAddress, dropoffAddress) || other.dropoffAddress == dropoffAddress)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.quotedPrice, quotedPrice) || other.quotedPrice == quotedPrice)&&(identical(other.finalPrice, finalPrice) || other.finalPrice == finalPrice)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.driver, driver) || other.driver == driver)&&(identical(other.customer, customer) || other.customer == customer)&&(identical(other.requestedAt, requestedAt) || other.requestedAt == requestedAt)&&(identical(other.assignedAt, assignedAt) || other.assignedAt == assignedAt)&&(identical(other.pickedUpAt, pickedUpAt) || other.pickedUpAt == pickedUpAt)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.cancelledAt, cancelledAt) || other.cancelledAt == cancelledAt)&&(identical(other.cancelReason, cancelReason) || other.cancelReason == cancelReason)&&(identical(other.shareToken, shareToken) || other.shareToken == shareToken)&&(identical(other.driverCommission, driverCommission) || other.driverCommission == driverCommission)&&(identical(other.asyncPaymentUrl, asyncPaymentUrl) || other.asyncPaymentUrl == asyncPaymentUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,customerId,driverId,status,vehicleType,pickup,pickupAddress,dropoff,dropoffAddress,distanceKm,quotedPrice,finalPrice,paymentMethod,driver,requestedAt,assignedAt,pickedUpAt,completedAt,cancelledAt,cancelReason,shareToken,driverCommission]);
+int get hashCode => Object.hashAll([runtimeType,id,customerId,driverId,status,vehicleType,pickup,pickupAddress,dropoff,dropoffAddress,distanceKm,quotedPrice,finalPrice,paymentMethod,driver,customer,requestedAt,assignedAt,pickedUpAt,completedAt,cancelledAt,cancelReason,shareToken,driverCommission,asyncPaymentUrl]);
 
 @override
 String toString() {
-  return 'Job(id: $id, customerId: $customerId, driverId: $driverId, status: $status, vehicleType: $vehicleType, pickup: $pickup, pickupAddress: $pickupAddress, dropoff: $dropoff, dropoffAddress: $dropoffAddress, distanceKm: $distanceKm, quotedPrice: $quotedPrice, finalPrice: $finalPrice, paymentMethod: $paymentMethod, driver: $driver, requestedAt: $requestedAt, assignedAt: $assignedAt, pickedUpAt: $pickedUpAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelReason: $cancelReason, shareToken: $shareToken, driverCommission: $driverCommission)';
+  return 'Job(id: $id, customerId: $customerId, driverId: $driverId, status: $status, vehicleType: $vehicleType, pickup: $pickup, pickupAddress: $pickupAddress, dropoff: $dropoff, dropoffAddress: $dropoffAddress, distanceKm: $distanceKm, quotedPrice: $quotedPrice, finalPrice: $finalPrice, paymentMethod: $paymentMethod, driver: $driver, customer: $customer, requestedAt: $requestedAt, assignedAt: $assignedAt, pickedUpAt: $pickedUpAt, completedAt: $completedAt, cancelledAt: $cancelledAt, cancelReason: $cancelReason, shareToken: $shareToken, driverCommission: $driverCommission, asyncPaymentUrl: $asyncPaymentUrl)';
 }
 
 
@@ -614,11 +917,11 @@ abstract mixin class _$JobCopyWith<$Res> implements $JobCopyWith<$Res> {
   factory _$JobCopyWith(_Job value, $Res Function(_Job) _then) = __$JobCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String customerId, String? driverId, JobStatus status, VehicleType vehicleType, LatLng pickup, String pickupAddress, LatLng dropoff, String dropoffAddress, double distanceKm, int quotedPrice, int? finalPrice, String paymentMethod, JobDriverSummary? driver, DateTime requestedAt, DateTime? assignedAt, DateTime? pickedUpAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelReason, String? shareToken, int? driverCommission
+ String id, String customerId, String? driverId, JobStatus status, VehicleType vehicleType, LatLng pickup, String pickupAddress, LatLng dropoff, String dropoffAddress, double distanceKm, int quotedPrice, int? finalPrice, String paymentMethod, JobDriverSummary? driver, JobCustomerSummary? customer, DateTime requestedAt, DateTime? assignedAt, DateTime? pickedUpAt, DateTime? completedAt, DateTime? cancelledAt, String? cancelReason, String? shareToken, int? driverCommission, String? asyncPaymentUrl
 });
 
 
-@override $LatLngCopyWith<$Res> get pickup;@override $LatLngCopyWith<$Res> get dropoff;@override $JobDriverSummaryCopyWith<$Res>? get driver;
+@override $LatLngCopyWith<$Res> get pickup;@override $LatLngCopyWith<$Res> get dropoff;@override $JobDriverSummaryCopyWith<$Res>? get driver;@override $JobCustomerSummaryCopyWith<$Res>? get customer;
 
 }
 /// @nodoc
@@ -631,7 +934,7 @@ class __$JobCopyWithImpl<$Res>
 
 /// Create a copy of Job
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? customerId = null,Object? driverId = freezed,Object? status = null,Object? vehicleType = null,Object? pickup = null,Object? pickupAddress = null,Object? dropoff = null,Object? dropoffAddress = null,Object? distanceKm = null,Object? quotedPrice = null,Object? finalPrice = freezed,Object? paymentMethod = null,Object? driver = freezed,Object? requestedAt = null,Object? assignedAt = freezed,Object? pickedUpAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelReason = freezed,Object? shareToken = freezed,Object? driverCommission = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? customerId = null,Object? driverId = freezed,Object? status = null,Object? vehicleType = null,Object? pickup = null,Object? pickupAddress = null,Object? dropoff = null,Object? dropoffAddress = null,Object? distanceKm = null,Object? quotedPrice = null,Object? finalPrice = freezed,Object? paymentMethod = null,Object? driver = freezed,Object? customer = freezed,Object? requestedAt = null,Object? assignedAt = freezed,Object? pickedUpAt = freezed,Object? completedAt = freezed,Object? cancelledAt = freezed,Object? cancelReason = freezed,Object? shareToken = freezed,Object? driverCommission = freezed,Object? asyncPaymentUrl = freezed,}) {
   return _then(_Job(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,customerId: null == customerId ? _self.customerId : customerId // ignore: cast_nullable_to_non_nullable
@@ -647,7 +950,8 @@ as double,quotedPrice: null == quotedPrice ? _self.quotedPrice : quotedPrice // 
 as int,finalPrice: freezed == finalPrice ? _self.finalPrice : finalPrice // ignore: cast_nullable_to_non_nullable
 as int?,paymentMethod: null == paymentMethod ? _self.paymentMethod : paymentMethod // ignore: cast_nullable_to_non_nullable
 as String,driver: freezed == driver ? _self.driver : driver // ignore: cast_nullable_to_non_nullable
-as JobDriverSummary?,requestedAt: null == requestedAt ? _self.requestedAt : requestedAt // ignore: cast_nullable_to_non_nullable
+as JobDriverSummary?,customer: freezed == customer ? _self.customer : customer // ignore: cast_nullable_to_non_nullable
+as JobCustomerSummary?,requestedAt: null == requestedAt ? _self.requestedAt : requestedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,assignedAt: freezed == assignedAt ? _self.assignedAt : assignedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,pickedUpAt: freezed == pickedUpAt ? _self.pickedUpAt : pickedUpAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
@@ -655,7 +959,8 @@ as DateTime?,cancelledAt: freezed == cancelledAt ? _self.cancelledAt : cancelled
 as DateTime?,cancelReason: freezed == cancelReason ? _self.cancelReason : cancelReason // ignore: cast_nullable_to_non_nullable
 as String?,shareToken: freezed == shareToken ? _self.shareToken : shareToken // ignore: cast_nullable_to_non_nullable
 as String?,driverCommission: freezed == driverCommission ? _self.driverCommission : driverCommission // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,asyncPaymentUrl: freezed == asyncPaymentUrl ? _self.asyncPaymentUrl : asyncPaymentUrl // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -688,6 +993,18 @@ $JobDriverSummaryCopyWith<$Res>? get driver {
 
   return $JobDriverSummaryCopyWith<$Res>(_self.driver!, (value) {
     return _then(_self.copyWith(driver: value));
+  });
+}/// Create a copy of Job
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$JobCustomerSummaryCopyWith<$Res>? get customer {
+    if (_self.customer == null) {
+    return null;
+  }
+
+  return $JobCustomerSummaryCopyWith<$Res>(_self.customer!, (value) {
+    return _then(_self.copyWith(customer: value));
   });
 }
 }
