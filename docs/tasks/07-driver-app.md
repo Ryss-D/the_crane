@@ -115,19 +115,33 @@ Flutter driver shell: go available, receive offers, execute the job.
   `didChangeAppLifecycleState(resumed)` (`main.dart`, via
   `WidgetsBindingObserver`) for coming back from the background, the case
   most likely to have actually left the socket stale (mobile OSes tend to
-  suspend networking while backgrounded). Honesty note: the backend doesn't
-  send FCM pushes for job offers yet either (`realtime.py`'s own
-  `TODO(FCM)` — no Firebase Admin credentials configured server-side), so
-  the `onMessage` listener is inert today; this only wires the client half
-  for whenever that lands, deliberately payload-agnostic since no message
-  shape exists yet to key off. Deliberately scoped to foreground/resumed
-  only — a killed-app, lock-screen notification experience needs
+  suspend networking while backgrounded). Honesty note (now stale, see
+  below): at the time this was written, the backend didn't send FCM
+  pushes for job offers yet either (`realtime.py`'s own `TODO(FCM)` — no
+  Firebase Admin credentials configured server-side), so the `onMessage`
+  listener was inert; this only wired the client half for whenever that
+  landed, deliberately payload-agnostic since no message shape existed yet
+  to key off. Deliberately scoped to foreground/resumed only — a
+  killed-app, lock-screen notification experience needs
   `flutter_local_notifications`, platform permission flows, and a
   background isolate entry point (`FirebaseMessaging.onBackgroundMessage`),
-  none of which is attempted here. New tests: `CraneSocket.reconnectNow`'s
+  none of which was attempted at the time. New tests: `CraneSocket.reconnectNow`'s
   three states (before connect, already connected, mid-backoff) against
-  the existing fake WebSocket channel double. Not checking this off — the
-  distance/commission half is still blocked on the backend.
+  the existing fake WebSocket channel double.
+
+  Stale-note correction (2026-08-31): both halves flagged above as missing
+  were actually built later under **TRK-3** in `05-realtime-tracking.md`,
+  which this entry was never cross-referenced against. The backend's
+  `TODO(FCM)` is gone — `notify_driver_offer` (`app/services/realtime.py`)
+  really does call `_push_to_user(..., {"type": "job_offer", ...})` now,
+  tested end to end by `test_dispatch_offer_sends_fcm_push_to_driver`
+  (`backend/tests/test_ws.py`). The killed-app/backgrounded Flutter gap is
+  also closed — `flutter_local_notifications` +
+  `FirebaseMessaging.onBackgroundMessage` show a real local notification
+  for a `job_offer` push even with the app fully killed. Still not
+  checking DRV-2 off: TRK-3's own entry is explicit that none of this has
+  ever been verified on a real device/emulator, and iOS has a real (not
+  just unverified) architectural gap on a killed app — see TRK-3's note.
 
 - [ ] **DRV-3 — Active job screen** *(deps: JOB-6, TRK-4)*
   Status-advance button per phase (En camino → Llegué → Cargado → En ruta → Entregado), map with route, deep-link to Google Maps navigation, call-customer button, cancel (returns job to matching).
