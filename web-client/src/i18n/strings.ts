@@ -1,4 +1,4 @@
-import type { JobStatus, TruckType, VehicleType } from '../api/types';
+import type { JobStatus, PaymentMethod, TruckType, VehicleType } from '../api/types';
 
 /**
  * es-CO strings, centralized so a real i18n layer (or at least en fallback)
@@ -83,6 +83,13 @@ export const strings = {
     confirmCash: 'Pagado en efectivo',
     confirming: 'Confirmando…',
     confirmError: 'No pudimos confirmar el pago. Intenta de nuevo.',
+    // PAY-4: digital-fare checkout, alongside (not replacing) cash above.
+    payDigitalToggle: 'Pagar con tarjeta, PSE o Nequi',
+    paymentMethodLabel: 'Método de pago',
+    payDigitalSubmit: 'Pagar',
+    nequiPending: 'Aprueba el pago en tu app Nequi para completar el servicio.',
+    digitalFaresUnavailable:
+      'Los pagos digitales todavía no están disponibles. Paga en efectivo por ahora.',
   },
 
   rating: {
@@ -104,6 +111,13 @@ export const strings = {
     car: 'Grúa para carro',
     flatbed: 'Grúa plataforma',
   } satisfies Record<TruckType, string>,
+
+  paymentMethods: {
+    cash: 'Efectivo',
+    card: 'Tarjeta',
+    pse: 'PSE',
+    nequi: 'Nequi',
+  } satisfies Record<PaymentMethod, string>,
 
   statuses: {
     requested: 'Solicitud recibida',

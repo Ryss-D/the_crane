@@ -37,6 +37,16 @@ export const TERMINAL_STATUSES: readonly JobStatus[] = ['completed', 'cancelled'
 export const VEHICLE_TYPES = ['moto', 'car', 'suv'] as const;
 export type VehicleType = (typeof VEHICLE_TYPES)[number];
 
+/**
+ * PAY-4: how a customer pays at `confirm-delivery`. Matches the backend's
+ * `PaymentMethod` enum (`app/models/job.py`) except this client never offers
+ * `wallet` — same subset the Flutter app's checkout dialog exposes, per that
+ * task's UI (`docs/tasks/12-payments-wompi.md`). Omitting `payment_method`
+ * entirely (or passing `'cash'`) is the pre-existing cash-only path.
+ */
+export const PAYMENT_METHODS = ['cash', 'nequi', 'pse', 'card'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
 export const TRUCK_TYPES = ['moto_only', 'car', 'flatbed'] as const;
 export type TruckType = (typeof TRUCK_TYPES)[number];
 
@@ -109,6 +119,14 @@ export interface Job {
   /** Token for the public share-track page (/t/{token}). */
   share_token: string;
   created_at: string;
+  /** PAY-4: non-null only on the exact `confirm-delivery` response that just
+   * started a real Wompi checkout for PSE/card — never for cash, never for
+   * Nequi (no redirect step there, the app just says "check your Nequi
+   * app"), and never on a later re-fetch of the same job. Matches the
+   * backend's `JobRead.async_payment_url` exactly (see PAY-4's note in
+   * `docs/tasks/12-payments-wompi.md` about the transient
+   * `job.pending_payment_url` attribute it's read from server-side). */
+  async_payment_url: string | null;
 }
 
 /**

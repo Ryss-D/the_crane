@@ -135,7 +135,7 @@ describe('HttpApi', () => {
   });
 
   describe('confirmDelivery', () => {
-    it('POSTs to the confirm-delivery endpoint with no body', async () => {
+    it('POSTs to the confirm-delivery endpoint with no body when no payment method is given', async () => {
       const job = { id: 'j1', status: 'completed' };
       fetchMock.mockResolvedValueOnce(fakeResponse(job));
       const api = new HttpApi(baseUrl, getToken);
@@ -147,6 +147,35 @@ describe('HttpApi', () => {
       expect(url).toBe(`${baseUrl}/v1/jobs/j1/confirm-delivery`);
       expect(init.method).toBe('POST');
       expect(init.body).toBeNull();
+    });
+
+    // PAY-4: a non-cash method carries a body; 'cash' does too (harmless —
+    // the backend treats an explicit 'cash' and an omitted body identically)
+    // but only an omitted argument gets the no-body fast path above.
+    it('POSTs {payment_method: "pse"} when a digital method is given', async () => {
+      const job = { id: 'j1', status: 'completed', async_payment_url: 'https://checkout.wompi.co/x' };
+      fetchMock.mockResolvedValueOnce(fakeResponse(job));
+      const api = new HttpApi(baseUrl, getToken);
+
+      const result = await api.confirmDelivery('j1', 'pse');
+
+      expect(result).toEqual(job);
+      const { url, init } = lastCall();
+      expect(url).toBe(`${baseUrl}/v1/jobs/j1/confirm-delivery`);
+      expect(init.method).toBe('POST');
+      expect(init.body).toBe(JSON.stringify({ payment_method: 'pse' }));
+    });
+
+    it('surfaces a 422 ApiError when the digital-fares flag is off server-side', async () => {
+      fetchMock.mockResolvedValueOnce(
+        fakeResponse({ detail: 'Digital fares are not enabled' }, { ok: false, status: 422 }),
+      );
+      const api = new HttpApi(baseUrl, getToken);
+
+      await expect(api.confirmDelivery('j1', 'card')).rejects.toMatchObject({
+        name: 'ApiError',
+        status: 422,
+      });
     });
   });
 
@@ -231,6 +260,48 @@ describe('HttpApi', () => {
 
       const { init } = lastCall();
       expect(init.body).toBeNull();
+    });
+  });
+
+  describe('reverseGeocode (CUS-1/CUS-4/WEB-2 follow-up)', () => {
+    it('GETs /v1/places/geocode with lat/lng query params and returns the address', async () => {
+      fetchMock.mockResolvedValueOnce(fakeResponse({ address: 'El Poblado, Medellín, Colombia' }));
+      const api = new HttpApi(baseUrl, getToken);
+
+      const result = await api.reverseGeocode(6.2442, -75.5812);
+
+      expect(result).toBe('El Poblado, Medellín, Colombia');
+      const { url, init } = lastCall();
+      expect(url).toBe(`${baseUrl}/v1/places/geocode?lat=6.2442&lng=-75.5812`);
+      expect(init.method).toBe('GET');
+      expect(init.headers).toMatchObject({ Authorization: 'Bearer the-id-token' });
+    });
+
+    it('resolves null (never throws) on a 503 — no server-side key configured, or a Google error', async () => {
+      fetchMock.mockResolvedValueOnce(fakeResponse({}, { ok: false, status: 503 }));
+      const api = new HttpApi(baseUrl, getToken);
+
+      const result = await api.reverseGeocode(6.2442, -75.5812);
+
+      expect(result).toBeNull();
+    });
+
+    it('resolves null (never throws) on a 401 — not signed in yet, same auth requirement as autocomplete/details', async () => {
+      fetchMock.mockResolvedValueOnce(fakeResponse({}, { ok: false, status: 401 }));
+      const api = new HttpApi(baseUrl, getToken);
+
+      const result = await api.reverseGeocode(6.2442, -75.5812);
+
+      expect(result).toBeNull();
+    });
+
+    it('resolves null (never throws) on a network failure', async () => {
+      fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      const api = new HttpApi(baseUrl, getToken);
+
+      const result = await api.reverseGeocode(6.2442, -75.5812);
+
+      expect(result).toBeNull();
     });
   });
 

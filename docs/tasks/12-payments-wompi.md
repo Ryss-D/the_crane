@@ -149,6 +149,74 @@ Digital money on top of the LED spine. Commission-first (drivers settle their ba
   PSE-pending run, or any live pass against a real Wompi account — none
   exists yet.
 
+  Follow-up (2026-08-31): the web-client customer checkout UI is built now
+  (stale-note correction, same pattern as PAY-3's: "web-client/admin
+  checkout UI" above no longer applies to the web-client half, only admin).
+
+  `src/api/types.ts` gained `PaymentMethod = 'cash' | 'nequi' | 'pse' |
+  'card'` (deliberately omits the backend's `wallet` value — same four-method
+  subset the Flutter checkout dialog exposes, not the full backend enum) and
+  `Job.async_payment_url: string | null`. `CraneApi.confirmDelivery`
+  (`src/api/client.ts`) gained an optional second `paymentMethod` parameter;
+  `HttpApi` sends `{payment_method: paymentMethod}` only when one is given,
+  omitting the request body entirely for a plain cash confirm (same
+  no-body-when-omitted convention `syncAuth` already used) so an explicit
+  `'cash'` and no argument at all are wire-identical, matching the backend's
+  own "omitted or cash" equivalence. `MockApi` (`src/api/mock.ts`) gained a
+  public `digitalFaresEnabled` flag (default `false`, matching the backend's
+  own `platform_config` default) — a non-cash method while it's off throws a
+  422 `ApiError` (`'Digital fares are not enabled'`), a PSE/card confirm
+  while it's on returns a fake `https://checkout.wompi.co/fake/{id}_{method}`
+  `async_payment_url`, and Nequi returns none even when the flag is on, all
+  mirroring the real gateway's behavior described above. The fake URL is
+  never persisted on the stored job record (only ever attached to the one
+  `confirmDelivery` response that generates it, same transient-attribute
+  contract as the real `job.pending_payment_url`) — a follow-up `getJob`
+  never resurrects it. `resetForTests()` now also resets
+  `digitalFaresEnabled` and un-freezes the seeded `demo-delivered` job back
+  to `delivered`, since confirming it is destructive and `MockApi` is a
+  module-level singleton shared across every test in a file.
+
+  `TrackingPage.tsx`'s existing `delivered`-state card gained a second,
+  collapsed-by-default option next to the unchanged cash button: a "pagar
+  con tarjeta, PSE o Nequi" toggle that reveals a three-way radio-button
+  picker (card/PSE/Nequi) plus its own submit button, both calling the same
+  `confirmMutation` with the chosen method. `onSuccess`, a non-null
+  `async_payment_url` redirects the browser immediately
+  (`window.location.href = ...` — no `url_launcher` equivalent needed for a
+  plain web app); choosing Nequi with no URL back shows a small persistent
+  notice telling the customer to approve the payment in their Nequi app
+  (kept in its own piece of state rather than gated on `job.status ===
+  'delivered'`, since the backend completes the job immediately regardless
+  of payment method and the delivered card would otherwise unmount before
+  the customer could read the notice). The existing `confirmMutation.isError`
+  banner now distinguishes a 422 (`ApiError` with `status === 422`) with a
+  clear "not available yet" message from any other failure, rather than one
+  generic string for both, per this task's own client-side "handle the 422
+  gracefully" note above.
+
+  Tests: 2 new `HttpApi.confirmDelivery` cases (`client.test.ts`, digital
+  body shape + 422 propagation), 5 new `MockApi.confirmDelivery` cases
+  (`mock.test.ts`: cash unaffected by the flag, 422 when off, fake URL for
+  PSE/card when on, null for Nequi, no stale URL on re-fetch), and 3 new
+  `TrackingPage` cases (PSE redirect, Nequi notice with no redirect, 422
+  inline message with cash still working alongside it) — full web-client
+  suite green, 82 passed (up from 72). `npm run lint` and `npm run build`
+  both clean.
+
+  Not built, a deliberate scope cut matching this session's brief: the admin
+  UI. Looked at what `JobRead`/the admin job list already surface first —
+  admin has no visible `payment_method`/payment-status column anywhere yet,
+  and PAY-4's own AC note above already flags that a digital fare's ledger
+  entry is deferred until the webhook settles it, so an admin viewing a
+  freshly-completed digital-fare job today would see it as "completed" with
+  no sign a payment is still in flight. That does look like a real gap worth
+  a small follow-up (a payment-method/status column, or at least a
+  "processing" badge) — flagging it rather than building it, since it's out
+  of this task's scope and touches `admin/`, not `web-client/`. Still not
+  verified, same standing gap as the rest of PAY-*: a real Wompi sandbox
+  account doesn't exist, so none of this has run against a live checkout.
+
 - [ ] **PAY-5 — Reconciliation job** *(deps: PAY-2)*
   Nightly task diffing Wompi's transaction list against `payments`; mismatches alert (log/email).
   *AC: seeded mismatch is detected and reported.*

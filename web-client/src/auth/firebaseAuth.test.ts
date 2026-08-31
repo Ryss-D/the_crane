@@ -1,5 +1,7 @@
-import type { User } from 'firebase/auth';
+import type * as FirebaseAuthModule from 'firebase/auth';
+import type { Auth, User } from 'firebase/auth';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { FirebaseAuthClient as FirebaseAuthClientClass } from './firebaseAuth';
 
 /**
  * `firebaseAuth.ts` is the real Firebase phone-OTP client (used once
@@ -28,9 +30,9 @@ vi.mock('firebase/auth', () => ({
 }));
 
 describe('FirebaseAuthClient', () => {
-  let auth: typeof import('firebase/auth');
-  let firebaseAuth: import('firebase/auth').Auth;
-  let FirebaseAuthClient: typeof import('./firebaseAuth').FirebaseAuthClient;
+  let auth: typeof FirebaseAuthModule;
+  let firebaseAuth: Auth;
+  let FirebaseAuthClient: typeof FirebaseAuthClientClass;
 
   function setCurrentUser(user: User | null): void {
     (firebaseAuth as unknown as { currentUser: User | null }).currentUser = user;

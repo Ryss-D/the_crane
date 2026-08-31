@@ -1,11 +1,19 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppRoutes, AppShell } from '../../App';
+import { api } from '../../api';
+import { MockApi } from '../../api/mock';
 import { TIMELINE_STATUSES } from '../../api/types';
 import { strings } from '../../i18n/strings';
 import { StatusTimeline } from './StatusTimeline';
+
+/** Set only on MockApi (see src/api/index.ts) — every test here relies on
+ * mocks, same as the rest of this file. */
+function setDigitalFaresEnabled(enabled: boolean) {
+  if (api instanceof MockApi) api.digitalFaresEnabled = enabled;
+}
 
 function renderAt(path: string) {
   return render(
@@ -118,6 +126,77 @@ describe('tracking page (WEB-3 skeleton)', () => {
     expect(
       screen.queryByRole('heading', { name: strings.tracking.publicTitle }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('PAY-4: digital fare checkout', () => {
+  const originalLocation = window.location;
+
+  beforeEach(() => {
+    // A plain object stand-in — `TrackingPage` only ever assigns `.href` on
+    // it, and jsdom's real `Location` throws "Not implemented: navigation"
+    // if a test actually lets that assignment try to navigate.
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: { ...originalLocation, href: '' },
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: originalLocation,
+    });
+  });
+
+  it('redirects to the fake checkout URL when PSE/card is chosen with the flag on', async () => {
+    setDigitalFaresEnabled(true);
+    const user = userEvent.setup();
+    renderAt('/jobs/demo-delivered');
+
+    await screen.findByRole('heading', { name: strings.tracking.deliveredTitle });
+    await user.click(screen.getByRole('button', { name: strings.tracking.payDigitalToggle }));
+    await user.click(screen.getByRole('radio', { name: strings.paymentMethods.pse }));
+    await user.click(screen.getByRole('button', { name: strings.tracking.payDigitalSubmit }));
+
+    await waitFor(() =>
+      expect(window.location.href).toBe('https://checkout.wompi.co/fake/demo-delivered_pse'),
+    );
+  });
+
+  it('shows the Nequi in-app-approval message with no redirect when Nequi is chosen with the flag on', async () => {
+    setDigitalFaresEnabled(true);
+    const user = userEvent.setup();
+    renderAt('/jobs/demo-delivered');
+
+    await screen.findByRole('heading', { name: strings.tracking.deliveredTitle });
+    await user.click(screen.getByRole('button', { name: strings.tracking.payDigitalToggle }));
+    await user.click(screen.getByRole('radio', { name: strings.paymentMethods.nequi }));
+    await user.click(screen.getByRole('button', { name: strings.tracking.payDigitalSubmit }));
+
+    expect(await screen.findByText(strings.tracking.nequiPending)).toBeInTheDocument();
+    expect(window.location.href).toBe('');
+  });
+
+  it('shows a clear "not available yet" message on the 422 when the flag is off', async () => {
+    setDigitalFaresEnabled(false);
+    const user = userEvent.setup();
+    renderAt('/jobs/demo-delivered');
+
+    await screen.findByRole('heading', { name: strings.tracking.deliveredTitle });
+    await user.click(screen.getByRole('button', { name: strings.tracking.payDigitalToggle }));
+    // Default-selected method (card) is fine — any non-cash method 422s.
+    await user.click(screen.getByRole('button', { name: strings.tracking.payDigitalSubmit }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      strings.tracking.digitalFaresUnavailable,
+    );
+    expect(window.location.href).toBe('');
+    // Cash still works unchanged on the same screen.
+    await user.click(screen.getByRole('button', { name: strings.tracking.confirmCash }));
+    await screen.findByRole('heading', { name: strings.rating.title });
   });
 });
 

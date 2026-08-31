@@ -6,6 +6,7 @@ import type {
   Driver,
   Job,
   JobStatus,
+  PaymentMethod,
   Quote,
   QuoteRequest,
   TrackInfo,
@@ -28,6 +29,20 @@ const PROGRESSION: ReadonlyArray<readonly [JobStatus, number]> = [
 
 const BASE_FARE: Record<VehicleType, number> = { moto: 35000, car: 60000, suv: 80000 };
 const PER_KM: Record<VehicleType, number> = { moto: 2500, car: 4000, suv: 5000 };
+
+/** Reverse-geocoding follow-up (CUS-1/CUS-4/WEB-2): a handful of real
+ * Medellín-area landmarks so `reverseGeocode()` under mocks returns a
+ * plausible-looking fake address instead of null — mirrors the Flutter
+ * app's `FakePlacesRepository` (`lib/core/api/fake_places_repository.dart`),
+ * same "nearest seeded place by straight-line distance" approach, not
+ * meant to mimic Google's actual reverse-geocoding precision. */
+const FAKE_LANDMARKS: ReadonlyArray<{ lat: number; lng: number; description: string }> = [
+  { lat: 6.2088, lng: -75.5679, description: 'El Poblado, Medellín, Antioquia' },
+  { lat: 6.2447, lng: -75.5916, description: 'Laureles, Medellín, Antioquia' },
+  { lat: 6.1701, lng: -75.591, description: 'Envigado, Antioquia' },
+  { lat: 6.3373, lng: -75.5581, description: 'Bello, Antioquia' },
+  { lat: 6.2518, lng: -75.5636, description: 'Centro, Medellín, Antioquia' },
+];
 
 const MOCK_DRIVER: Driver = {
   id: 'drv_1',
@@ -58,6 +73,12 @@ export class MockApi implements CraneApi {
   private readonly jobs = new Map<string, MockJobRecord>();
   private readonly quotes = new Map<string, Quote>();
   private seq = 0;
+  /** PAY-4: mirrors the backend's `payments.digital_fares_enabled`
+   * platform-config flag (`false` by default, same as the real config seed)
+   * — settable directly by tests, same spirit as the Flutter fake's
+   * `FakeJobsRepository.digitalFaresEnabled`. Cash is entirely unaffected by
+   * this flag either way, matching the real backend. */
+  digitalFaresEnabled = false;
   /** Set on the first syncAuth() call, mirroring the backend's
    * create-or-fetch: subsequent calls return the same row regardless of the
    * body passed in (FakeAuth only ever has one signed-in identity at a
@@ -76,10 +97,21 @@ export class MockApi implements CraneApi {
    * this, the WEB-1 profile-completion gate only shows once per file (the
    * first test to complete it "sticks" for every test after). Not part of
    * the `CraneApi` interface on purpose; called from `src/test/setup.tsx`
-   * only, guarded by an `instanceof MockApi` check.
+   * only, guarded by an `instanceof MockApi` check. Also resets
+   * `digitalFaresEnabled` to its default (`false`) for the same
+   * cross-test-leakage reason (PAY-4).
    */
   resetForTests(): void {
     this.userProfile = null;
+    this.digitalFaresEnabled = false;
+    // The seeded `demo-delivered` job (see `seedDemoJob`) is the only fixed
+    // job any test can reach `delivered` on without waiting on real elapsed
+    // time — confirmDelivery() mutates its `frozenStatus` to `completed` in
+    // place, which would otherwise leak into every later test in the same
+    // file (MockApi is a module-level singleton, same story as
+    // `userProfile` above). Put it back to `delivered` every time.
+    const deliveredRec = this.jobs.get('demo-delivered');
+    if (deliveredRec) deliveredRec.frozenStatus = 'delivered';
   }
 
   private delay(): Promise<void> {
@@ -104,6 +136,7 @@ export class MockApi implements CraneApi {
       driver: MOCK_DRIVER,
       share_token: 'demo-token',
       created_at: new Date().toISOString(),
+      async_payment_url: null,
     };
     this.jobs.set(job.id, {
       job,
@@ -187,6 +220,7 @@ export class MockApi implements CraneApi {
       driver: null,
       share_token: `tok_${id}`,
       created_at: new Date().toISOString(),
+      async_payment_url: null,
     };
     this.jobs.set(id, { job, createdAtMs: Date.now() });
     return job;
@@ -199,15 +233,31 @@ export class MockApi implements CraneApi {
     return this.materialize(rec);
   }
 
-  async confirmDelivery(id: string): Promise<Job> {
+  async confirmDelivery(id: string, paymentMethod?: PaymentMethod): Promise<Job> {
     await this.delay();
     const rec = this.jobs.get(id);
     if (!rec) throw new ApiError(404, `job ${id} not found`);
     if (this.computeStatus(rec) !== 'delivered') {
       throw new ApiError(409, 'Delivery can only be confirmed once the job is delivered');
     }
+    // PAY-4: omitted or 'cash' is the original, flag-independent path. A
+    // non-cash method while the flag is off is a 422, mirroring the real
+    // backend's `ConfirmDeliveryRequest` rejection exactly (never a silent
+    // fallback to cash).
+    const isDigital = paymentMethod !== undefined && paymentMethod !== 'cash';
+    if (isDigital && !this.digitalFaresEnabled) {
+      throw new ApiError(422, 'Digital fares are not enabled');
+    }
     rec.frozenStatus = 'completed';
-    return this.materialize(rec);
+    const job = this.materialize(rec);
+    // Transient, like the real `job.pending_payment_url` attribute this
+    // mirrors — never stored on `rec.job`, only ever present on the exact
+    // response that starts a PSE/card checkout. Nequi has no redirect step
+    // (the driver/customer just approves in-app), same as the real gateway.
+    if (paymentMethod === 'pse' || paymentMethod === 'card') {
+      return { ...job, async_payment_url: `https://checkout.wompi.co/fake/${id}_${paymentMethod}` };
+    }
+    return job;
   }
 
   async submitRating(jobId: string, _stars: number, _comment?: string): Promise<void> {
@@ -265,5 +315,15 @@ export class MockApi implements CraneApi {
       ...(body.email !== undefined ? { email: body.email } : {}),
     };
     return this.userProfile;
+  }
+
+  async reverseGeocode(lat: number, lng: number): Promise<string | null> {
+    await this.delay();
+    const distanceSquared = (p: { lat: number; lng: number }) =>
+      (p.lat - lat) ** 2 + (p.lng - lng) ** 2;
+    const nearest = FAKE_LANDMARKS.reduce((closest, candidate) =>
+      distanceSquared(candidate) <= distanceSquared(closest) ? candidate : closest,
+    );
+    return `Cerca de ${nearest.description}`;
   }
 }
