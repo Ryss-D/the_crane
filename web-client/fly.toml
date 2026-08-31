@@ -1,0 +1,38 @@
+# OPS-5: web-client static deploy. Deployed with VITE_USE_MOCKS=true (the
+# code's own default) deliberately — flipping to the real backend needs
+# FIREBASE_CREDENTIALS_JSON set on the-crane-api first (see backend/README.md),
+# which is a manual step for the user; shipping "real mode" before that would
+# just be broken (every authed API call 401s with no token verifier
+# configured server-side). Once that's done, rebuild with
+# `--build-arg VITE_USE_MOCKS=false --build-arg VITE_API_BASE_URL=https://the-crane-api.fly.dev`.
+app = "the-crane-web"
+primary_region = "iad"
+
+[build]
+  [build.args]
+    VITE_USE_MOCKS = "true"
+    VITE_FIREBASE_API_KEY = "AIzaSyDYGwvNhX_qexs8e1HPQv4Skwe3oq6_lqQ"
+    VITE_FIREBASE_AUTH_DOMAIN = "the-crane-c6b86.firebaseapp.com"
+    VITE_FIREBASE_PROJECT_ID = "the-crane-c6b86"
+    VITE_FIREBASE_STORAGE_BUCKET = "the-crane-c6b86.firebasestorage.app"
+    VITE_FIREBASE_MESSAGING_SENDER_ID = "765176672838"
+    VITE_FIREBASE_APP_ID = "1:765176672838:web:9ea1159b70ba47689a1047"
+    VITE_GOOGLE_MAPS_API_KEY = "AIzaSyANdj-8_QeCUPs-gFsTNtTANm1saLvo-bU"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "5s"
+    interval = "30s"
+    method = "GET"
+    timeout = "3s"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

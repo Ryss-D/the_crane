@@ -1,0 +1,28 @@
+name: Deploy Admin (Fly.io)
+
+# OPS-5: auto-deploy on push to dev. No PR-preview-URL automation yet (Fly
+# has no built-in per-PR preview like Cloudflare Pages/Vercel do — would
+# need custom per-PR app create/destroy logic, a separate follow-up).
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "admin/**"
+      - ".github/workflows/deploy-admin.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    name: Deploy to Fly.io
+    runs-on: ubuntu-latest
+    concurrency: deploy-admin-dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        run: flyctl deploy --remote-only --ha=false --app the-crane-admin
+        working-directory: admin
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN_ADMIN }}

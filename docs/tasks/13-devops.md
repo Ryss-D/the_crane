@@ -74,6 +74,54 @@
 - [ ] **OPS-5 — Web/admin CI + deploy** *(deps: WEB-1, ADM-1)*
   Lint/typecheck/build on PR; preview deploys per PR; prod deploy on `main`.
   *AC: PR preview URL posted automatically.*
+  Built and live-verified (2026-08-31): both deployed to Fly.io (not the
+  original task line's Cloudflare Pages/Vercel — kept everything on one
+  platform alongside the backend, see OPS-3) as static sites —
+  `the-crane-web`/`the-crane-admin`, each a multi-stage Docker build
+  (`node:22-alpine` running `vite build`, served by `nginx:alpine` with an
+  SPA fallback for react-router) via `web-client/Dockerfile` and
+  `admin/Dockerfile`. `VITE_*` env vars are baked in as Docker build ARGs
+  (`fly.toml`'s `[build.args]`), not runtime secrets — Vite compiles them
+  into the JS bundle at build time, and none of them are actually secret
+  once built anyway (Firebase web config is meant to be public; the Maps
+  key is protected by its own referrer restriction).
+
+  Deployed with `VITE_USE_MOCKS=true` deliberately, not pointed at the
+  real backend yet: flipping that needs `FIREBASE_CREDENTIALS_JSON` set on
+  `the-crane-api` first (a manual step for the user, see the OPS-3 note),
+  and shipping "real mode" before that would just 401 on every authed
+  call. `the-crane-api`'s `CORS_ORIGINS` already includes both new domains
+  for whenever that flip happens.
+
+  GitHub Actions auto-deploy on push to `dev`
+  (`.github/workflows/deploy-web-client.yml`, `deploy-admin.yml`), each
+  with its own app-scoped Fly deploy token. **Not built**: PR preview URLs
+  — Fly has no built-in per-PR preview the way Cloudflare Pages/Vercel do;
+  replicating that needs custom per-PR app create/destroy logic, a
+  separate follow-up. **Not built**: a distinct prod deploy on `main` —
+  only the single `dev` environment exists right now, matching OPS-3's own
+  scope-to-"(dev)" choice.
+
+  A real, non-obvious constraint hit while deploying: the Fly org's
+  machine limit — `fly deploy` creates a second machine for HA by default,
+  and the org (which also runs several unrelated apps) hit its cap
+  mid-deploy. Fixed by scaling every app in this project down to a single
+  machine (`--ha=false` on deploy, `fly scale count 1` on the two apps
+  already past that point) — a deliberate choice for a dev/demo
+  environment, not just a workaround; revisit if real uptime requirements
+  ever call for redundancy here.
+
+  Real follow-up flagged, not done here (needs an interactive `gcloud auth
+  login` this session couldn't do non-interactively): the Web Google Maps
+  key's HTTP-referrer restriction (Google Cloud Console) is still
+  `localhost:5173`/`5174` only — add `https://the-crane-web.fly.dev/*` and
+  `https://the-crane-admin.fly.dev/*` or the map components on both
+  deployed sites silently show no tiles.
+
+  AC verified directly: `curl https://the-crane-web.fly.dev/health` and
+  `https://the-crane-admin.fly.dev/health` both return `ok` (HTTP 200)
+  after a real deploy; `curl .../` on both returns real rendered HTML, not
+  a blank/broken page.
 
 - [ ] **OPS-6 — Observability baseline** *(deps: OPS-3)*
   Structured logging (request id, job id), Sentry for API + Flutter + web, basic uptime check.
