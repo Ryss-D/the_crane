@@ -149,6 +149,56 @@ New role: owners of multiple grúas who assign drivers to trucks and settle one 
   rather than shipped hanging -- the underlying logic is already exercised
   at the repository level, so this isn't believed to be a real coverage gap.
 
+  Follow-up (2026-08-31): root-caused and fixed, confirmed with checkpoint
+  logging (not guessed). The actual mechanism: seeding a real invite needs
+  `await fleetRepo.createFleet(...)`/`createInvite(...)`, and both
+  internally `await Future<...>.delayed(actionDelay)`. Calling those
+  *before* the test's first `tester.pumpWidget()`/`pump()` -- which is
+  exactly what building a real invite to type into the field requires --
+  means the call is awaited before `testWidgets`' FakeAsync zone has ever
+  had its clock advanced. A `Timer` (even a `Duration.zero` one --
+  confirmed by testing that specifically, it did *not* fix it) only fires
+  when something calls `elapse()`, which only `tester.pump(...)` does
+  here; nothing had pumped yet, so the await blocked forever. (Print
+  checkpoints placed after every step confirmed execution stopping dead
+  at exactly that first `await createFleet(...)` line, every time.)
+
+  This has nothing to do with `pumpAndSettle()` or the indeterminate
+  submit-button spinner (an earlier version of this note guessed that;
+  it was wrong -- left here so a future reader doesn't re-guess it
+  either). The fix: wrap the seeding calls in `tester.runAsync(() async {
+  ... })`, which steps outside the FakeAsync zone into a real one where a
+  real `Future.delayed` (near-instant, given `actionDelay: Duration.zero`)
+  just resolves normally.
+
+  Two new tests in `test/features/customer/become_driver_flow_widget_test.dart`:
+  `FLT-4: redeeming a valid invite links the pre-provisioned truck and
+  lands on the driver shell` and `FLT-4: a phone-mismatched invite shows
+  an inline error instead of hanging or silently succeeding` -- both seed
+  a real invite via `tester.runAsync` on a `FakeFleetRepository(actionDelay:
+  Duration.zero)` instance passed into `testDependencies(fleet: ...)`
+  before pumping (phone matching `FakeAuthRepository.currentPhone`'s
+  hardcoded `+573000000000` for the success case, a different phone for
+  the rejection case), then drive submit with the same bounded
+  `tester.pump(duration)` sequence (100ms + 400ms + 400ms) the AUTH-5
+  success test above already uses.
+
+  Fully verified, not just reasoned about: `flutter analyze` clean;
+  `flutter test test/features/customer/become_driver_flow_widget_test.dart`
+  -- all 5 tests in this file, including both new ones -- passes in 2
+  seconds; the full `flutter test` suite (419 passed) is green too, no
+  hangs anywhere. (This session ran several other agents concurrently
+  compiling/testing the same project on one shared, externally loaded
+  machine -- `uptime` showed load averages of 4-7 with 12 concurrent user
+  sessions throughout -- which made `flutter test` invocations extremely
+  slow to *start* for over an hour of this investigation and repeatedly
+  produced misleading multi-minute apparent "hangs" at the process level
+  before this specific, reproducible root cause was isolated with
+  checkpoint logging. That contention is a real, separate environmental
+  fact worth knowing about for future concurrent-agent sessions on this
+  project, but is unrelated to the actual bug and its fix, both confirmed
+  above.)
+
 - [x] **FLT-5 — Fleet earnings screen** *(deps: FLT-2)*
   Commission accrued per truck, consolidated balance owed, settlement action (cash instructions; Wompi via PAY-3 pattern later).
   Design: «Ganancias de la flota» (`docs/design/screen-references.md`)

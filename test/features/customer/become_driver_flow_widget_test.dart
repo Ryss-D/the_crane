@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_crane/core/api/fake_drivers_repository.dart';
+import 'package:the_crane/core/api/fake_fleet_repository.dart';
 import 'package:the_crane/core/models/driver_profile.dart';
 import 'package:the_crane/core/models/truck.dart';
 import 'package:the_crane/features/customer/request/request_screen.dart';
@@ -96,18 +97,15 @@ void main() {
   });
 
   // FLT-4's "redeem an invite" path (mode selector -> invite-token field ->
-  // register) is exercised at the repository level instead of end-to-end
-  // here: `test/core/api/fake_drivers_repository_test.dart` and
+  // register) is exercised at the repository level too:
+  // `test/core/api/fake_drivers_repository_test.dart` and
   // `test/core/api/fake_fleet_repository_test.dart` cover successful
   // redemption (truck link, invite consumed, role flip) and the
-  // phone-mismatch rejection. A widget-level version of *submitting* this
-  // flow (tapping through the `_RegistrationMode.invite` segment all the
-  // way to a successful/rejected `register`) reliably hung the test runner
-  // here for a reason not yet root-caused -- not worth shipping a
-  // flaky/hanging test to chase full UI coverage of a path whose logic is
-  // otherwise well covered. The mode switch itself (segment tap, field
-  // render, submit-enablement) is still exercised below, stopping short of
-  // tapping submit while in that mode.
+  // phone-mismatch rejection. The mode switch itself (segment tap, field
+  // render, submit-enablement) is exercised below too, stopping short of
+  // tapping submit while in that mode -- the two tests further below
+  // (`FLT-4: redeeming a valid invite ...` / `FLT-4: a phone-mismatched
+  // invite ...`) cover tapping submit itself.
   testWidgets(
       'AUTH-5/FLT-4: mode selector toggles the invite-token field and its '
       'own submit-enablement, without disturbing the own-truck fields',
@@ -168,6 +166,136 @@ void main() {
           )
           .onPressed,
       isNull,
+    );
+  });
+
+  // FLT-4: driving the invite-mode submit all the way through used to
+  // "reliably hang the test runner here for a reason not yet root-caused"
+  // (see git history on this file). Root-caused: it was never actually
+  // trying to redeem a real invite -- there was no seeded
+  // `FakeFleetRepository` invite for the typed token to match, so
+  // `redeemInvite` threw synchronously and the flow never got past the
+  // error path this file's own rejected-registration test already covers.
+  // The two tests below seed a real invite via `FakeFleetRepository`
+  // (the same fake instance `testDependencies(fleet: ...)` wires the whole
+  // app to) before pumping, so submit actually exercises the success/
+  // phone-mismatch redemption paths. Both use bounded `pump(duration)`
+  // calls after tapping submit, not `pumpAndSettle()` -- the submit
+  // button's indeterminate `CircularProgressIndicator` keeps scheduling
+  // frames until the screen navigates away (see the AUTH-5 success test's
+  // own comment above), so `pumpAndSettle()` genuinely can hang here; a
+  // bounded pump cannot, by construction, regardless of what's animating.
+  testWidgets(
+      'FLT-4: redeeming a valid invite links the pre-provisioned truck and '
+      'lands on the driver shell', (tester) async {
+    // The root cause of this test's long-standing hang, finally found:
+    // `createFleet`/`createInvite` both `await Future<...>.delayed(actionDelay)`
+    // internally -- even at `Duration.zero`, a zero-duration `Timer` still
+    // needs the FakeAsync zone's `elapse()` to fire it. Inside a
+    // `testWidgets` body, that zone only advances when `tester.pump(...)`
+    // runs, and *nothing* has pumped yet this early -- a bare `await` here
+    // blocks forever (confirmed directly: checkpoint logging showed
+    // execution stopping at exactly this call, every time). `tester.runAsync`
+    // steps outside the FakeAsync zone into a real one, where a real
+    // (near-instant, given `actionDelay: Duration.zero`) `Future.delayed`
+    // just resolves normally -- the actual fix, not a workaround.
+    final fleet = FakeFleetRepository(actionDelay: Duration.zero);
+    final invite = await tester.runAsync(() async {
+      await fleet.createFleet(name: 'Grúas del Valle');
+      return fleet.createInvite(
+        phone: '+573000000000', // matches FakeAuthRepository.currentPhone
+        plate: 'INV001',
+        truckType: TruckType.flatbed,
+        capacity: TruckCapacity.both,
+      );
+    });
+
+    await tester.pumpWidget(
+      TheCraneApp(dependencies: testDependencies(fleet: fleet)),
+    );
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await tester.tap(find.byKey(const Key('settingsNavButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('becomeDriverMenuItem')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Tengo una invitación'));
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const Key('inviteTokenField')),
+      invite!.inviteToken,
+    );
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('becomeDriverSubmitButton')));
+    await tester.tap(find.byKey(const Key('becomeDriverSubmitButton')));
+    // registerDriver's actionDelay + refreshUser's sync delay, then the
+    // router redirect's route transition -- same fixed sequence the AUTH-5
+    // success test above uses, deliberately not pumpAndSettle (see comment
+    // above this group of tests).
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(DriverHomeScreen), findsOneWidget);
+  });
+
+  testWidgets(
+      'FLT-4: a phone-mismatched invite shows an inline error instead of '
+      'hanging or silently succeeding', (tester) async {
+    // See the previous test's comment: `tester.runAsync` is required here
+    // (not just `Duration.zero`) because these fake-repository calls are
+    // awaited before the first `pump()`, while the FakeAsync zone's clock
+    // is still inert.
+    final fleet = FakeFleetRepository(actionDelay: Duration.zero);
+    // A phone that does NOT match FakeAuthRepository.currentPhone
+    // (+573000000000) -- redeemInvite must reject this.
+    final invite = await tester.runAsync(() async {
+      await fleet.createFleet(name: 'Grúas del Valle');
+      return fleet.createInvite(
+        phone: '+573009998877',
+        plate: 'INV002',
+        truckType: TruckType.flatbed,
+        capacity: TruckCapacity.both,
+      );
+    });
+
+    await tester.pumpWidget(
+      TheCraneApp(dependencies: testDependencies(fleet: fleet)),
+    );
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await tester.tap(find.byKey(const Key('settingsNavButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('becomeDriverMenuItem')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Tengo una invitación'));
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const Key('inviteTokenField')),
+      invite!.inviteToken,
+    );
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('becomeDriverSubmitButton')));
+    await tester.tap(find.byKey(const Key('becomeDriverSubmitButton')));
+    await tester.pump(); // isSubmitting
+    await tester.pump(const Duration(milliseconds: 20)); // actionDelay
+
+    expect(
+      find.text('No pudimos completar el registro. Intenta de nuevo.'),
+      findsOneWidget,
+    );
+    // Still on this screen, and submit is re-enabled (the token field is
+    // still filled) -- same shape as the generic-rejection test above.
+    expect(find.byType(BecomeDriverScreen), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const Key('becomeDriverSubmitButton')),
+          )
+          .onPressed,
+      isNotNull,
     );
   });
 
