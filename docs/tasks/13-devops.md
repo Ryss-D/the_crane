@@ -71,6 +71,30 @@
   dev/prod separation everywhere: Firebase projects, Maps keys, Wompi sandbox/prod, DB. `.env.example` files per workspace; nothing secret in git.
   *AC: fresh clone + documented steps reaches a running local stack.*
 
+  Audited (2026-08-31): `.env.example` already exists for all three
+  non-Flutter workspaces (`backend/`, `web-client/`, `admin/`) -- that part
+  of the AC was already met before this pass. Ran a real secret scan
+  (`git ls-files` + grep for API-key-shaped strings across the tracked
+  tree): no `.env`/`.env.local` files are tracked anywhere, and the only
+  tracked files containing what look like API keys are `google-services.json`,
+  `GoogleService-Info.plist`, and the two `fly.toml`s' `[build.args]` --
+  all deliberate and correct to commit, not a leak: Firebase client config
+  and a referrer-locked Maps key are meant to be public once shipped in an
+  app bundle/JS build (documented already in OPS-5's own note and
+  `backend/README.md`'s Firebase section). **AC's "nothing secret in git"
+  clause: verified true.**
+
+  Still not done, and this is the actual remaining scope of the task's own
+  title ("dev/prod separation"): there is exactly **one** environment
+  everywhere right now -- one Firebase project, one set of Maps keys, no
+  Wompi account at all yet (sandbox or prod), one Fly Postgres. Building
+  real separation means standing up a second Firebase project + a second
+  set of restricted Maps keys + Wompi sandbox creds + a second DB, which is
+  account-creation/credential work only a human can do (same external
+  blockers already tracked elsewhere: FND-6's iOS key, PAY-1..5's Wompi
+  account) -- there's no code left to write for this task until those
+  accounts exist to point config at. Left unchecked for that reason.
+
 - [ ] **OPS-5 — Web/admin CI + deploy** *(deps: WEB-1, ADM-1)*
   Lint/typecheck/build on PR; preview deploys per PR; prod deploy on `main`.
   *AC: PR preview URL posted automatically.*

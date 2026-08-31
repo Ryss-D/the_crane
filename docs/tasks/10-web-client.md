@@ -183,3 +183,12 @@ Request and track a grúa from the browser — no install. Customer role only.
 - [ ] **WEB-5 — Deploy** *(deps: WEB-1)*
   Static hosting (Cloudflare Pages / Vercel), env per stage, web-restricted Maps key, API CORS allowlist.
   *AC: dev + prod URLs live behind HTTPS.*
+
+  Doc cross-reference: this work was actually done and recorded under
+  `13-devops.md`'s **OPS-5** (Fly.io, not the Cloudflare Pages/Vercel this
+  line originally named — see that entry for the full rationale/history)
+  rather than here, so it never got cross-linked. AC is partially met: dev
+  is live behind HTTPS (`https://the-crane-web.fly.dev`), web-restricted
+  Maps key and CORS allowlist both in place; no separate prod URL exists
+  yet, matching OPS-3/OPS-5's own deliberate dev-only scope. Left unchecked
+  here for that reason, not because the work doesn't exist.
