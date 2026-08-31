@@ -6,10 +6,10 @@ The plan (`docs/PLAN.md`) split into features and tasks. One file per feature; e
 
 | Path | What | Status |
 |---|---|---|
-| `/` (root) | Flutter mobile app (customer + driver) | boilerplate — restructure in FND-4 |
-| `backend/` | FastAPI API | placeholder README |
-| `web-client/` | React customer web app (`web/` is Flutter's web target) | placeholder README |
-| `admin/` | React super admin panel | placeholder README |
+| `/` (root) | Flutter mobile app (customer + driver + fleet-owner) | most feature screens built and tested against fakes; map/Places/polyline UI blocked on FND-6 (Google Maps keys), and several flows (auth, offer distance/commission wiring, driver background location) are code-complete but not yet run live against the real Firebase project/a device — see per-task notes in `02-auth-accounts.md`, `06-customer-app.md`, `07-driver-app.md`, `05-realtime-tracking.md` |
+| `backend/` | FastAPI API | jobs/dispatch/tracking/ledger/ratings/admin/fleets all implemented (90%+ pytest coverage); payments beyond cash (Wompi, `12-payments-wompi.md`) not started; no deploy target yet (`13-devops.md`) |
+| `web-client/` | React customer web app (`web/` is Flutter's web target) | scaffold, auth, request flow, live tracking, and public share-track page built (`10-web-client.md`); Maps/Places still stubbed pending FND-6; not yet deployed (WEB-5) |
+| `admin/` | React super admin panel | config, drivers, ops, ledger, and fleets views built (`11-admin-panel.md`); not yet deployed (OPS-5) |
 
 ## Features → phases
 

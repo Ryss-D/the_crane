@@ -291,9 +291,11 @@ Auth is the same Firebase login — the backend's admin router checks `role=admi
 
 ## 5. Phased delivery
 
+> **Status:** this section's checkboxes are the original planning snapshot and are not kept in sync with delivery — they were never checked off as work landed. **[docs/tasks/](tasks/README.md)** is the maintained, per-task backlog (with acceptance criteria and honest "not yet verified live" notes) and is the authoritative source for what's actually done; treat the outline below as scope/sequencing only, not status.
+
 ### Phase 0 — Foundations (~week 1)
 - [ ] `backend/` scaffold: FastAPI, async SQLAlchemy, Alembic, Docker Compose (postgis + redis), Firebase Admin token verification, `/auth/sync`, `/me`
-- [ ] Flutter: flavors (dev/prod), Firebase project wiring, Riverpod + go_router skeleton, auth flow (phone OTP), role-aware routing
+- [ ] Flutter: flavors (dev/prod), Firebase project wiring, flutter_bloc + go_router skeleton, auth flow (phone OTP), role-aware routing
 - [ ] CI for both (ruff/pytest, flutter analyze/test)
 
 ### Phase 1 — Request & dispatch core (~weeks 2–3)

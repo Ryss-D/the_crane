@@ -6,7 +6,7 @@ Uber-style dispatch platform for grúas (tow trucks) hauling motos and cars. Lau
 
 | Path | What | Stack |
 |---|---|---|
-| `/` (root) | Mobile app — customer + driver, role switch | Flutter, Riverpod, go_router, Google Maps |
+| `/` (root) | Mobile app — customer + driver, role switch | Flutter, flutter_bloc, go_router, Google Maps |
 | `backend/` | API — dispatch, pricing, jobs, ledger, payments | FastAPI, PostgreSQL/PostGIS, Redis, Firebase Admin |
 | `web-client/` | Customer web app — request/track without installing | React (Vite + TS), Firebase Auth web |
 | `admin/` | Super admin panel — config, drivers, ops, ledger | React (Vite + TS) |
@@ -34,5 +34,5 @@ flutter run --dart-define-from-file=env/dev.json
 flutter run --dart-define-from-file=env/prod.json
 ```
 
-After changing models/providers, regenerate code: `dart run build_runner build --delete-conflicting-outputs`.
-Lints: `flutter analyze` plus `dart run custom_lint` (riverpod_lint rules).
+After changing models/blocs/cubits, regenerate code: `dart run build_runner build --delete-conflicting-outputs`.
+Lints: `flutter analyze` (base rule set: `flutter_lints`).
