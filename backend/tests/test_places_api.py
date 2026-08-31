@@ -241,3 +241,55 @@ async def test_haversine_fallback_route_polyline_raises_503() -> None:
     with pytest.raises(HTTPException) as exc_info:
         await HaversineFallback().route_polyline((6.24, -75.58), (6.20, -75.57))
     assert exc_info.value.status_code == 503
+
+
+# --- geocode --------------------------------------------------------------
+
+_GEOCODE_PARAMS = {"lat": 6.2442, "lng": -75.5812}
+
+
+async def test_geocode_requires_auth(client: AsyncClient) -> None:
+    response = await client.get("/v1/places/geocode", params=_GEOCODE_PARAMS)
+    assert response.status_code == 401
+
+
+async def test_geocode_without_key_is_503(client: AsyncClient, as_customer: User) -> None:
+    response = await client.get("/v1/places/geocode", headers=AUTH, params=_GEOCODE_PARAMS)
+    assert response.status_code == 503
+
+
+async def test_geocode_with_key_returns_address(
+    client: AsyncClient, as_customer: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_key(monkeypatch)
+    _patch_places_response(
+        monkeypatch,
+        _FakeGoogleResponse(
+            200,
+            {
+                "status": "OK",
+                "results": [{"formatted_address": "El Poblado, Medellín, Colombia"}],
+            },
+        ),
+    )
+    response = await client.get("/v1/places/geocode", headers=AUTH, params=_GEOCODE_PARAMS)
+    assert response.status_code == 200
+    assert response.json() == {"address": "El Poblado, Medellín, Colombia"}
+
+
+async def test_geocode_non_ok_status_is_503(
+    client: AsyncClient, as_customer: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_key(monkeypatch)
+    _patch_places_response(monkeypatch, _FakeGoogleResponse(200, {"status": "ZERO_RESULTS"}))
+    response = await client.get("/v1/places/geocode", headers=AUTH, params=_GEOCODE_PARAMS)
+    assert response.status_code == 503
+
+
+async def test_geocode_zero_results_status_ok_but_empty_is_503(
+    client: AsyncClient, as_customer: User, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure_key(monkeypatch)
+    _patch_places_response(monkeypatch, _FakeGoogleResponse(200, {"status": "OK", "results": []}))
+    response = await client.get("/v1/places/geocode", headers=AUTH, params=_GEOCODE_PARAMS)
+    assert response.status_code == 503

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../core/api/drivers_repository.dart';
 import '../core/api/fleet_repository.dart';
 import '../core/api/jobs_repository.dart';
+import '../core/api/places_repository.dart';
 import '../core/api/vehicles_repository.dart';
 import '../core/location/location_source.dart';
 import '../core/models/app_user.dart';
@@ -161,6 +162,7 @@ GoRouter createRouter(AuthCubit authCubit) {
         builder: (context, state, child) => BlocProvider(
           create: (context) => RequestBloc(
             jobsRepository: context.read<JobsRepository>(),
+            placesRepository: context.read<PlacesRepository>(),
             activeJobStore: context.read<ActiveJobStore>(),
             socket: context.read<CraneSocket?>(),
           ),

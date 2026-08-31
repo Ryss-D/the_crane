@@ -50,14 +50,61 @@ export function RequestPage() {
 
   const pickupInputRef = useRef<HTMLInputElement>(null);
   const dropoffInputRef = useRef<HTMLInputElement>(null);
+  // Reverse-geocoding follow-up (CUS-1/CUS-4/WEB-2): the coordinate object
+  // most recently set for each field, kept outside React state so a
+  // background reverseGeocode() resolution can tell (by reference equality)
+  // whether it's still describing the current point — if the user has since
+  // typed over the field, dragged again, or picked a new Places suggestion,
+  // the ref no longer matches and the stale resolution is dropped instead
+  // of clobbering whatever is showing by then.
+  const pickupCoordsRef = useRef<LatLng | null>(null);
+  const dropoffCoordsRef = useRef<LatLng | null>(null);
+
+  function updatePickupCoords(coords: LatLng | null) {
+    pickupCoordsRef.current = coords;
+    setPickupCoords(coords);
+  }
+
+  function updateDropoffCoords(coords: LatLng | null) {
+    dropoffCoordsRef.current = coords;
+    setDropoffCoords(coords);
+  }
+
+  /**
+   * Reverse-geocoding follow-up: shows [coords] as the raw `(lat, lng)` text
+   * immediately — same behavior as before this change, and still exactly
+   * what a GPS fix or a dragged pin shows today, since no server-side
+   * Google Maps key exists yet in this environment — then upgrades to a
+   * real address in the background if `reverseGeocode()` resolves one.
+   * Never regresses: a null result (no key, not signed in yet, or any
+   * other failure) just leaves the coordinate text standing.
+   */
+  function setPickupFromRawCoords(coords: LatLng) {
+    updatePickupCoords(coords);
+    setPickup(strings.request.locationText(coords.lat, coords.lng));
+    setQuote(null);
+    void api.reverseGeocode(coords.lat, coords.lng).then((address) => {
+      if (address && pickupCoordsRef.current === coords) setPickup(address);
+    });
+  }
+
+  /** Same as {@link setPickupFromRawCoords}, for dropoff. */
+  function setDropoffFromRawCoords(coords: LatLng) {
+    updateDropoffCoords(coords);
+    setDropoff(strings.request.locationText(coords.lat, coords.lng));
+    setQuote(null);
+    void api.reverseGeocode(coords.lat, coords.lng).then((address) => {
+      if (address && dropoffCoordsRef.current === coords) setDropoff(address);
+    });
+  }
 
   usePlacesAutocomplete(pickupInputRef, (coords, address) => {
-    setPickupCoords(coords);
+    updatePickupCoords(coords);
     setPickup(address);
     setQuote(null);
   });
   usePlacesAutocomplete(dropoffInputRef, (coords, address) => {
-    setDropoffCoords(coords);
+    updateDropoffCoords(coords);
     setDropoff(address);
     setQuote(null);
   });
@@ -72,9 +119,7 @@ export function RequestPage() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const coords: LatLng = { lat: position.coords.latitude, lng: position.coords.longitude };
-        setPickupCoords(coords);
-        setPickup(strings.request.locationText(coords.lat, coords.lng));
-        setQuote(null);
+        setPickupFromRawCoords(coords);
         setLocating(false);
       },
       () => {
@@ -160,16 +205,8 @@ export function RequestPage() {
         <RequestMap
           pickup={pickupCoords}
           dropoff={dropoffCoords}
-          onPickupDrag={(coords) => {
-            setPickupCoords(coords);
-            setPickup(strings.request.locationText(coords.lat, coords.lng));
-            setQuote(null);
-          }}
-          onDropoffDrag={(coords) => {
-            setDropoffCoords(coords);
-            setDropoff(strings.request.locationText(coords.lat, coords.lng));
-            setQuote(null);
-          }}
+          onPickupDrag={setPickupFromRawCoords}
+          onDropoffDrag={setDropoffFromRawCoords}
         />
       ) : (
         <div
@@ -190,7 +227,7 @@ export function RequestPage() {
               value={pickup}
               onChange={(e) => {
                 setPickup(e.target.value);
-                setPickupCoords(null);
+                updatePickupCoords(null);
                 setQuote(null);
               }}
               placeholder={strings.request.pickupPlaceholder}
@@ -220,7 +257,7 @@ export function RequestPage() {
             value={dropoff}
             onChange={(e) => {
               setDropoff(e.target.value);
-              setDropoffCoords(null);
+              updateDropoffCoords(null);
               setQuote(null);
             }}
             placeholder={strings.request.dropoffPlaceholder}

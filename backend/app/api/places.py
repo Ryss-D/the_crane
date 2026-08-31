@@ -8,10 +8,15 @@ capable key of its own; they just call the authenticated backend instead.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.security import CurrentUser
-from app.schemas.places import PlaceAutocompleteResponse, PlaceDetailsResponse, RouteResponse
+from app.schemas.places import (
+    GeocodeResponse,
+    PlaceAutocompleteResponse,
+    PlaceDetailsResponse,
+    RouteResponse,
+)
 from app.services import places as places_service
 from app.services.pricing import DirectionsClient, get_directions_client
 
@@ -32,6 +37,17 @@ async def autocomplete(
 @router.get("/details/{place_id}", response_model=PlaceDetailsResponse)
 async def place_details(place_id: str, user: CurrentUser) -> dict[str, object]:
     return await places_service.place_details(place_id)
+
+
+@router.get("/geocode", response_model=GeocodeResponse)
+async def geocode(lat: float, lng: float, user: CurrentUser) -> dict[str, str]:
+    address = await places_service.reverse_geocode(lat, lng)
+    if address is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Geocoding service unavailable",
+        )
+    return {"address": address}
 
 
 @directions_router.get("/route", response_model=RouteResponse)

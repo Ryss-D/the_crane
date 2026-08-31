@@ -169,10 +169,21 @@ void main() {
     expect(find.byKey(const Key('craneMapTapArea')), findsNothing);
 
     await tester.tap(find.byKey(const Key('craneMapMarkerDrag_pickup')));
-    await tester.pump(const Duration(milliseconds: 50)); // re-quotes again
+    await tester.pump();
     expect(
       tester.widget<TextField>(find.byKey(const Key('pickupField'))).controller!.text,
-      '6.31000, -75.61000', // craneMapStubDragPosition
+      '6.31000, -75.61000', // craneMapStubDragPosition -- raw coordinate shown first
+    );
+
+    // Reverse-geocoding follow-up: FakePlacesRepository resolves a plausible
+    // fake address in the background (zero delay under
+    // test_dependencies.dart), upgrading the raw-coordinate text once it
+    // arrives -- same "coordinate first, real address if/when it resolves"
+    // sequence a real backend key would produce.
+    await tester.pump(const Duration(milliseconds: 50)); // re-quotes + reverse-geocode resolve
+    expect(
+      tester.widget<TextField>(find.byKey(const Key('pickupField'))).controller!.text,
+      'Cerca de Bello, Antioquia', // nearest FakePlacesRepository place to craneMapStubDragPosition
     );
   });
 

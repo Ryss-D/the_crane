@@ -95,24 +95,55 @@ describe('request flow (WEB-2 skeleton)', () => {
 });
 
 describe('"usar mi ubicación actual" (WEB-2)', () => {
-  it('fills the pickup field with the real GPS coordinates on success', async () => {
-    mockGeolocation.getCurrentPosition.mockImplementation(
-      (success: (pos: { coords: { latitude: number; longitude: number } }) => void) => {
-        success({ coords: { latitude: 6.25184, longitude: -75.56359 } });
-      },
-    );
-    const user = userEvent.setup();
-    renderApp();
+  it(
+    'fills the pickup field with the real GPS coordinates on success, then ' +
+      'upgrades to a reverse-geocoded address (reverse-geocoding follow-up)',
+    async () => {
+      mockGeolocation.getCurrentPosition.mockImplementation(
+        (success: (pos: { coords: { latitude: number; longitude: number } }) => void) => {
+          success({ coords: { latitude: 6.25184, longitude: -75.56359 } });
+        },
+      );
+      const user = userEvent.setup();
+      renderApp();
 
-    await user.click(screen.getByRole('button', { name: strings.request.useCurrentLocation }));
+      await user.click(screen.getByRole('button', { name: strings.request.useCurrentLocation }));
 
-    expect(await screen.findByLabelText(strings.request.pickupLabel)).toHaveValue(
-      strings.request.locationText(6.25184, -75.56359),
-    );
-    expect(
-      screen.queryByText(strings.request.locationUnavailable),
-    ).not.toBeInTheDocument();
-  });
+      // MockApi's reverseGeocode() always resolves to a plausible fake
+      // address (there is no "no key configured" state to simulate under
+      // mocks) -- it settles here, upgrading the raw-coordinate text a real
+      // backend-with-no-key would leave standing instead (see the null-result
+      // test below for that fallback).
+      expect(await screen.findByLabelText(strings.request.pickupLabel)).toHaveValue(
+        'Cerca de Centro, Medellín, Antioquia',
+      );
+      expect(
+        screen.queryByText(strings.request.locationUnavailable),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it(
+    'leaves the raw GPS coordinate text in place when reverse geocoding ' +
+      'resolves null (no server-side key configured, or any failure)',
+    async () => {
+      const { api } = await import('../../api');
+      vi.spyOn(api, 'reverseGeocode').mockResolvedValueOnce(null);
+      mockGeolocation.getCurrentPosition.mockImplementation(
+        (success: (pos: { coords: { latitude: number; longitude: number } }) => void) => {
+          success({ coords: { latitude: 6.25184, longitude: -75.56359 } });
+        },
+      );
+      const user = userEvent.setup();
+      renderApp();
+
+      await user.click(screen.getByRole('button', { name: strings.request.useCurrentLocation }));
+
+      expect(await screen.findByLabelText(strings.request.pickupLabel)).toHaveValue(
+        strings.request.locationText(6.25184, -75.56359),
+      );
+    },
+  );
 
   it('shows a message and leaves the field untouched when permission is denied', async () => {
     mockGeolocation.getCurrentPosition.mockImplementation(

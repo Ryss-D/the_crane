@@ -377,6 +377,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/directions/route": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Route */
+        get: operations["route_v1_directions_route_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/drivers/me/balance": {
         parameters: {
             query?: never;
@@ -427,6 +444,31 @@ export interface paths {
          *     schema docstring); license_url/truck_photo_url are accepted as-is.
          */
         post: operations["register_driver_v1_drivers_me_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/drivers/me/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle My Balance
+         * @description PAY-3: "pay my balance" — creates a Wompi checkout (Nequi/PSE) for
+         *     `body.amount` of the driver's owed commission. The actual balance
+         *     reduction (a `payout` driver_ledger row, same shape LED-4's admin
+         *     settlement writes) happens once Wompi's webhook reports the payment
+         *     `approved` (`app/api/payments.py`) — this endpoint only starts the
+         *     checkout, it never settles anything itself.
+         */
+        post: operations["settle_my_balance_v1_drivers_me_settle_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -627,6 +669,13 @@ export interface paths {
         /**
          * Create Quote
          * @description JOB-4: price a trip from live config; the quote is Redis-cached for 10 minutes.
+         *
+         *     Deliberately public (no CurrentUser dependency) -- `build_quote` never
+         *     used the caller's identity for anything, and letting a customer see a
+         *     real price before signing in (web-client's request flow, see the
+         *     follow-up note below) is the whole point. `create_job` right below
+         *     this, which actually commits to something, still requires auth --
+         *     quoting is stateless/anonymous, booking isn't.
          */
         post: operations["create_quote_v1_jobs_quote_post"];
         delete?: never;
@@ -715,6 +764,14 @@ export interface paths {
         /**
          * Confirm Delivery Endpoint
          * @description CUS-5/LED-1: customer confirms delivery + cash payment -> completed + accrual.
+         *
+         *     PAY-4: `body.payment_method` opts into a digital fare instead of cash --
+         *     only honored when `payments.digital_fares_enabled` is also on in
+         *     `platform_config` ("flag off = cash-only unchanged", the PAY-4 AC). A
+         *     non-cash method requested while the flag is off is a 422, not a silent
+         *     fallback to cash -- a caller sending it clearly expects the digital
+         *     path, so silently switching payment behavior underneath it would be
+         *     worse than telling it plainly the flag isn't on.
          */
         post: operations["confirm_delivery_endpoint_v1_jobs__job_id__confirm_delivery_post"];
         delete?: never;
@@ -895,6 +952,57 @@ export interface paths {
         patch: operations["update_my_vehicle_v1_me_vehicles__vehicle_id__patch"];
         trace?: never;
     };
+    "/v1/places/autocomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Autocomplete */
+        get: operations["autocomplete_v1_places_autocomplete_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/places/details/{place_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Place Details */
+        get: operations["place_details_v1_places_details__place_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/places/geocode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Geocode */
+        get: operations["geocode_v1_places_geocode_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/track/{share_token}": {
         parameters: {
             query?: never;
@@ -913,6 +1021,31 @@ export interface paths {
         get: operations["track_job_v1_track__share_token__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/webhooks/wompi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Wompi Webhook
+         * @description PAY-1: signature-verified, idempotent, out-of-order-tolerant.
+         *
+         *     Always acks 2xx once the signature itself checks out (even for an
+         *     unknown reference, or a stale/duplicate event) — the only thing that
+         *     should make Wompi keep retrying is *not being able to verify the
+         *     request at all*, which is exactly what the 401 branch below is for.
+         */
+        post: operations["wompi_webhook_v1_webhooks_wompi_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1151,6 +1284,18 @@ export interface components {
             value: unknown;
         };
         /**
+         * ConfirmDeliveryRequest
+         * @description POST /v1/jobs/{id}/confirm-delivery body (PAY-4). Optional and
+         *     defaults to nothing sent at all (`None` field) so every existing caller
+         *     keeps confirming in cash unchanged -- only a customer explicitly
+         *     choosing a non-cash `payment_method` opts into the digital-fare path,
+         *     and only when `payments.digital_fares_enabled` is also on
+         *     (`app/api/jobs.py`).
+         */
+        ConfirmDeliveryRequest: {
+            payment_method?: components["schemas"]["PaymentMethod"] | null;
+        };
+        /**
          * DriverBalanceRead
          * @description GET /v1/drivers/me/balance (DRV-5): current owed balance, the settlement
          *     cap it's gated against (null if disabled), and recent settlement history.
@@ -1274,6 +1419,33 @@ export interface components {
             /** Truck Photo Url */
             truck_photo_url?: string | null;
             truck_type?: components["schemas"]["TruckType"] | null;
+        };
+        /**
+         * DriverSettleRequest
+         * @description POST /v1/drivers/me/settle body — same `amount` shape as the admin
+         *     settlement request (`app/schemas/admin.py`'s `LedgerSettleRequest`), plain
+         *     COP, no sub-unit.
+         */
+        DriverSettleRequest: {
+            /** Amount */
+            amount: number;
+            /** @default nequi */
+            payment_method: components["schemas"]["PaymentMethod"];
+        };
+        /**
+         * DriverSettleResponse
+         * @description What the driver app needs to complete the Wompi checkout: the payment
+         *     reference (for polling `GET /v1/drivers/me/balance` afterward) and, for
+         *     an async (PSE) method, the URL to redirect the driver to. Null for a
+         *     method with no redirect step at this stage of the flow (e.g. Nequi,
+         *     which instead pushes a push-notification/OTP prompt in the driver's own
+         *     Nequi app -- nothing for this backend to hand back).
+         */
+        DriverSettleResponse: {
+            /** Async Payment Url */
+            async_payment_url?: string | null;
+            /** Payment Reference */
+            payment_reference: string;
         };
         /**
          * DriverSettlementRead
@@ -1413,6 +1585,11 @@ export interface components {
              */
             ledger_entry_id: string;
         };
+        /** GeocodeResponse */
+        GeocodeResponse: {
+            /** Address */
+            address: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1543,6 +1720,24 @@ export interface components {
             vehicle_type: components["schemas"]["VehicleType"];
         };
         /**
+         * JobCustomerInfo
+         * @description DRV-3: the symmetric customer summary `JobDriverInfo` never had a
+         *     counterpart for — the driver app's call-customer button had no phone
+         *     number to call. Deliberately minimal (id/name/phone only, no rating —
+         *     there's no `JobDriverInfo.rating_avg` equivalent for customers).
+         */
+        JobCustomerInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string | null;
+            /** Phone */
+            phone: string | null;
+        };
+        /**
          * JobDriverInfo
          * @description Assigned-driver summary embedded in `JobRead` once a job has one —
          *     matches the Flutter app's `JobDriverSummary` field-for-field
@@ -1615,6 +1810,8 @@ export interface components {
         JobRead: {
             /** Assigned At */
             assigned_at: string | null;
+            /** Async Payment Url */
+            async_payment_url?: string | null;
             /** Cancel Reason */
             cancel_reason: string | null;
             /** Cancelled At */
@@ -1625,6 +1822,7 @@ export interface components {
             config_snapshot: {
                 [key: string]: unknown;
             } | null;
+            customer?: components["schemas"]["JobCustomerInfo"] | null;
             /**
              * Customer Id
              * Format: uuid
@@ -1633,6 +1831,8 @@ export interface components {
             /** Distance Km */
             distance_km: number | null;
             driver?: components["schemas"]["JobDriverInfo"] | null;
+            /** Driver Commission */
+            driver_commission?: number | null;
             /** Driver Id */
             driver_id: string | null;
             /** Dropoff Address */
@@ -1733,6 +1933,27 @@ export interface components {
          * @enum {string}
          */
         PaymentMethod: "cash" | "card" | "pse" | "nequi" | "wallet";
+        /** PlaceAutocompleteResponse */
+        PlaceAutocompleteResponse: {
+            /** Predictions */
+            predictions: components["schemas"]["PlacePrediction"][];
+        };
+        /** PlaceDetailsResponse */
+        PlaceDetailsResponse: {
+            /** Formatted Address */
+            formatted_address: string;
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
+        };
+        /** PlacePrediction */
+        PlacePrediction: {
+            /** Description */
+            description: string;
+            /** Place Id */
+            place_id: string;
+        };
         /** QuoteRequest */
         QuoteRequest: {
             dropoff: components["schemas"]["LatLng"];
@@ -1802,6 +2023,11 @@ export interface components {
              * Format: uuid
              */
             to_user_id: string;
+        };
+        /** RouteResponse */
+        RouteResponse: {
+            /** Points */
+            points: components["schemas"]["LatLng"][];
         };
         /**
          * TrackDriver
@@ -1957,6 +2183,17 @@ export interface components {
             /** Plate */
             plate?: string | null;
             type?: components["schemas"]["VehicleType"] | null;
+        };
+        /**
+         * WompiWebhookAck
+         * @description POST /v1/webhooks/wompi's own response — Wompi only checks for a 2xx,
+         *     but a real body makes manual/sandbox debugging saner than a bare 204.
+         */
+        WompiWebhookAck: {
+            /** Applied */
+            applied: boolean;
+            /** Received */
+            received: boolean;
         };
     };
     responses: never;
@@ -2510,6 +2747,40 @@ export interface operations {
             };
         };
     };
+    route_v1_directions_route_get: {
+        parameters: {
+            query: {
+                origin_lat: number;
+                origin_lng: number;
+                dest_lat: number;
+                dest_lng: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_balance_v1_drivers_me_balance_get: {
         parameters: {
             query?: never;
@@ -2550,6 +2821,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DriverProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_my_balance_v1_drivers_me_settle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DriverSettleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriverSettleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3016,7 +3320,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConfirmDeliveryRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -3371,6 +3679,100 @@ export interface operations {
             };
         };
     };
+    autocomplete_v1_places_autocomplete_get: {
+        parameters: {
+            query: {
+                input: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceAutocompleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    place_details_v1_places_details__place_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                place_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaceDetailsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    geocode_v1_places_geocode_get: {
+        parameters: {
+            query: {
+                lat: number;
+                lng: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeocodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     track_job_v1_track__share_token__get: {
         parameters: {
             query?: never;
@@ -3389,6 +3791,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TrackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    wompi_webhook_v1_webhooks_wompi_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WompiWebhookAck"];
                 };
             };
             /** @description Validation Error */

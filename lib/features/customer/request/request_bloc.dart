@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/api/jobs_repository.dart';
+import '../../../core/api/places_repository.dart';
 import '../../../core/models/job.dart';
 import '../../../core/models/lat_lng.dart';
 import '../../../core/models/place_prediction.dart';
@@ -29,10 +30,11 @@ LatLng fakeGeocode(String address) {
   );
 }
 
-/// Display text for a pin-dropped point: no reverse geocoding available
-/// (the Geocoding API isn't enabled), so the raw coordinate is the honest
-/// thing to show — same call the web client makes for its own un-geocoded
-/// GPS fix.
+/// Display text for a pin-dropped point, shown immediately and kept if
+/// reverse geocoding (below) never resolves a real address for it — no
+/// server-side Google Maps key exists yet in this environment, so this is
+/// what every pin drag actually shows today. Same call the web client makes
+/// for its own un-geocoded GPS fix.
 String _formatCoordinate(LatLng position) =>
     '${position.lat.toStringAsFixed(5)}, ${position.lng.toStringAsFixed(5)}';
 
@@ -67,12 +69,15 @@ final class RequestDropoffLocationSelected extends RequestEvent {
 
 /// FND-6: the customer dragged the pickup pin to refine it (only possible
 /// once one exists — a search already placed it; see the CUS-1 doc note on
-/// why pin-only placement, with no prior search, isn't built). No reverse
-/// geocoding available (the Geocoding API isn't enabled — see the FND-6
-/// note in `01-foundations.md`), so [RequestState.pickupAddress] becomes a
-/// plain formatted coordinate string, same honest "show the raw lat/lng"
-/// choice the web client makes for its own un-geocoded GPS fix
-/// (`RequestPage.tsx`).
+/// why pin-only placement, with no prior search, isn't built).
+/// [RequestState.pickupAddress] is set to a plain formatted coordinate
+/// string immediately (same honest "show the raw lat/lng" choice the web
+/// client makes for its own un-geocoded GPS fix, `RequestPage.tsx`), then a
+/// background reverse-geocode call (see [RequestPickupAddressResolved])
+/// upgrades it to a real address if [PlacesRepository.reverseGeocode]
+/// resolves one — no server-side Google Maps key exists yet in this
+/// environment, so that upgrade never actually fires today, only the
+/// coordinate fallback does.
 final class RequestPickupPinMoved extends RequestEvent {
   const RequestPickupPinMoved(this.position);
   final LatLng position;
@@ -82,6 +87,24 @@ final class RequestPickupPinMoved extends RequestEvent {
 final class RequestDropoffPinMoved extends RequestEvent {
   const RequestDropoffPinMoved(this.position);
   final LatLng position;
+}
+
+/// Internal (reverse-geocoding follow-up): a background reverse-geocode
+/// call for the pickup pin resolved to a real address. Carries
+/// [forPosition] so a stale response (the pin moved again, or a fresh
+/// search replaced it, before this arrived) can't clobber a newer value —
+/// same staleness guard `_quoteToken` gives in-flight quotes.
+final class RequestPickupAddressResolved extends RequestEvent {
+  const RequestPickupAddressResolved(this.address, this.forPosition);
+  final String address;
+  final LatLng forPosition;
+}
+
+/// Same as [RequestPickupAddressResolved], for dropoff.
+final class RequestDropoffAddressResolved extends RequestEvent {
+  const RequestDropoffAddressResolved(this.address, this.forPosition);
+  final String address;
+  final LatLng forPosition;
 }
 
 final class RequestVehicleTypeChanged extends RequestEvent {
@@ -142,13 +165,21 @@ final class RequestDeliveryConfirmed extends RequestEvent {
 /// full app restart, not just navigating away and back. When [socket] is
 /// provided, also relays the assigned driver's live position
 /// (`ServerMessage.driverLocation`) into [RequestState.driverPosition] for
-/// as long as a job is active — null under fakes (no socket).
+/// as long as a job is active — null under fakes (no socket). When
+/// [placesRepository] is provided, a dragged pin also attempts a background
+/// reverse-geocode upgrade from its raw-coordinate display text to a real
+/// address (see [RequestPickupPinMoved]/[RequestPickupAddressResolved]) —
+/// no server-side Google Maps key exists yet in this environment, so that
+/// upgrade never actually fires today; the raw-coordinate text is what every
+/// pin drag still shows.
 class RequestBloc extends Bloc<RequestEvent, RequestState> {
   RequestBloc({
     required JobsRepository jobsRepository,
+    PlacesRepository? placesRepository,
     ActiveJobStore? activeJobStore,
     CraneSocket? socket,
   })  : _repo = jobsRepository,
+        _places = placesRepository,
         _store = activeJobStore,
         _socket = socket,
         super(const RequestState()) {
@@ -185,6 +216,7 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
         pickupAddress: _formatCoordinate(event.position),
         pickupLatLng: event.position,
       ));
+      unawaited(_resolvePickupAddress(event.position));
       await _refreshQuote(emit);
     });
     on<RequestDropoffPinMoved>((event, emit) async {
@@ -192,7 +224,18 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
         dropoffAddress: _formatCoordinate(event.position),
         dropoffLatLng: event.position,
       ));
+      unawaited(_resolveDropoffAddress(event.position));
       await _refreshQuote(emit);
+    });
+    on<RequestPickupAddressResolved>((event, emit) {
+      // Superseded (the pin moved again, or a Places search replaced this
+      // point) before the reverse-geocode call came back — drop it.
+      if (state.pickupLatLng != event.forPosition) return;
+      emit(state.copyWith(pickupAddress: event.address));
+    });
+    on<RequestDropoffAddressResolved>((event, emit) {
+      if (state.dropoffLatLng != event.forPosition) return;
+      emit(state.copyWith(dropoffAddress: event.address));
     });
     on<RequestVehicleTypeChanged>((event, emit) async {
       if (event.value == state.vehicleType) return;
@@ -238,6 +281,7 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
   }
 
   final JobsRepository _repo;
+  final PlacesRepository? _places;
   final ActiveJobStore? _store;
   final CraneSocket? _socket;
   StreamSubscription<Job>? _jobSub;
@@ -262,6 +306,43 @@ class RequestBloc extends Bloc<RequestEvent, RequestState> {
 
   /// Same as [_pickupCoord], for dropoff.
   LatLng get _dropoffCoord => state.dropoffLatLng ?? fakeGeocode(state.dropoffAddress);
+
+  /// Reverse-geocoding follow-up (CUS-1/CUS-4): kicked off in the
+  /// background by `RequestPickupPinMoved`'s handler, never awaited by it —
+  /// the coordinate fallback it already emitted stands until (if ever) this
+  /// resolves a real address, so a slow/unconfigured Geocoding lookup never
+  /// blocks the quote refresh that also runs off that same pin move. Feeds
+  /// its result through [RequestPickupAddressResolved] (an internal event,
+  /// not a direct `emit`) since it runs after this method's own event
+  /// handler has already returned.
+  Future<void> _resolvePickupAddress(LatLng position) async {
+    final places = _places;
+    if (places == null) return;
+    String? address;
+    try {
+      address = await places.reverseGeocode(position.lat, position.lng);
+    } catch (_) {
+      address = null;
+    }
+    if (address != null && !isClosed) {
+      add(RequestPickupAddressResolved(address, position));
+    }
+  }
+
+  /// Same as [_resolvePickupAddress], for dropoff.
+  Future<void> _resolveDropoffAddress(LatLng position) async {
+    final places = _places;
+    if (places == null) return;
+    String? address;
+    try {
+      address = await places.reverseGeocode(position.lat, position.lng);
+    } catch (_) {
+      address = null;
+    }
+    if (address != null && !isClosed) {
+      add(RequestDropoffAddressResolved(address, position));
+    }
+  }
 
   Future<void> _refreshQuote(Emitter<RequestState> emit) async {
     // Any input change invalidates whatever quote request is in flight —

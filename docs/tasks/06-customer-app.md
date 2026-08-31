@@ -73,6 +73,58 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   proxy (which itself has no server-side Google key yet either — see
   FND-6) or a real rendered map on a device/simulator.
 
+  Follow-up (2026-08-31, reverse geocoding — closes part of the "addresses
+  readable in es-CO" gap the pin-drag follow-up above left open, and the
+  matching gap flagged in `03-jobs-pricing.md`'s JOB-4 and `10-web-client.md`'s
+  WEB-2): `PlacesRepository` gained `reverseGeocode(double lat, double lng)
+  -> Future<String?>` (`lib/core/api/places_repository.dart`), calling the
+  backend's new `GET /v1/places/geocode` proxy; `ApiPlacesRepository`
+  catches every `DioException` and returns `null` rather than throwing —
+  there is no error UI for this best-effort enrichment, only the
+  pre-existing raw-coordinate text to fall back to (broader than
+  `ApiDirectionsRepository.route`'s own 503-only catch, since a dragged pin
+  already has a perfectly good fallback for *any* failure, not just a
+  missing key).
+
+  `RequestBloc` takes an optional `placesRepository` now (wired in
+  `lib/app/router.dart` via `context.read<PlacesRepository>()`, same as
+  every other repository). `RequestPickupPinMoved`/`RequestDropoffPinMoved`
+  still emit the raw-coordinate text immediately as before — unchanged,
+  since no server-side Google Maps key exists yet in this environment, so
+  that's still exactly what a drag shows today — but now also kick off a
+  background reverse-geocode call, feeding a resolved address back through
+  two new internal events (`RequestPickupAddressResolved`/
+  `RequestDropoffAddressResolved`) that upgrade the display text if (and
+  only if) the pin hasn't since moved again, been retyped, or been replaced
+  by a Places selection — guarded by comparing the resolved address's
+  originating position against the field's current `pickupLatLng`/
+  `dropoffLatLng`, the same staleness-guard shape `_quoteToken` already
+  gives in-flight quotes.
+
+  `FakePlacesRepository.reverseGeocode` returns a plausible address —
+  "Cerca de `<nearest seeded fake place>`" by straight-line distance — never
+  null, since there's no "no key configured" state to simulate under fakes.
+  8 new tests: 3 direct (`test/core/api/fake_places_repository_test.dart`,
+  new file — `FakePlacesRepository` had no unit tests of its own before
+  this) and 5 `RequestBloc` tests (upgrade on resolve for both pickup and
+  dropoff, a null resolution leaves the coordinate standing, a stale
+  resolution for a superseded pin position is dropped, no-`PlacesRepository`
+  construction never attempts it at all) against a new
+  `ControllablePlacesRepository` test double (a `Completer`-backed fake,
+  resolved on demand, so the staleness race can be driven deterministically
+  rather than relying on a zero-delay fake's actual timing). One pre-existing
+  widget test assertion updated to match: `FakePlacesRepository`'s zero test
+  delay means its `reverseGeocode` resolves fast enough in
+  `request_flow_widget_test.dart`'s existing drag test that the upgraded fake
+  address is what ends up asserted, not the intermediate coordinate (both are
+  now checked, at two different pump points). Full suite green (427 passed,
+  up from 419), `flutter analyze` clean.
+
+  Not verified, same standing gap as everywhere else in this session: no
+  live call has been made against a real `google_maps_api_key` — every path
+  above only ever exercises the backend's no-key 503 fallback, so a dragged
+  pin still shows a raw coordinate on any actual run of this app today.
+
 - [x] **CUS-2 — Vehicle type + quote sheet** *(deps: CUS-1, JOB-4)*
   Select moto / car / SUV (optionally pick a saved vehicle) → quote card with price (COP) + pickup ETA → confirm button.
   *AC: quote refreshes on any input change; stale quotes (>10 min) re-fetch.*
@@ -209,6 +261,14 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   Still not built: reverse geocoding anywhere (a pin/GPS point always
   displays as a raw coordinate — see the CUS-1 note), and no live pass
   against a real deployed backend/device for any of this.
+
+  Follow-up (2026-08-31): the reverse-geocoding gap above is closed for the
+  one place a customer actually sets a raw coordinate on this screen —
+  pin-drag, on the request screen (CUS-1). See CUS-1's own follow-up note
+  below for the wiring; nothing in this screen (CUS-4) itself sets a raw
+  coordinate that needed the same treatment — the live driver marker is a
+  read-only position feed, never something reverse-geocoded into an
+  address.
 
 - [ ] **CUS-5 — Delivery confirmation + cash payment** *(deps: CUS-4, LED-1)*
   On `delivered`: fare summary, "paid in cash" confirmation → job `completed` → rating prompt.

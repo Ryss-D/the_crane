@@ -74,4 +74,21 @@ class FakePlacesRepository implements PlacesRepository {
     }
     return place.details;
   }
+
+  /// A plausible fake address for [Env.useFakeBackend] demos/tests: "nearest
+  /// known fake place" by straight-line distance, prefixed the same honest
+  /// "approximate" way a real reverse-geocode result for a pin dropped a
+  /// street or two off a landmark would read. Never null -- there is no
+  /// "no key configured" state to simulate under fakes.
+  @override
+  Future<String?> reverseGeocode(double lat, double lng) async {
+    await Future<void>.delayed(delay);
+    final nearest = _places.values.reduce((a, b) {
+      double distanceSquared(PlaceDetails details) =>
+          (details.lat - lat) * (details.lat - lat) +
+          (details.lng - lng) * (details.lng - lng);
+      return distanceSquared(a.details) <= distanceSquared(b.details) ? a : b;
+    });
+    return 'Cerca de ${nearest.description}';
+  }
 }

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_crane/core/api/fake_jobs_repository.dart';
+import 'package:the_crane/core/api/places_repository.dart';
 import 'package:the_crane/core/models/job.dart';
 import 'package:the_crane/core/models/lat_lng.dart';
 import 'package:the_crane/core/models/place_prediction.dart';
@@ -13,6 +15,31 @@ import 'package:the_crane/features/customer/request/request_state.dart';
 
 import '../../support/fake_web_socket_channel.dart';
 import '../../support/in_memory_active_job_store.dart';
+
+/// Reverse-geocoding follow-up test double: each [reverseGeocode] call
+/// returns a fresh [Completer]'s future, resolved on demand via
+/// [resolveNext] (FIFO) -- lets a test control exactly when a background
+/// reverse-geocode call "arrives", including out-of-order/stale cases a
+/// zero-delay fake couldn't reliably exercise.
+class ControllablePlacesRepository implements PlacesRepository {
+  final List<Completer<String?>> _pending = [];
+
+  @override
+  Future<List<PlacePrediction>> autocomplete(String input) async => const [];
+
+  @override
+  Future<PlaceDetails> placeDetails(String placeId) => throw UnimplementedError();
+
+  @override
+  Future<String?> reverseGeocode(double lat, double lng) {
+    final completer = Completer<String?>();
+    _pending.add(completer);
+    return completer.future;
+  }
+
+  /// Resolves the oldest still-pending [reverseGeocode] call.
+  void resolveNext(String? address) => _pending.removeAt(0).complete(address);
+}
 
 /// FND-6 test double: records the coordinates the bloc actually requested a
 /// quote for, so tests can tell a real Places coordinate apart from
@@ -591,6 +618,95 @@ void main() {
 
       expect(bloc.state.pickupLatLng, const LatLng(lat: 6.22, lng: -75.59));
       expect(bloc.state.pickupAddress, '6.22000, -75.59000');
+
+      await bloc.close();
+    });
+  });
+
+  group('RequestBloc reverse-geocoding follow-up (CUS-1/CUS-4/WEB-2)', () {
+    test(
+        'dragging the pickup pin upgrades the raw-coordinate address once '
+        'reverse geocoding resolves', () async {
+      final jobs = CapturingQuoteJobsRepository();
+      final places = ControllablePlacesRepository();
+      final bloc = RequestBloc(jobsRepository: jobs, placesRepository: places);
+
+      bloc.add(const RequestPickupPinMoved(LatLng(lat: 6.3, lng: -75.6)));
+      await tick();
+      expect(bloc.state.pickupAddress, '6.30000, -75.60000');
+
+      places.resolveNext('Calle Falsa 123, Medellín');
+      await tick();
+      expect(bloc.state.pickupAddress, 'Calle Falsa 123, Medellín');
+
+      await bloc.close();
+    });
+
+    test(
+        'dragging the dropoff pin upgrades the raw-coordinate address once '
+        'reverse geocoding resolves', () async {
+      final jobs = CapturingQuoteJobsRepository();
+      final places = ControllablePlacesRepository();
+      final bloc = RequestBloc(jobsRepository: jobs, placesRepository: places);
+
+      bloc.add(const RequestDropoffPinMoved(LatLng(lat: 6.3, lng: -75.6)));
+      await tick();
+      expect(bloc.state.dropoffAddress, '6.30000, -75.60000');
+
+      places.resolveNext('Avenida Siempre Viva 742');
+      await tick();
+      expect(bloc.state.dropoffAddress, 'Avenida Siempre Viva 742');
+
+      await bloc.close();
+    });
+
+    test(
+        'a null resolution (no server-side key configured, or any failure) '
+        'leaves the raw-coordinate fallback in place -- never regresses', () async {
+      final jobs = CapturingQuoteJobsRepository();
+      final places = ControllablePlacesRepository();
+      final bloc = RequestBloc(jobsRepository: jobs, placesRepository: places);
+
+      bloc.add(const RequestPickupPinMoved(LatLng(lat: 6.3, lng: -75.6)));
+      await tick();
+
+      places.resolveNext(null);
+      await tick();
+      expect(bloc.state.pickupAddress, '6.30000, -75.60000');
+
+      await bloc.close();
+    });
+
+    test(
+        'a stale reverse-geocode result for a superseded pin position is '
+        'dropped rather than clobbering the newer one', () async {
+      final jobs = CapturingQuoteJobsRepository();
+      final places = ControllablePlacesRepository();
+      final bloc = RequestBloc(jobsRepository: jobs, placesRepository: places);
+
+      bloc.add(const RequestPickupPinMoved(LatLng(lat: 6.3, lng: -75.6)));
+      await tick();
+      bloc.add(const RequestPickupPinMoved(LatLng(lat: 6.32, lng: -75.62)));
+      await tick();
+
+      // Resolves the *first* pin position's reverse-geocode call -- it
+      // should be silently dropped, since the pin moved again before it
+      // arrived.
+      places.resolveNext('Stale address for the first position');
+      await tick();
+      expect(bloc.state.pickupAddress, '6.32000, -75.62000');
+
+      await bloc.close();
+    });
+
+    test('no PlacesRepository provided never attempts reverse geocoding '
+        '(default construction, matches every pre-existing test)', () async {
+      final jobs = CapturingQuoteJobsRepository();
+      final bloc = RequestBloc(jobsRepository: jobs);
+
+      bloc.add(const RequestPickupPinMoved(LatLng(lat: 6.3, lng: -75.6)));
+      await tick(30);
+      expect(bloc.state.pickupAddress, '6.30000, -75.60000');
 
       await bloc.close();
     });

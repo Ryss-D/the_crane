@@ -1313,6 +1313,19 @@
         "title": "FleetSettlementEntry",
         "type": "object"
       },
+      "GeocodeResponse": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          }
+        },
+        "required": [
+          "address"
+        ],
+        "title": "GeocodeResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -5532,6 +5545,62 @@
           }
         ],
         "summary": "Place Details",
+        "tags": [
+          "places"
+        ]
+      }
+    },
+    "/v1/places/geocode": {
+      "get": {
+        "operationId": "geocode_v1_places_geocode_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lat",
+            "required": true,
+            "schema": {
+              "title": "Lat",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lng",
+            "required": true,
+            "schema": {
+              "title": "Lng",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeocodeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Geocode",
         "tags": [
           "places"
         ]

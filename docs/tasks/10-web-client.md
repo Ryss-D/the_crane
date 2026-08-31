@@ -133,6 +133,73 @@ Request and track a grúa from the browser — no install. Customer role only.
   interactions or the real Autocomplete dropdown UI (jsdom + the mock above
   can't exercise real Google Maps JS at all, by design).
 
+  Follow-up (2026-08-31, reverse geocoding -- closes the gap flagged just
+  above ("a dragged pin's text-field label is the raw (lat, lng)... real
+  reverse geocoding would need the (unenabled) Geocoding API, not attempted
+  here") and matches the equivalent Flutter/backend work in
+  `06-customer-app.md`'s CUS-1 and `03-jobs-pricing.md`'s JOB-4): `CraneApi`
+  gained `reverseGeocode(lat, lng): Promise<string | null>`
+  (`src/api/client.ts`/`src/api/mock.ts`). Unlike Places autocomplete on
+  this client (which calls Google's JS SDK directly via
+  `usePlacesAutocomplete`, since a web-restricted key can authenticate that
+  the way an Android/iOS-restricted key can't), reverse geocoding goes
+  through the backend's new `GET /v1/places/geocode` proxy -- a raw REST
+  Geocoding call from the browser isn't something the Maps JavaScript
+  library's loaded-script model covers the way Autocomplete/`Geocoder` are,
+  so this follows the same backend-proxy shape the Flutter app's
+  `PlacesRepository.reverseGeocode` uses instead of inventing a second
+  pattern. `HttpApi.reverseGeocode` never throws -- a 503 (no server-side
+  key, or Google errors), a 401 (this endpoint requires auth, and a GPS fix
+  or pin drag can happen before the customer has signed in at all -- see the
+  WEB-1 follow-up on quoting being public but this proxy not being), or any
+  network failure all resolve to `null`.
+
+  Wired into `RequestPage.tsx`'s two raw-coordinate call sites -- the GPS
+  button's success callback and both of `RequestMap`'s drag callbacks --
+  via two new shared helpers (`setPickupFromRawCoords`/
+  `setDropoffFromRawCoords`) that show the raw `(lat, lng)` text immediately
+  (unchanged from before this change) and then upgrade it in the background
+  if `reverseGeocode()` resolves a real address. A `pickupCoordsRef`/
+  `dropoffCoordsRef` pair (plain refs, not state, so a resolution doesn't
+  need a re-render to check) guards against a stale resolution clobbering a
+  newer value -- if the customer has since typed over the field, dragged
+  again, or picked a Places suggestion, the ref no longer matches the
+  coordinate object the resolution was for and the address is dropped,
+  mirroring the position-based staleness guard the Flutter app's
+  `RequestBloc` now uses for the identical race.
+
+  `MockApi.reverseGeocode` resolves to "Cerca de `<nearest of five seeded
+  Medellín landmarks>`" by straight-line distance -- never null, mirroring
+  the Flutter fake's identical convention, since there's no "no key
+  configured" state to simulate under mocks. `backend/openapi.json` and
+  `src/api/generated.ts` both regenerated (`npm run client:check` was
+  failing against the new endpoint before this).
+
+  8 new tests: 4 in `src/api/client.test.ts` (query params + auth header on
+  success, null on 503, null on 401, null on a network rejection), 3 in
+  `src/api/mock.test.ts` (nearest-landmark selection for two different
+  coordinates, never-null), and the existing GPS-button test in
+  `RequestPage.test.tsx` split into two (one asserting the eventual
+  upgraded address under the real `MockApi`, a new one spying
+  `reverseGeocode` to resolve `null` and asserting the coordinate fallback
+  stands) -- the prior single assertion of the raw coordinate text no
+  longer held once `reverseGeocode` was wired in and resolving
+  near-instantly under the zero-latency test config. Pin-drag itself is not
+  covered by a test: this codebase's Google Maps mock
+  (`src/test/setup.tsx`) renders `Marker` as a static `<div>` with no drag
+  simulation at all (the existing WEB-2 note above already flags "no manual
+  test of drag interactions" as a known jsdom limitation) -- both drag
+  handlers call the exact same shared helper the GPS-button tests exercise,
+  so the upgrade/staleness logic itself is still covered, just not through
+  a simulated drag. Full suite green (90 passed), lint clean, `npm run
+  build` clean.
+
+  Not yet verified: no live pass against a real server-side
+  `google_maps_api_key` -- every path above only ever exercises the
+  backend's no-key 503 fallback in this session, so a GPS fix or dragged pin
+  still shows a raw coordinate on any actual run of this app today; same
+  standing gap as the rest of this task.
+
 - [ ] **WEB-3 — Live tracking page** *(deps: WEB-1, TRK-1)*
   Active-job view over the shared WS with 10s polling fallback; status timeline + driver marker; cash confirmation + rating.
   *AC: socket kill switches to polling transparently.*

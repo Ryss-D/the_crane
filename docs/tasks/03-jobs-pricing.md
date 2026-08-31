@@ -68,6 +68,38 @@ The core domain: platform config, quoting, the job record and its state machine.
   `Authorization` header sent at all). `openapi.json` regenerated. Full
   suite green (338 passed), ruff clean.
 
+  Follow-up (2026-08-31, reverse geocoding — the gap flagged in
+  `06-customer-app.md`'s CUS-1/CUS-4 and `10-web-client.md`'s WEB-2): a
+  fourth proxy joins autocomplete/details/route in `app/services/places.py`/
+  `app/api/places.py` — `reverse_geocode(lat, lng) -> str | None` calls
+  Google's classic Geocoding API
+  (`https://maps.googleapis.com/maps/api/geocode/json`) and returns the
+  first result's `formatted_address`. New endpoint: `GET
+  /v1/places/geocode?lat=&lng=` -> `{"address": "..."}`, auth-required, same
+  as autocomplete/details/route (`CurrentUser` dependency).
+
+  Design choice (the task note asked for judgment here): `reverse_geocode`
+  sits with `place_details` on the 503-on-failure side of the line — there
+  is nothing sensible to fake for a specific coordinate's address the way an
+  empty autocomplete list is a fine no-op. Unlike `place_details`, though,
+  the service function itself never raises `HTTPException` — it stays a
+  plain `str | None` return, kept directly unit-testable without assembling
+  a FastAPI exception in a test; the 503 is raised one layer up, in
+  `app/api/places.py`'s `geocode` endpoint, when the service returns `None`
+  (no key configured, non-OK Google status, or an empty `results` list).
+
+  Regenerated `openapi.json` (`web-client`'s `client:check` CI job would
+  otherwise flag it as stale). 7 new tests in `tests/test_places_api.py`
+  (auth-required, no-key 503, a mocked successful Google response, a mocked
+  non-OK status, and a mocked OK-status-but-empty-results case — both
+  failure shapes 503, matching `place_details`'s convention). Full backend
+  suite green (345 passed), ruff clean.
+
+  Still no server-side key: every path above is real and tested, but as of
+  this session only ever exercises its no-key 503 fallback branch — no live
+  call against a real `google_maps_api_key` has happened, same standing gap
+  as autocomplete/details/route.
+
 - [x] **JOB-5 — Create / get / list / cancel endpoints** *(deps: JOB-3, JOB-4)*
   `POST /v1/jobs` (from a quote id) → status `matching`; `GET /v1/jobs/{id}`; `GET /v1/jobs?role=` history with pagination; `POST /v1/jobs/{id}/cancel` enforcing JOB-3 rules. Job stores the pricing/commission config snapshot.
   *AC: customer can only see own jobs, driver only assigned ones; snapshot present on created jobs.*

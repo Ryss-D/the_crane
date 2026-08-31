@@ -22,3 +22,7 @@ class PlaceDetailsResponse(LatLng):
 
 class RouteResponse(BaseModel):
     points: list[LatLng]
+
+
+class GeocodeResponse(BaseModel):
+    address: str

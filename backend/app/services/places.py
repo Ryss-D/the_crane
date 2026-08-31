@@ -12,6 +12,14 @@ best-effort enrichment" stance as pricing.py's haversine fallback. Details has
 no such fallback (there's nothing sensible to return instead of real
 coordinates for a specific place_id), so it 503s instead, same shape
 GoogleDirectionsClient(None) uses for a missing key.
+
+reverse_geocode (CUS-1/CUS-4/WEB-2 follow-up) sits with details on the
+503 side of that line -- there's nothing sensible to fake for a specific
+coordinate's address the way an empty autocomplete list is a fine no-op.
+Unlike place_details, it stays a plain `str | None` return (no
+HTTPException raised in here) so it remains a directly unit-testable pure
+function; app/api/places.py's geocode endpoint is what turns a None into
+the 503, same status/detail shape place_details raises itself.
 """
 
 import logging
@@ -32,6 +40,7 @@ AUTOCOMPLETE_RADIUS_METERS = 20_000
 
 AUTOCOMPLETE_URL = "https://maps.googleapis.com/maps/api/place/autocomplete/json"
 DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json"
+GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
 
 
 async def autocomplete(query: str) -> list[dict[str, str]]:
@@ -90,3 +99,25 @@ async def place_details(place_id: str) -> dict[str, Any]:
         "lng": location["lng"],
         "formatted_address": result.get("formatted_address", ""),
     }
+
+
+async def reverse_geocode(lat: float, lng: float) -> str | None:
+    api_key = get_settings().google_maps_api_key
+    if not api_key:
+        logger.warning("google_maps_api_key not set — reverse_geocode returns None")
+        return None
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(
+            GEOCODE_URL,
+            params={
+                "latlng": f"{lat},{lng}",
+                "key": api_key,
+                "language": "es",
+            },
+        )
+    data = response.json() if response.status_code == 200 else {}
+    results = data.get("results")
+    if data.get("status") != "OK" or not results:
+        logger.warning("Geocoding non-OK status: %s", data.get("status"))
+        return None
+    return results[0].get("formatted_address")
