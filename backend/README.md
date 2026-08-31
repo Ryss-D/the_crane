@@ -93,3 +93,24 @@ uv run alembic upgrade head
 ```
 
 The first migration enables the PostGIS extension (skipped on sqlite in tests).
+
+## Deploy (OPS-3)
+
+Live dev deployment on Fly.io: `the-crane-api` (`fly.toml` in this
+directory), Postgres+PostGIS as a separate app (`deploy/postgres/fly.toml`,
+private-network-only), Redis via Fly's Upstash integration. Full detail —
+why Fly's own managed Postgres doesn't work for this app, secrets, the
+GitHub Actions auto-deploy on push to `dev` — in the OPS-3 entry in
+`docs/tasks/13-devops.md`.
+
+```bash
+flyctl deploy --app the-crane-api   # manual deploy, from this directory
+flyctl secrets list --app the-crane-api
+```
+
+To wire up real Firebase token verification in this environment, set the
+service-account JSON as a secret yourself (never paste it anywhere else):
+
+```bash
+fly secrets set FIREBASE_CREDENTIALS_JSON="$(cat path/to/firebase.json)" --app the-crane-api
+```

@@ -1,0 +1,27 @@
+# Standalone Postgres+PostGIS on Fly.io — deployed directly from the same
+# postgis/postgis image local dev and CI already use (backend/docker-compose.yml,
+# .github/workflows/backend.yml), rather than Fly's own managed "postgres-flex"
+# offering: that image does not support the postgis extension (confirmed by
+# crashing the server on `CREATE EXTENSION postgis` during setup) and Fly has
+# no managed Postgres+PostGIS product as of this deploy.
+#
+# No [[services]] block on purpose: this app is reachable only over Fly's
+# private 6PN network as the-crane-db.internal:5432 from other apps in the
+# same org (the-crane-api) — never exposed publicly.
+app = "the-crane-db"
+primary_region = "iad"
+
+[build]
+  image = "postgis/postgis:16-3.4"
+
+[env]
+  POSTGRES_DB = "crane"
+  PGDATA = "/var/lib/postgresql/data/pgdata"
+
+[[mounts]]
+  source = "crane_pgdata"
+  destination = "/var/lib/postgresql/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

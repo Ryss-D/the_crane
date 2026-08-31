@@ -1,0 +1,42 @@
+# OPS-3: backend deploy (dev). Scales to zero when idle (cost-conscious for
+# a dev environment) and cold-starts on the next request.
+#
+# Firebase credentials: FIREBASE_CREDENTIALS_PATH (app/core/security.py) needs
+# a JSON file on disk, but the credential itself has to travel as a secret
+# (env var), never a file baked into the image. [processes] below writes
+# FIREBASE_CREDENTIALS_JSON (if set) to a file at boot and points
+# FIREBASE_CREDENTIALS_PATH at it -- set the secret yourself, from your own
+# terminal, so the service-account JSON never has to be pasted anywhere else:
+#   fly secrets set FIREBASE_CREDENTIALS_JSON="$(cat path/to/firebase.json)" --app the-crane-api
+# Until that's set, the app runs fine (per FIREBASE_CREDENTIALS_PATH's own
+# "app boots without it; only token verification requires it") -- auth-gated
+# endpoints just won't verify real tokens yet.
+app = "the-crane-api"
+primary_region = "iad"
+
+[build]
+
+[processes]
+  app = "sh -c 'if [ -n \"$FIREBASE_CREDENTIALS_JSON\" ]; then mkdir -p /app/secrets && printf %s \"$FIREBASE_CREDENTIALS_JSON\" > /app/secrets/firebase.json && export FIREBASE_CREDENTIALS_PATH=/app/secrets/firebase.json; fi; exec uv run --no-dev uvicorn app.main:app --host 0.0.0.0 --port 8000'"
+
+[deploy]
+  release_command = "uv run --no-dev alembic upgrade head"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
