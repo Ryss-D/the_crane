@@ -12,4 +12,6 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID?: string;
   /** FND-6: web-restricted (HTTP referrer) key — Maps JavaScript API + Places API. */
   readonly VITE_GOOGLE_MAPS_API_KEY?: string;
+  /** OPS-6: unset → Sentry.init is skipped entirely (see src/main.tsx). */
+  readonly VITE_SENTRY_DSN?: string;
 }

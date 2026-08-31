@@ -37,4 +37,11 @@ abstract final class Env {
 
   static const bool isProd = name == 'prod';
   static const bool isDev = !isProd;
+
+  /// OPS-6: Sentry DSN for crash/error reporting. Empty string (the default when
+  /// no `env/*.json` sets it) means `SentryFlutter.init` in `main.dart` still runs
+  /// (it must, to wrap `runApp`) but its own SDK treats an empty DSN as "disabled" —
+  /// no events are ever sent, no network call is made. No real Sentry account
+  /// exists yet, so `env/dev.json`/`env/prod.json` deliberately leave this unset.
+  static const String sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
 }

@@ -1,5 +1,6 @@
 {
   "API_BASE_URL": "http://localhost:8000",
   "WEB_BASE_URL": "http://localhost:5173",
-  "ENV": "dev"
+  "ENV": "dev",
+  "SENTRY_DSN": ""
 }

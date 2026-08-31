@@ -15,6 +15,7 @@
     "client:generate": "echo 'TODO: openapi-typescript http://localhost:8000/openapi.json -o src/api/generated.ts — replaces the hand-written types in src/api/types.ts once the backend admin OpenAPI spec stabilizes (see src/api/README.md)' && exit 1"
   },
   "dependencies": {
+    "@sentry/react": "^10.73.0",
     "@tanstack/react-query": "^5.62.0",
     "@vis.gl/react-google-maps": "^1.9.0",
     "firebase": "^12.17.1",

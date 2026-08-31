@@ -4,8 +4,11 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
+import sentry_sdk
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import (
@@ -87,6 +90,25 @@ def _real_offer_notifier(
 
 
 def create_app() -> FastAPI:
+    # OPS-6: only initialize Sentry when a DSN is actually configured -- explicitly
+    # skip the call entirely rather than relying on sentry_sdk's own no-op behavior
+    # for an empty/None dsn, same "unset means genuinely off" discipline as
+    # GoogleDirectionsClient/WompiGateway elsewhere in this file's settings. No real
+    # Sentry account exists yet, so this branch is never exercised outside tests.
+    if get_settings().sentry_dsn:
+        sentry_sdk.init(
+            dsn=get_settings().sentry_dsn,
+            environment=get_settings().env,
+            # FastAPI/Starlette integrations attach request context (method, path,
+            # headers) to every captured event -- this is the "request context" the
+            # OPS-6 AC asks for; job_id is tagged separately in
+            # app/api/jobs.py's _get_job_or_404, the one place every job-scoped
+            # endpoint already passes through. No custom request-id middleware is
+            # introduced here -- this codebase doesn't generate one anywhere else,
+            # and building one from scratch is out of this task's scope.
+            integrations=[FastApiIntegration(), StarletteIntegration()],
+        )
+
     app = FastAPI(title="The Crane API", version="0.1.0", lifespan=lifespan)
 
     # WEB-1: web-client/admin call this API directly from the browser.

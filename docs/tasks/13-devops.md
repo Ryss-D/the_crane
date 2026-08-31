@@ -150,3 +150,92 @@
 - [ ] **OPS-6 — Observability baseline** *(deps: OPS-3)*
   Structured logging (request id, job id), Sentry for API + Flutter + web, basic uptime check.
   *AC: a forced API exception appears in Sentry with request context.*
+
+  Built (2026-08-31): Sentry wired into all four codebases, following the exact
+  unset-means-genuinely-off pattern this repo already uses for every other
+  external integration it doesn't yet have real credentials for
+  (`GoogleDirectionsClient`/`HaversineFallback` in `backend/app/services/pricing.py`,
+  `WompiGateway`'s `WompiNotConfiguredError`) — zero Sentry references existed
+  anywhere in this repo before this pass.
+
+  Backend: `sentry-sdk[fastapi]` added (`uv add`, now in `pyproject.toml`).
+  `Settings.sentry_dsn: str | None = None` (`app/core/config.py`). `create_app()`
+  in `app/main.py` calls `sentry_sdk.init(dsn=..., environment=..., integrations=
+  [FastApiIntegration(), StarletteIntegration()])` **only inside an `if
+  get_settings().sentry_dsn:` guard** — no init call at all when unset, not just
+  relying on the SDK's own falsy-DSN no-op. The FastAPI/Starlette integrations
+  attach request context (method, path, headers) to every captured event, which is
+  what the AC's "with request context" asks for. `job_id` is tagged onto Sentry's
+  scope (`sentry_sdk.set_tag("job_id", ...)`) in `app/api/jobs.py`'s
+  `_get_job_or_404` — the one helper every job-scoped endpoint already routes
+  through, so this covers job-id tagging without adding a new call site per
+  endpoint. `SENTRY_DSN=` added to `backend/.env.example` with a comment matching
+  the existing entries' voice. New `backend/tests/test_sentry.py`: confirms
+  `create_app()` boots and never calls `sentry_sdk.init` when `sentry_dsn` is
+  `None` (this repo's real default), and that it does call `init` with the
+  configured DSN when one is set (via `monkeypatch`, no real network call).
+
+  Deliberately **not built**: a request-id middleware. This codebase generates no
+  request id anywhere today (checked); inventing one from scratch was out of this
+  task's stated scope ("wiring Sentry, not building new request-tracing infra from
+  nothing") — flagging it here as the one piece of "structured logging (request
+  id, job id)" left undone. `job_id` tagging above covers the other half.
+
+  Flutter: `sentry_flutter` added (`flutter pub add`). `lib/main.dart` wraps the
+  existing `runApp(...)` call in `SentryFlutter.init((options) { options.dsn =
+  Env.sentryDsn; options.environment = Env.name; }, appRunner: () => runApp(...))`
+  — its own standard integration pattern. `Env.sentryDsn` (`lib/core/config/
+  env.dart`) reads `SENTRY_DSN` via `String.fromEnvironment`, defaulting to `''`,
+  matching `apiBaseUrl`/`webBaseUrl`'s existing `--dart-define-from-file`
+  convention. Added `"SENTRY_DSN": ""` to both `env/dev.json` and `env/prod.json`,
+  and the key to `README.md`'s dart-define key list. Verified safe with an empty
+  DSN by running the full suite: `flutter analyze` and `flutter test` both stay
+  green (see below) — `SentryFlutter.init` with an empty DSN doesn't throw or hit
+  the network, it just no-ops event sending while still running the app normally.
+
+  web-client + admin: `@sentry/react` added to both (separate `npm install`s,
+  separate `package.json`s). Each `src/main.tsx` calls `Sentry.init({dsn: ...,
+  environment: import.meta.env.MODE})` inside `if (import.meta.env.
+  VITE_SENTRY_DSN)` — guarded explicitly rather than trusting `@sentry/react`'s
+  own falsy-dsn no-op, same convention as `VITE_GOOGLE_MAPS_API_KEY`'s conditional
+  rendering in `web-client/src/features/request/RequestPage.tsx` and elsewhere.
+  `VITE_SENTRY_DSN=` added to both `.env.example` files (matching comment style)
+  and to both `src/vite-env.d.ts`'s `ImportMetaEnv`. Neither `vite.config.ts`'s
+  test `env` block needed a placeholder — unlike `VITE_GOOGLE_MAPS_API_KEY` (which
+  gates a truthy check components render against), nothing in either test suite
+  reads `VITE_SENTRY_DSN`, so leaving it unset in tests already exercises the
+  correct no-op path.
+
+  Basic uptime check: **not a new service** — deliberately, per this task's own
+  framing that stood up a real one would be infra/hosting scope, not app code.
+  All three deployed services already expose a health endpoint an external
+  monitor can hit: backend `GET /health` (`app/main.py`), and both `web-client`
+  and `admin`'s nginx-served `/health` (OPS-5). Fly's own `[[http_service.checks]]`
+  in each `fly.toml` already polls these. Flagging this as the AC's "basic uptime
+  check" being effectively already met, not left undone.
+
+  AC **not verified** and left unchecked: "a forced API exception appears in
+  Sentry with request context" needs a live Sentry DSN, which doesn't exist yet —
+  same credential-gated situation as every unchecked Wompi/Maps-key task
+  elsewhere in this backlog. `backend/tests/test_sentry.py` covers the init-guard
+  logic (the only thing testable without a real account) but not actual event
+  delivery. Once a Sentry account/DSN exists: set `SENTRY_DSN` in the backend's
+  `fly secrets`, hit any endpoint in a way that raises, and confirm the event
+  shows up in the Sentry project with the request's method/path attached.
+
+  Verified green in this pass: backend `uv run ruff check .` clean, `uv run
+  pytest -q` 345 passed (was 338 immediately before this task's own changes,
+  +2 from `test_sentry.py`; the gap from this repo's last-committed count is
+  unrelated concurrent work landing on this branch mid-session, not part of
+  OPS-6). `flutter analyze` unchanged at 13 pre-existing info/warnings, all in
+  test files, none touching `lib/main.dart`/`lib/core/config/env.dart` (confirmed
+  identical before/after this task's changes). `flutter test` all green (422
+  passed; some of the increase over this backlog's previously-noted 419 is the
+  same unrelated concurrent work, not OPS-6). `web-client`: `npm run lint` clean,
+  `npm test` 82 passed (unchanged), `npm run build` succeeds. `admin`: `npm test`
+  62 passed (unchanged) and `npm run build` succeeds, but `npm run lint` has 5
+  pre-existing errors (`firebaseAuth.test.ts`'s `import()` type annotations,
+  `ConfigPage.test.tsx`'s intentional NBSP literals tripping
+  `no-irregular-whitespace`) confirmed present with this task's changes stashed
+  out entirely — not introduced by OPS-6, left as-is rather than risk touching a
+  test whose NBSP characters look load-bearing to its own stated purpose.

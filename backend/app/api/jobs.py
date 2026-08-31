@@ -7,6 +7,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
+import sentry_sdk
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,6 +84,10 @@ _TRACK_DRIVER_VISIBLE = frozenset(
 
 
 async def _get_job_or_404(session: AsyncSession, job_id: uuid.UUID) -> Job:
+    # OPS-6: every job-scoped endpoint routes through here, so this is the one
+    # natural place to tag job_id onto Sentry's scope -- a safe no-op call whether
+    # or not sentry_sdk.init() ever ran (no-DSN case, the only one exercised today).
+    sentry_sdk.set_tag("job_id", str(job_id))
     job = await session.get(Job, job_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")

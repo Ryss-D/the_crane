@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     wompi_private_key: str | None = None
     wompi_events_key: str | None = None
     wompi_env: str = "sandbox"  # or "prod"
+    # OPS-6: Sentry DSN for error tracking. Unset -> app/main.py's create_app skips
+    # the sentry_sdk.init() call entirely (no-op, same fallback discipline as
+    # google_maps_api_key/wompi_* above) -- no Sentry account exists yet as of this
+    # pass. Once set, errors report with request context (via sentry-sdk's FastAPI
+    # integration) and job_id (tagged in app/api/jobs.py's _get_job_or_404).
+    sentry_dsn: str | None = None
 
     @property
     def cors_origins_list(self) -> list[str]:

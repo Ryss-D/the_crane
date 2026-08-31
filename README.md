@@ -24,7 +24,7 @@ Uber-style dispatch platform for grúas (tow trucks) hauling motos and cars. Lau
 
 ## Running (Flutter app)
 
-Flavors are plain `--dart-define-from-file` configs in `env/` (keys: `API_BASE_URL`, `ENV`), read by `lib/core/config/env.dart`.
+Flavors are plain `--dart-define-from-file` configs in `env/` (keys: `API_BASE_URL`, `WEB_BASE_URL`, `ENV`, `USE_FAKE_BACKEND`, `SENTRY_DSN`), read by `lib/core/config/env.dart`. `SENTRY_DSN` (OPS-6) is left empty in both `env/dev.json` and `env/prod.json` — no real Sentry account exists yet; `SentryFlutter.init` still runs but sends nothing with an empty DSN.
 
 ```sh
 # dev (backend at http://localhost:8000)

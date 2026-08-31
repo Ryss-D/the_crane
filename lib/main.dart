@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +11,7 @@ import 'app/di.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
 import 'core/api/directions_repository.dart';
+import 'core/config/env.dart';
 import 'core/api/drivers_repository.dart';
 import 'core/api/fleet_repository.dart';
 import 'core/api/jobs_repository.dart';
@@ -47,7 +49,19 @@ Future<void> main() async {
   // first frame, so the router's very first redirect doesn't flash the
   // sign-in screen for a returning user.
   await dependencies.authCubit.bootstrap();
-  runApp(TheCraneApp(dependencies: dependencies));
+  // OPS-6: SentryFlutter.init must wrap runApp per its own standard integration
+  // pattern (captures uncaught Flutter/platform errors from inside the zone it
+  // creates) -- it still needs to be called even with an empty DSN (Env.sentryDsn
+  // defaults to ''), but the SDK itself treats that as "disabled" and never sends
+  // anything or makes a network call. No real Sentry account exists yet, so this
+  // is the only path exercised today; see env/dev.json and env/prod.json.
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = Env.sentryDsn;
+      options.environment = Env.name;
+    },
+    appRunner: () => runApp(TheCraneApp(dependencies: dependencies)),
+  );
 }
 
 class TheCraneApp extends StatefulWidget {
