@@ -41,6 +41,16 @@ describe('tracking page (WEB-3 skeleton)', () => {
     const driverCard = await screen.findByTestId('driver-card');
     expect(driverCard).toHaveTextContent('Carlos Restrepo');
 
+    // FND-6 follow-up: pickup/dropoff pins from the job's own lat/lng — no
+    // driver marker under mocks (useJobSocket no-ops, no `driver_location`
+    // WS push to receive; `GET /v1/jobs/{id}` itself has no location field).
+    await screen.findByTestId('tracking-map');
+    const markers = screen.getAllByTestId('map-marker');
+    expect(markers).toHaveLength(2);
+    expect(markers.map((m) => m.getAttribute('data-marker-label'))).toEqual(['A', 'B']);
+    expect(markers[0]).toHaveAttribute('data-marker-lat', '6.2088');
+    expect(markers[1]).toHaveAttribute('data-marker-lat', '6.2273');
+
     // Call-driver button (parity with the Flutter app's CUS-4): a plain
     // tel: link, shown because the seeded demo driver has a phone.
     const callLink = screen.getByRole('link', { name: strings.tracking.callDriver });
@@ -86,6 +96,14 @@ describe('tracking page (WEB-3 skeleton)', () => {
     // found once the real backend contract existed to check against).
     expect(screen.getByText('Carlos')).toBeInTheDocument();
     expect(screen.getByText('TKX-482')).toBeInTheDocument();
+
+    // FND-6 follow-up: the public poll response (`TrackResponse`) carries
+    // `driver_location` directly (no WS needed here, unlike the authed
+    // tracking page above) — three pins once a driver is assigned.
+    await screen.findByTestId('tracking-map');
+    const markers = screen.getAllByTestId('map-marker');
+    expect(markers).toHaveLength(3);
+    expect(markers.some((m) => m.getAttribute('data-marker-title') === 'Grúa')).toBe(true);
   });
 
   it('shows a not-found message for an unknown or expired share token (WEB-4)', async () => {

@@ -25,6 +25,16 @@ export const strings = {
     confirmError: 'Código incorrecto. Intenta de nuevo.',
   },
 
+  // WEB-1: profile completion, same copy as the Flutter app's
+  // completeProfile* ARB keys (lib/l10n/app_es.arb).
+  completeProfile: {
+    title: '¿Cómo te llamas?',
+    subtitle: 'Lo usamos para que tu conductor o cliente sepa quién eres.',
+    nameLabel: 'Nombre completo',
+    saveButton: 'Continuar',
+    saveError: 'No pudimos guardar tu nombre. Intenta de nuevo.',
+  },
+
   request: {
     title: '¿Dónde está tu vehículo?',
     pickupLabel: 'Punto de recogida',

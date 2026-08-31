@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../../api';
@@ -8,31 +8,51 @@ import { useAuth } from '../../auth';
 import { strings } from '../../i18n/strings';
 import { useActiveJobStore } from '../../store/activeJob';
 import { Button, Card } from '../../ui';
+import { CompleteProfileForm } from './CompleteProfileForm';
 import { PhoneSignIn } from './PhoneSignIn';
 import { QuoteCard } from './QuoteCard';
+import { RequestMap } from '../map/RequestMap';
+import { usePlacesAutocomplete } from '../map/usePlacesAutocomplete';
 import { VehicleTypeSelector } from './VehicleTypeSelector';
 
 export function RequestPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const setActiveJob = useActiveJobStore((s) => s.setActiveJob);
   const activeJobId = useActiveJobStore((s) => s.jobId);
 
   const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
-  // WEB-2: a real GPS fix from navigator.geolocation, when the customer used
-  // "usar mi ubicación actual". Kept separate from the `pickup` text field so
-  // a real coordinate (more accurate than a hash-derived fake point) can be
-  // sent to quote()/createJob() while the field still shows something
-  // readable — there's no reverse-geocoding available without a Maps key
-  // (FND-6), so the field shows the raw coordinates, not a street address.
-  // Cleared whenever the user edits the text by hand, since at that point
-  // the coordinates no longer describe what's typed.
+  // WEB-2: a real coordinate — from browser geolocation ("usar mi ubicación
+  // actual"), a dragged map pin, or a selected Places suggestion — kept
+  // separate from the text field so the *real* point (more accurate than a
+  // hash-derived fake one) can be sent to quote()/createJob() while the
+  // field shows something readable. Cleared whenever the user edits the
+  // text field by hand, since at that point the coordinates no longer
+  // describe what's typed; `fakeGeocode` is the fallback once that happens
+  // (or if Places/the map are unavailable at all).
   const [pickupCoords, setPickupCoords] = useState<LatLng | null>(null);
+  // FND-6 follow-up: dropoff gets the same treatment now that Places/the map
+  // exist — previously always `fakeGeocode`, with no way to set a real point.
+  const [dropoffCoords, setDropoffCoords] = useState<LatLng | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState(false);
   const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
+
+  const pickupInputRef = useRef<HTMLInputElement>(null);
+  const dropoffInputRef = useRef<HTMLInputElement>(null);
+
+  usePlacesAutocomplete(pickupInputRef, (coords, address) => {
+    setPickupCoords(coords);
+    setPickup(address);
+    setQuote(null);
+  });
+  usePlacesAutocomplete(dropoffInputRef, (coords, address) => {
+    setDropoffCoords(coords);
+    setDropoff(address);
+    setQuote(null);
+  });
 
   function useCurrentLocation() {
     if (!('geolocation' in navigator)) {
@@ -64,7 +84,7 @@ export function RequestPage() {
       api.quote({
         vehicle_type: vehicleType as VehicleType,
         pickup: pickupCoords ?? fakeGeocode(pickup),
-        dropoff: fakeGeocode(dropoff),
+        dropoff: dropoffCoords ?? fakeGeocode(dropoff),
       }),
     onSuccess: setQuote,
   });
@@ -75,7 +95,7 @@ export function RequestPage() {
         quote_id: (quote as Quote).quote_id,
         vehicle_type: vehicleType as VehicleType,
         pickup: { ...(pickupCoords ?? fakeGeocode(pickup)), address: pickup.trim() },
-        dropoff: { ...fakeGeocode(dropoff), address: dropoff.trim() },
+        dropoff: { ...(dropoffCoords ?? fakeGeocode(dropoff)), address: dropoff.trim() },
       }),
     onSuccess: (job) => {
       setActiveJob(job.id, job.status);
@@ -84,6 +104,12 @@ export function RequestPage() {
   });
 
   if (!user) return <PhoneSignIn />;
+  // WEB-1: gate the request flow behind profile completion, same as the
+  // Flutter app's AuthPhase.needsProfile. `profile` is briefly null right
+  // after sign-in while syncAuth() is in flight — render nothing for that
+  // instant rather than flashing the request form first.
+  if (!profile) return null;
+  if (!profile.name) return <CompleteProfileForm />;
 
   const canQuote = pickup.trim().length > 0 && dropoff.trim().length > 0 && vehicleType !== null;
 
@@ -101,14 +127,32 @@ export function RequestPage() {
         </Card>
       )}
 
-      {/* TODO(FND-6): replace with @vis.gl/react-google-maps map + Places
-          Autocomplete + browser-geolocation pickup once the Maps key exists. */}
-      <div
-        aria-hidden
-        className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900 text-sm text-slate-500"
-      >
-        {strings.request.mapPlaceholder} — TODO(FND-6)
-      </div>
+      {/* FND-6 follow-up: real map now, when the key is configured. Falls
+          back to the same dashed placeholder box if it isn't — matches the
+          non-fatal "silently drop the map" contract RequestMap documents. */}
+      {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+        <RequestMap
+          pickup={pickupCoords}
+          dropoff={dropoffCoords}
+          onPickupDrag={(coords) => {
+            setPickupCoords(coords);
+            setPickup(strings.request.locationText(coords.lat, coords.lng));
+            setQuote(null);
+          }}
+          onDropoffDrag={(coords) => {
+            setDropoffCoords(coords);
+            setDropoff(strings.request.locationText(coords.lat, coords.lng));
+            setQuote(null);
+          }}
+        />
+      ) : (
+        <div
+          aria-hidden
+          className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900 text-sm text-slate-500"
+        >
+          {strings.request.mapPlaceholder} — TODO(FND-6)
+        </div>
+      )}
 
       <Card className="flex flex-col gap-3">
         <h1 className="text-lg font-bold text-slate-100">{strings.request.title}</h1>
@@ -116,6 +160,7 @@ export function RequestPage() {
           {strings.request.pickupLabel}
           <div className="flex gap-2">
             <input
+              ref={pickupInputRef}
               value={pickup}
               onChange={(e) => {
                 setPickup(e.target.value);
@@ -145,9 +190,11 @@ export function RequestPage() {
         <label className="flex flex-col gap-1 text-sm text-slate-300">
           {strings.request.dropoffLabel}
           <input
+            ref={dropoffInputRef}
             value={dropoff}
             onChange={(e) => {
               setDropoff(e.target.value);
+              setDropoffCoords(null);
               setQuote(null);
             }}
             placeholder={strings.request.dropoffPlaceholder}

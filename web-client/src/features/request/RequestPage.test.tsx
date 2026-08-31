@@ -1,17 +1,25 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AppRoutes, AppShell } from '../../App';
 import { formatCOP } from '../../i18n/format';
 import { strings } from '../../i18n/strings';
 import { mockGeolocation } from '../../test/setup';
 
-async function signIn(user: ReturnType<typeof userEvent.setup>, phone: string) {
+/** Signs in AND completes the WEB-1 profile-completion gate (a fresh
+ * FakeAuth/MockApi identity always has no name), landing on the request
+ * form itself. */
+async function signIn(user: ReturnType<typeof userEvent.setup>, phone: string, name = 'Ana Gómez') {
   await user.type(screen.getByLabelText(strings.auth.phoneLabel), phone);
   await user.click(screen.getByRole('button', { name: strings.auth.submit }));
   await user.type(await screen.findByLabelText(strings.auth.codeLabel), '123456');
   await user.click(screen.getByRole('button', { name: strings.auth.confirm }));
+  await user.type(
+    await screen.findByLabelText(strings.completeProfile.nameLabel),
+    name,
+  );
+  await user.click(screen.getByRole('button', { name: strings.completeProfile.saveButton }));
 }
 
 function renderApp() {
@@ -32,11 +40,9 @@ describe('request flow (WEB-2 skeleton)', () => {
     const user = userEvent.setup();
     renderApp();
 
-    // FakeAuth gate: any phone + any code → logged in.
-    await user.type(screen.getByLabelText(strings.auth.phoneLabel), '3001234567');
-    await user.click(screen.getByRole('button', { name: strings.auth.submit }));
-    await user.type(await screen.findByLabelText(strings.auth.codeLabel), '123456');
-    await user.click(screen.getByRole('button', { name: strings.auth.confirm }));
+    // FakeAuth gate: any phone + any code → logged in. Then WEB-1's
+    // profile-completion gate (a fresh identity always has no name).
+    await signIn(user, '3001234567');
 
     // Request form.
     await user.type(
@@ -66,10 +72,7 @@ describe('request flow (WEB-2 skeleton)', () => {
     const user = userEvent.setup();
     renderApp();
 
-    await user.type(screen.getByLabelText(strings.auth.phoneLabel), '3000000000');
-    await user.click(screen.getByRole('button', { name: strings.auth.submit }));
-    await user.type(await screen.findByLabelText(strings.auth.codeLabel), '123456');
-    await user.click(screen.getByRole('button', { name: strings.auth.confirm }));
+    await signIn(user, '3000000000');
 
     const quoteBtn = await screen.findByRole('button', { name: strings.request.getQuote });
     expect(quoteBtn).toBeDisabled();
@@ -140,5 +143,42 @@ describe('"usar mi ubicación actual" (WEB-2)', () => {
     await user.type(pickupInput, 'Cra. 43A #1-50, El Poblado');
 
     expect(pickupInput).toHaveValue('Cra. 43A #1-50, El Poblado');
+  });
+});
+
+describe('map (FND-6 follow-up)', () => {
+  it('renders no pin until a real coordinate exists, then a pickup pin once GPS provides one', async () => {
+    mockGeolocation.getCurrentPosition.mockImplementation(
+      (success: (pos: { coords: { latitude: number; longitude: number } }) => void) => {
+        success({ coords: { latitude: 6.25184, longitude: -75.56359 } });
+      },
+    );
+    const user = userEvent.setup();
+    renderApp();
+    await signIn(user, '3002221111');
+
+    expect(await screen.findByTestId('request-map')).toBeInTheDocument();
+    // Neither pickup nor dropoff has a real coordinate yet (nothing typed,
+    // no GPS fix taken) — RequestMap only renders a Marker once it has one.
+    expect(screen.queryByTestId('map-marker')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: strings.request.useCurrentLocation }));
+
+    const marker = await screen.findByTestId('map-marker');
+    expect(marker).toHaveAttribute('data-marker-label', 'A');
+    expect(marker).toHaveAttribute('data-marker-lat', '6.25184');
+    expect(marker).toHaveAttribute('data-marker-lng', '-75.56359');
+  });
+
+  it('shows the dashed placeholder instead when no Maps key is configured', async () => {
+    vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', '');
+    const user = userEvent.setup();
+    renderApp();
+    await signIn(user, '3004443333');
+
+    expect(screen.getByText(`${strings.request.mapPlaceholder} — TODO(FND-6)`)).toBeInTheDocument();
+    expect(screen.queryByTestId('request-map')).not.toBeInTheDocument();
+
+    vi.unstubAllEnvs();
   });
 });

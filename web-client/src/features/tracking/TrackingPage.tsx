@@ -7,6 +7,7 @@ import { strings } from '../../i18n/strings';
 import { useActiveJobStore } from '../../store/activeJob';
 import { Button, Card } from '../../ui';
 import { POLL_INTERVAL_MS, useJobSocket } from '../../ws/useJobSocket';
+import { TrackingMap } from '../map/TrackingMap';
 import { RatingStub } from '../rating/RatingStub';
 import { DriverCard } from './DriverCard';
 import { StatusTimeline } from './StatusTimeline';
@@ -17,8 +18,9 @@ export function TrackingPage() {
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
 
-  // TODO(WEB-3/TRK-1): live WS updates; polling below is the permanent fallback.
-  useJobSocket(id);
+  // Live WS updates (job_event -> refetch, driver_location -> the map
+  // marker below); polling stays the permanent fallback either way.
+  const { driverLocation } = useJobSocket(id);
 
   const jobQuery = useQuery({
     queryKey: ['job', id],
@@ -66,13 +68,20 @@ export function TrackingPage() {
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-bold text-slate-100">{strings.tracking.title}</h1>
 
-      {/* TODO(FND-6): live map with driver marker. */}
-      <div
-        aria-hidden
-        className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900 text-sm text-slate-500"
-      >
-        {strings.request.mapPlaceholder} — TODO(FND-6)
-      </div>
+      {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+        <TrackingMap
+          pickup={{ lat: job.pickup_lat, lng: job.pickup_lng }}
+          dropoff={{ lat: job.dropoff_lat, lng: job.dropoff_lng }}
+          driverLocation={driverLocation}
+        />
+      ) : (
+        <div
+          aria-hidden
+          className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900 text-sm text-slate-500"
+        >
+          {strings.request.mapPlaceholder} — TODO(FND-6)
+        </div>
+      )}
 
       <Card className="flex flex-col gap-2 text-sm text-slate-300">
         <p className="truncate">

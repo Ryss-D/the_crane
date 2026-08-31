@@ -4,6 +4,7 @@ import { api } from '../../api';
 import { strings } from '../../i18n/strings';
 import { Card } from '../../ui';
 import { POLL_INTERVAL_MS } from '../../ws/useJobSocket';
+import { TrackingMap } from '../map/TrackingMap';
 import { StatusTimeline } from './StatusTimeline';
 
 /**
@@ -38,13 +39,20 @@ export function ShareTrackPage() {
       <h1 className="text-lg font-bold text-slate-100">{strings.tracking.publicTitle}</h1>
       <p className="text-xs text-slate-500">{strings.tracking.publicNote}</p>
 
-      {/* TODO(FND-6): read-only live map with driver position (track.driver_location). */}
-      <div
-        aria-hidden
-        className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900 text-sm text-slate-500"
-      >
-        {strings.request.mapPlaceholder} — TODO(FND-6)
-      </div>
+      {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+        <TrackingMap
+          pickup={track.pickup}
+          dropoff={track.dropoff}
+          driverLocation={track.driver_location}
+        />
+      ) : (
+        <div
+          aria-hidden
+          className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900 text-sm text-slate-500"
+        >
+          {strings.request.mapPlaceholder} — TODO(FND-6)
+        </div>
+      )}
 
       {track.driver && (
         <Card className="flex flex-col gap-2 text-sm text-slate-300">

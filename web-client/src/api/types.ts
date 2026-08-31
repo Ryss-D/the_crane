@@ -91,6 +91,13 @@ export interface Job {
   id: string;
   status: JobStatus;
   vehicle_type: VehicleType;
+  /** FND-6 follow-up: the real `JobRead` (`backend/app/schemas/job.py`) has
+   * always returned these — this hand-written type just never declared
+   * them until the tracking map needed real pickup/dropoff pins. */
+  pickup_lat: number;
+  pickup_lng: number;
+  dropoff_lat: number;
+  dropoff_lng: number;
   pickup_address: string;
   dropoff_address: string;
   /** COP, integer pesos — the fare locked in from the quote at creation. */
@@ -135,8 +142,8 @@ export interface UserProfile {
   firebase_uid: string;
   role: UserRole;
   /** Firebase phone-OTP never provides a name — null until profile
-   * completion, which this web client doesn't build a gate for yet
-   * (see the WEB-1 note in docs/tasks/10-web-client.md). */
+   * completion (`AuthProvider`'s gate on `RequestPage`, mirroring the
+   * Flutter app's `AuthPhase.needsProfile`/`CompleteProfileScreen`). */
   name: string | null;
   phone: string | null;
   email: string | null;

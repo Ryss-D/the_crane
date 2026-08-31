@@ -24,6 +24,11 @@ export interface CraneApi {
    * authenticated call 404s on a fresh account (get_current_user has no row
    * to resolve until this has run at least once). */
   syncAuth(body?: { name?: string; phone?: string }): Promise<UserProfile>;
+  /** PATCH /v1/me — profile completion (mirrors the Flutter app's AUTH-3
+   * `CompleteProfileScreen`/`AuthCubit.completeProfile`): a fresh phone-OTP
+   * account has no `name` until this is called once. Only provided fields
+   * are updated server-side. */
+  updateMe(body: { name?: string; email?: string }): Promise<UserProfile>;
 }
 
 export class ApiError extends Error {
@@ -45,7 +50,7 @@ export class HttpApi implements CraneApi {
   ) {}
 
   private async request<T>(
-    method: 'GET' | 'POST',
+    method: 'GET' | 'POST' | 'PATCH',
     path: string,
     opts: { body?: unknown; auth?: boolean } = {},
   ): Promise<T> {
@@ -94,5 +99,9 @@ export class HttpApi implements CraneApi {
 
   syncAuth(body?: { name?: string; phone?: string }): Promise<UserProfile> {
     return this.request('POST', '/v1/auth/sync', { body });
+  }
+
+  updateMe(body: { name?: string; email?: string }): Promise<UserProfile> {
+    return this.request('PATCH', '/v1/me', { body });
   }
 }

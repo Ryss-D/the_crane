@@ -10,7 +10,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ['./src/test/setup.tsx'],
     css: false,
     // src/firebase.ts calls initializeApp/getAuth at module-eval time (via
     // src/auth/firebaseAuth.ts, imported unconditionally by singleton.ts
@@ -26,6 +26,12 @@ export default defineConfig({
       VITE_FIREBASE_STORAGE_BUCKET: 'test.firebasestorage.app',
       VITE_FIREBASE_MESSAGING_SENDER_ID: '000000000000',
       VITE_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000000000',
+      // Same reasoning as the Firebase placeholders above — RequestMap/
+      // TrackingMap check for a truthy key before rendering at all, and
+      // @vis.gl/react-google-maps itself is mocked wholesale in
+      // src/test/setup.tsx, so this never actually reaches a real network
+      // call; it just needs to be non-empty for that truthiness check.
+      VITE_GOOGLE_MAPS_API_KEY: 'test-placeholder-maps-key',
     },
   },
 });

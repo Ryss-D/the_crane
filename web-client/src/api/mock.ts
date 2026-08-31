@@ -68,6 +68,20 @@ export class MockApi implements CraneApi {
     this.seedDemoJob();
   }
 
+  /**
+   * Test-only: clears the synced profile so the next `syncAuth()` starts
+   * fresh (a real `name: null` account) instead of returning whatever an
+   * earlier test's `updateMe()` left behind. `MockApi` is a module-level
+   * singleton (`src/api/index.ts`) shared by every test in a file — without
+   * this, the WEB-1 profile-completion gate only shows once per file (the
+   * first test to complete it "sticks" for every test after). Not part of
+   * the `CraneApi` interface on purpose; called from `src/test/setup.tsx`
+   * only, guarded by an `instanceof MockApi` check.
+   */
+  resetForTests(): void {
+    this.userProfile = null;
+  }
+
   private delay(): Promise<void> {
     if (this.latencyMs <= 0) return Promise.resolve();
     return new Promise((r) => setTimeout(r, this.latencyMs));
@@ -78,6 +92,10 @@ export class MockApi implements CraneApi {
       id: 'demo',
       status: 'en_route_pickup',
       vehicle_type: 'car',
+      pickup_lat: 6.2088,
+      pickup_lng: -75.5679,
+      dropoff_lat: 6.2273,
+      dropoff_lng: -75.5843,
       pickup_address: 'Cra. 43A #1-50, El Poblado, Medellín',
       dropoff_address: 'Cl. 10 #52-25, Guayabal, Medellín',
       quoted_price: 92000,
@@ -157,6 +175,10 @@ export class MockApi implements CraneApi {
       id,
       status: 'requested',
       vehicle_type: req.vehicle_type,
+      pickup_lat: req.pickup.lat,
+      pickup_lng: req.pickup.lng,
+      dropoff_lat: req.dropoff.lat,
+      dropoff_lng: req.dropoff.lng,
       pickup_address: req.pickup.address,
       dropoff_address: req.dropoff.address,
       quoted_price: quote.price,
@@ -202,10 +224,8 @@ export class MockApi implements CraneApi {
     const job = this.materialize(rec);
     return {
       status: job.status,
-      // Mock job records only keep addresses (pre-FND-6 stub); these fixed
-      // Medellín-area points stand in for real geocoded pickup/dropoff.
-      pickup: { lat: 6.2108, lng: -75.5658 },
-      dropoff: { lat: 6.2308, lng: -75.5906 },
+      pickup: { lat: job.pickup_lat, lng: job.pickup_lng },
+      dropoff: { lat: job.dropoff_lat, lng: job.dropoff_lng },
       driver: job.driver
         ? {
             first_name: job.driver.name?.split(' ')[0] ?? null,
@@ -233,6 +253,17 @@ export class MockApi implements CraneApi {
         created_at: new Date().toISOString(),
       };
     }
+    return this.userProfile;
+  }
+
+  async updateMe(body: { name?: string; email?: string }): Promise<UserProfile> {
+    await this.delay();
+    if (!this.userProfile) throw new ApiError(404, 'no synced profile to update');
+    this.userProfile = {
+      ...this.userProfile,
+      ...(body.name !== undefined ? { name: body.name } : {}),
+      ...(body.email !== undefined ? { email: body.email } : {}),
+    };
     return this.userProfile;
   }
 }

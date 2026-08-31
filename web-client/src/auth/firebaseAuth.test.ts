@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  * that same object is what `firebaseAuth.ts` reads `.currentUser` off of —
  * so tests mutate it directly to simulate signed-in/signed-out state.
  *
- * `src/test/setup.ts` already imports `../auth/singleton` (which pulls in
+ * `src/test/setup.tsx` already imports `../auth/singleton` (which pulls in
  * `../firebase` and this module) before any test file's `vi.mock` hoisting
  * can run, so those modules are cached with the *real* Firebase SDK by the
  * time this file's body starts. `vi.resetModules()` + dynamic imports (per
