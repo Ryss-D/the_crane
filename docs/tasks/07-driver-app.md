@@ -51,6 +51,16 @@ Flutter driver shell: go available, receive offers, execute the job.
   has no position field to feed one — a separate, small follow-up, not
   attempted this pass).
 
+  Stale-note correction (2026-08-31): the self-position marker flagged
+  above as a follow-up is already built — `DriverHomeState.selfPosition`
+  exists and `DriverHomeScreen`'s map renders a `CraneMapMarker`
+  (`role: CraneMapMarkerRole.self`) whenever it's set. It's a one-shot fix
+  taken the moment the driver last went available, deliberately not a
+  continuous live stream (see `toggleAvailability`'s own doc comment on
+  why one doesn't run just for being available — that's TRK-5's
+  background-location stream, a separate concern). Audited, not rebuilt;
+  no code changed here.
+
 - [ ] **DRV-2 — Incoming offer sheet** *(deps: DSP-2, TRK-4)*
   Bottom sheet on offer (WS or FCM tap-through): pickup distance, route summary, vehicle type, fare, commission preview, countdown timer from config TTL; accept / reject.
   Design: «Oferta entrante» (`docs/design/screen-references.md`)

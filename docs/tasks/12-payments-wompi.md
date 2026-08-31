@@ -53,6 +53,17 @@ Digital money on top of the LED spine. Commission-first (drivers settle their ba
   UI for this button — backend-only, matching this pass's scope everywhere. Not verified: a real
   sandbox settlement.
 
+  Stale-note correction (2026-08-31): the Flutter UI flagged above as not
+  built was actually built later, documented under `07-driver-app.md`'s
+  DRV-5 entry rather than here — `EarningsScreen` gained a "Liquidar saldo"
+  button, an amount/method-picker dialog, and full `DriverBalanceCubit`
+  wiring to this exact endpoint (Nequi/PSE/card, redirect launch via
+  `url_launcher`), tested (6 repository tests, 4 widget tests). "Web
+  driver-app UI" doesn't apply — drivers don't use `web-client`
+  (customer-only) or `admin` (staff-only), so there's no second UI surface
+  for this. Genuinely still open, matching the note above: no real sandbox
+  settlement has ever run (Wompi account doesn't exist yet).
+
 - [ ] **PAY-4 — Customer digital fares (feature-flagged)** *(deps: PAY-2)*
   Optional card/PSE payment at delivery instead of cash; PSE-pending policy: job completes with payment `processing`, driver sees "payment in progress".
   *AC: flag off = cash-only unchanged; flag on = both paths write correct ledger entries (digital fare → platform owes driver net).*
