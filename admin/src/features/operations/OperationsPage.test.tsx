@@ -72,4 +72,56 @@ describe('OperationsPage (ADM-5)', () => {
     // Customer for job_4 is Santiago Vélez.
     expect(screen.getByText('Santiago Vélez')).toBeInTheDocument();
   });
+
+  it('ADM-5 follow-up: shows a map pin for every visible job, at its pickup point', async () => {
+    await authClient.signInWithPassword('admin@thecrane.local', 'anything');
+    renderOperationsPage();
+
+    await screen.findByText('job_1');
+    const pins = screen.getAllByTestId('map-marker');
+    // 15 seeded jobs, one pin each, unfiltered.
+    expect(pins).toHaveLength(15);
+    // job_3's pickup is El Poblado (6.2088, -75.5679) — spot-check one pin
+    // actually carries real coordinates, not just a stub count.
+    expect(
+      pins.some(
+        (p) => p.dataset.markerLat === '6.2088' && p.dataset.markerLng === '-75.5679',
+      ),
+    ).toBe(true);
+  });
+
+  it('ADM-5 follow-up: the map pin count follows the status filter', async () => {
+    const user = userEvent.setup();
+    await authClient.signInWithPassword('admin@thecrane.local', 'anything');
+    renderOperationsPage();
+
+    await screen.findByText('job_1');
+    await user.selectOptions(
+      screen.getByLabelText(strings.operations.filterStatus, { exact: false }),
+      strings.jobStatuses.completed,
+    );
+
+    await screen.findByText('job_9');
+    // job_9, job_10, job_11, job_12 are the seeded `completed` jobs.
+    expect(screen.getAllByTestId('map-marker')).toHaveLength(4);
+  });
+
+  it('ADM-5 follow-up: clicking a map pin navigates to that job detail page',
+    async () => {
+      const user = userEvent.setup();
+      await authClient.signInWithPassword('admin@thecrane.local', 'anything');
+      renderOperationsPage();
+
+      await screen.findByText('job_4');
+      const pin = screen
+        .getAllByTestId('map-marker')
+        .find((p) => p.dataset.markerTitle?.startsWith('Santiago Vélez'));
+      expect(pin).toBeDefined();
+      await user.click(pin!);
+
+      expect(
+        await screen.findByText(new RegExp(strings.operations.detailTitle)),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Santiago Vélez')).toBeInTheDocument();
+    });
 });

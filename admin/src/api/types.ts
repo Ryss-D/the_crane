@@ -172,7 +172,11 @@ export interface Job {
   driver_name: string | null;
   vehicle_type: VehicleType;
   pickup_address: string;
+  pickup_lat: number;
+  pickup_lng: number;
   dropoff_address: string;
+  dropoff_lat: number;
+  dropoff_lng: number;
   distance_km: number;
   /** COP, integer pesos. */
   quoted_price: number;

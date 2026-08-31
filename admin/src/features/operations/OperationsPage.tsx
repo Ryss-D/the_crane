@@ -8,6 +8,7 @@ import { strings } from '../../i18n/strings';
 import { Badge, Table, TBody, Td, Th, THead, Tr } from '../../ui';
 import { JOB_STATUSES } from '../../api/types';
 import { jobStatusTone } from './jobStatusTone';
+import { OperationsMap } from './OperationsMap';
 
 type StatusFilter = 'all' | JobStatus;
 
@@ -46,34 +47,39 @@ export function OperationsPage() {
       ) : jobs.length === 0 ? (
         <p className="text-sm text-slate-500">{strings.operations.noJobs}</p>
       ) : (
-        <Table>
-          <THead>
-            <Tr>
-              <Th>{strings.operations.columns.id}</Th>
-              <Th>{strings.operations.columns.customer}</Th>
-              <Th>{strings.operations.columns.driver}</Th>
-              <Th>{strings.operations.columns.status}</Th>
-              <Th>{strings.operations.columns.vehicleType}</Th>
-              <Th>{strings.operations.columns.price}</Th>
-              <Th>{strings.operations.columns.requestedAt}</Th>
-            </Tr>
-          </THead>
-          <TBody>
-            {jobs.map((job) => (
-              <Tr key={job.id} onClick={() => navigate(`/operations/${job.id}`)}>
-                <Td className="font-mono text-xs">{job.id}</Td>
-                <Td>{job.customer_name}</Td>
-                <Td>{job.driver_name ?? '—'}</Td>
-                <Td>
-                  <Badge tone={jobStatusTone[job.status]}>{strings.jobStatuses[job.status]}</Badge>
-                </Td>
-                <Td>{strings.vehicleTypes[job.vehicle_type]}</Td>
-                <Td>{formatCOP(job.final_price ?? job.quoted_price)}</Td>
-                <Td className="text-xs text-slate-400">{formatDateTime(job.requested_at)}</Td>
+        <>
+          <OperationsMap jobs={jobs} onSelectJob={(id) => navigate(`/operations/${id}`)} />
+          <Table>
+            <THead>
+              <Tr>
+                <Th>{strings.operations.columns.id}</Th>
+                <Th>{strings.operations.columns.customer}</Th>
+                <Th>{strings.operations.columns.driver}</Th>
+                <Th>{strings.operations.columns.status}</Th>
+                <Th>{strings.operations.columns.vehicleType}</Th>
+                <Th>{strings.operations.columns.price}</Th>
+                <Th>{strings.operations.columns.requestedAt}</Th>
               </Tr>
-            ))}
-          </TBody>
-        </Table>
+            </THead>
+            <TBody>
+              {jobs.map((job) => (
+                <Tr key={job.id} onClick={() => navigate(`/operations/${job.id}`)}>
+                  <Td className="font-mono text-xs">{job.id}</Td>
+                  <Td>{job.customer_name}</Td>
+                  <Td>{job.driver_name ?? '—'}</Td>
+                  <Td>
+                    <Badge tone={jobStatusTone[job.status]}>
+                      {strings.jobStatuses[job.status]}
+                    </Badge>
+                  </Td>
+                  <Td>{strings.vehicleTypes[job.vehicle_type]}</Td>
+                  <Td>{formatCOP(job.final_price ?? job.quoted_price)}</Td>
+                  <Td className="text-xs text-slate-400">{formatDateTime(job.requested_at)}</Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+        </>
       )}
     </div>
   );
