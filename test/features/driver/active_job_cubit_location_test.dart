@@ -19,6 +19,9 @@ class _FakeLocationSource implements LocationSource {
   Future<bool> requestPermission() async => true;
 
   @override
+  Future<bool> requestBackgroundPermission() async => true;
+
+  @override
   Stream<LatLng> watchPosition() => _controller.stream;
 
   @override

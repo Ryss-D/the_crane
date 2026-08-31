@@ -33,6 +33,9 @@ class _FixedLocationSource implements LocationSource {
   Future<bool> requestPermission() async => permissionGranted;
 
   @override
+  Future<bool> requestBackgroundPermission() async => permissionGranted;
+
+  @override
   Stream<LatLng> watchPosition() => Stream.value(fix);
 
   @override

@@ -158,9 +158,18 @@ class ActiveJobCubit extends Cubit<ActiveJobState> {
       _stopLocationTracking();
       return;
     }
-    _positionSub ??= _locationSource?.watchPosition().listen((fix) {
-      _lastFix = fix;
-    });
+    if (_positionSub == null) {
+      // TRK-5: only ask to escalate to "always" once a job is actually
+      // active — a driver who never accepts one is never asked for more
+      // than DRV-1's "while in use" grant. Fire-and-forget: `watchPosition`
+      // starts immediately after regardless of the answer (foreground-only
+      // tracking if declined), matching every other permission prompt in
+      // this app never gating on its own result.
+      unawaited(_locationSource?.requestBackgroundPermission());
+      _positionSub = _locationSource?.watchPosition().listen((fix) {
+        _lastFix = fix;
+      });
+    }
     _locationTimer ??= Timer.periodic(locationInterval, (_) {
       final current = state.job;
       if (current == null) return;

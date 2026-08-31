@@ -126,6 +126,35 @@ WebSocket layer for live positions and job events; FCM covers backgrounded apps.
   notification actually appearing, and the "Always" prompt's exact wording
   on-device are all unverified. This is manifest/plist prep only.
 
+  Follow-up: the two code gaps this note flagged are both built now.
+  `LocationSource` gained `requestBackgroundPermission()` (escalates an
+  already-granted "while in use" grant to "always" — a no-op, never
+  throwing, if declined; same "ask when needed, don't gate on the answer"
+  convention as every other permission prompt in this app), called from
+  `ActiveJobCubit._syncLocationTimer` the moment a job actually goes active
+  — a driver who never accepts one is still only ever asked for "while in
+  use". `GeolocatorLocationSource.watchPosition()` now branches on
+  `defaultTargetPlatform`: Android gets `AndroidSettings` with a
+  `ForegroundNotificationConfig` (persistent, non-dismissable notification,
+  wake lock held) — this is what actually keeps `Geolocator.getPositionStream`
+  alive once backgrounded/locked, per the same geolocator README section
+  (`### Platform specific location settings`) the manifest/plist pass
+  already cited; iOS gets `AppleSettings` with
+  `showBackgroundLocationIndicator: true` and
+  `pauseLocationUpdatesAutomatically: false`. Both fall back to the original
+  plain `LocationSettings` on any other platform (desktop/tests, which use
+  fakes anyway). 5 tests unaffected (`active_job_cubit_location_test.dart`
+  still passes against its `_FakeLocationSource`, updated for the new
+  interface method); full suite green (391 passed, up from 385).
+
+  Still not checking this off: everything above is still exactly what the
+  device-verification note above says it is — code only. Locked-screen
+  streaming, the notification actually appearing, wake-lock behavior, and
+  the "Always" prompt's on-device wording/flow (especially Android 11+,
+  where a first in-line denial can't be re-prompted and needs a Settings
+  deep-link this pass doesn't add) all still need a real device pass before
+  this AC is actually met.
+
 - [x] **TRK-6 — Share-track token backend** *(deps: TRK-3)*
   Mint `job_token` at creation; `GET /v1/track/{token}` + public WS/poll channel exposing only position, status, ETA (no PII beyond driver first name/plate).
   *AC: token works logged-out; expires after job completion + 24h.*
