@@ -1,0 +1,36 @@
+name: Reconcile Wompi Payments
+
+# PAY-5: nightly reconciliation of Wompi's view of each pending/processing/
+# recently-terminal local `payments` row against Wompi's own status
+# (backend/scripts/reconcile_wompi.py). The script itself exits 1 on any
+# mismatch, 0 otherwise (including "nothing to check", e.g. no
+# WOMPI_PRIVATE_KEY configured yet -- see the script's own docstring); a
+# failed scheduled run IS the alert here, same as any other failed GitHub
+# Actions run -- no separate notification channel is built.
+#
+# Cron is in UTC. 08:00 UTC = 03:00 Colombia time (UTC-5, no DST), a
+# reasonably off-peak nightly slot matching the script's own "nightly
+# reconciliation" framing.
+#
+# NOTE: GitHub Actions only evaluates `schedule:` triggers from the workflow
+# file as it exists on the repository's *default* branch (`main` here), not
+# `dev` -- unlike deploy-backend.yml, which deploys off pushes to `dev`. This
+# workflow's schedule will not actually start firing until this file lands on
+# `main`.
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  reconcile:
+    name: Reconcile Wompi payments
+    runs-on: ubuntu-latest
+    concurrency: reconcile-wompi
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Run reconciliation script on the live deployment
+        run: flyctl ssh console -a the-crane-api -C "uv run --no-dev python scripts/reconcile_wompi.py"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

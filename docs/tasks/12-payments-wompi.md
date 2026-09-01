@@ -233,3 +233,35 @@ Digital money on top of the LED spine. Commission-first (drivers settle their ba
   no key configured is a no-op. Not built: an actual nightly schedule/cron entry to run it (no
   scheduler exists yet in this repo — OPS territory) — the script itself is the deliverable
   here, wiring it to run automatically is a separate, small follow-up.
+
+  Follow-up (2026-08-31): the nightly schedule itself is built now —
+  `.github/workflows/reconcile-wompi.yml`, following `deploy-backend.yml`'s
+  exact conventions (`superfly/flyctl-actions/setup-flyctl@master`, the same
+  app-scoped `FLY_API_TOKEN` secret, not an account-wide one). It runs the
+  script against the live deployment via `flyctl ssh console -a
+  the-crane-api -C "uv run --no-dev python scripts/reconcile_wompi.py"` —
+  SSH's own exit-code propagation carries the script's exit 1 back out as
+  the step's (and so the run's) failure, so a failed scheduled run is the
+  entire alert mechanism; no separate notification channel was built, per
+  this task's own AC scope. Trigger is `schedule: cron: "0 8 * * *"` (08:00
+  UTC = 03:00 Colombia time, UTC-5 with no DST — an off-peak nightly slot
+  matching the script's own "nightly reconciliation" framing) plus
+  `workflow_dispatch:` for manual runs. One difference from
+  `deploy-backend.yml` worth flagging explicitly: that workflow deploys off
+  pushes to `dev`, but GitHub Actions only ever evaluates a `schedule:`
+  trigger from the workflow file as it exists on the repo's *default*
+  branch — `main` here, confirmed via `git symbolic-ref
+  refs/remotes/origin/HEAD` — regardless of which branch other workflows in
+  this repo build off. So this schedule will not actually start firing
+  until this file lands on `main`, and consequently has not run once yet,
+  scheduled or otherwise — this branch hasn't reached `main`. Not verified
+  and not verifiable from this session: an actual live run, scheduled or
+  manual, since (a) no real Wompi sandbox/prod account exists yet
+  (`WOMPI_PRIVATE_KEY` unset on the deployed app — the script itself
+  degrades gracefully to a no-op without it, per its own docstring, so even
+  once this schedule does fire it will only exercise that no-op path until
+  a real account exists) and (b) this sandboxed session has no reachable
+  Fly SSH target to exercise the command against locally. Verification
+  here was limited to: the YAML parses as well-formed (loaded successfully
+  via a YAML parser), and a line-by-line cross-check of every step/secret
+  name against `deploy-backend.yml`'s own working pattern.
