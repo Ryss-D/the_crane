@@ -8,7 +8,13 @@ import { strings } from '../../i18n/strings';
 import { Badge, Table, TBody, Td, Th, THead, Tr } from '../../ui';
 import { JOB_STATUSES } from '../../api/types';
 import { jobStatusTone } from './jobStatusTone';
+import { paymentStatusTone } from './paymentStatusTone';
 import { OperationsMap } from './OperationsMap';
+
+/** PAY-4 follow-up: the list only flags a payment still in flight — a settled
+ * (`approved`) or absent (`null`) payment adds no extra badge here, since
+ * that's the common/expected case and doesn't need calling out row by row. */
+const IN_FLIGHT_PAYMENT_STATUSES = new Set(['pending', 'processing']);
 
 type StatusFilter = 'all' | JobStatus;
 
@@ -68,9 +74,17 @@ export function OperationsPage() {
                   <Td>{job.customer_name}</Td>
                   <Td>{job.driver_name ?? '—'}</Td>
                   <Td>
-                    <Badge tone={jobStatusTone[job.status]}>
-                      {strings.jobStatuses[job.status]}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Badge tone={jobStatusTone[job.status]}>
+                        {strings.jobStatuses[job.status]}
+                      </Badge>
+                      {job.payment_status !== null &&
+                        IN_FLIGHT_PAYMENT_STATUSES.has(job.payment_status) && (
+                          <Badge tone={paymentStatusTone[job.payment_status]}>
+                            {strings.paymentStatuses[job.payment_status]}
+                          </Badge>
+                        )}
+                    </div>
                   </Td>
                   <Td>{strings.vehicleTypes[job.vehicle_type]}</Td>
                   <Td>{formatCOP(job.final_price ?? job.quoted_price)}</Td>

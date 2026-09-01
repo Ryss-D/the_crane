@@ -8,7 +8,10 @@ directly, `blocked` reusing DriverStatus from app/models/driver.py). Job listing
 reuses JOB-5's JobRead/JobListResponse schemas (no ownership filter — admin sees
 all). The admin cancel path is documented at `_admin_cancel_job` below: JOB-3's
 state machine doesn't wire a `-> cancelled` edge from every non-terminal status, so
-this route can't always go through `transition()` as-is.
+this route can't always go through `transition()` as-is. PAY-4 follow-up: each job's
+actual `payment_status` (distinct from the requested `payment_method`) is joined in
+the same batched-per-page way as customer/driver names (`_payment_status_map`,
+mirroring `_user_name_map`) rather than a per-job query.
 """
 
 import uuid
@@ -25,7 +28,7 @@ from app.core.security import AdminUser
 from app.models.driver import DriverProfile, DriverStatus, Truck
 from app.models.fleet import Fleet
 from app.models.job import DriverLocationSnapshot, Job, JobOffer, JobStatus
-from app.models.ledger import DriverLedgerEntry, LedgerEntryType
+from app.models.ledger import DriverLedgerEntry, LedgerEntryType, Payment, PaymentStatus
 from app.models.platform_config import PlatformConfig, PlatformConfigAudit
 from app.models.user import User, UserRole
 from app.schemas.admin import (
@@ -248,7 +251,37 @@ async def _user_name_map(session: AsyncSession, user_ids: set[uuid.UUID]) -> dic
     return {u.id: u for u in users}
 
 
-def _job_list_item(job: Job, users: dict[uuid.UUID, User]) -> AdminJobListItem:
+async def _payment_status_map(
+    session: AsyncSession, job_ids: set[uuid.UUID]
+) -> dict[uuid.UUID, PaymentStatus]:
+    """Batched lookup (PAY-4 follow-up) for each job's most-recent Payment.status —
+    same one-query-for-the-page shape as `_user_name_map`, avoiding a per-job
+    lookup. `payment_reference` is deterministic per job_id (see
+    app/services/payments/base.py), so a job never actually has more than one
+    Payment row today, but rows are still walked newest-first so the mapping
+    stays correct if that ever changes. Jobs with no Payment row at all are
+    simply absent from the returned dict."""
+    if not job_ids:
+        return {}
+    rows = (
+        await session.scalars(
+            select(Payment)
+            .where(Payment.job_id.in_(job_ids))
+            .order_by(Payment.created_at.desc())
+        )
+    ).all()
+    result: dict[uuid.UUID, PaymentStatus] = {}
+    for payment in rows:
+        if payment.job_id is not None and payment.job_id not in result:
+            result[payment.job_id] = payment.status
+    return result
+
+
+def _job_list_item(
+    job: Job,
+    users: dict[uuid.UUID, User],
+    payment_statuses: dict[uuid.UUID, PaymentStatus],
+) -> AdminJobListItem:
     customer = users.get(job.customer_id)
     driver = users.get(job.driver_id) if job.driver_id else None
     return AdminJobListItem(
@@ -256,6 +289,7 @@ def _job_list_item(job: Job, users: dict[uuid.UUID, User]) -> AdminJobListItem:
         customer_name=customer.name if customer else None,
         customer_phone=customer.phone if customer else None,
         driver_name=driver.name if driver else None,
+        payment_status=payment_statuses.get(job.id),
     )
 
 
@@ -284,7 +318,8 @@ async def list_jobs_admin(
     ).all()
     user_ids = {j.customer_id for j in jobs} | {j.driver_id for j in jobs if j.driver_id}
     users = await _user_name_map(session, user_ids)
-    items = [_job_list_item(j, users) for j in jobs]
+    payment_statuses = await _payment_status_map(session, {j.id for j in jobs})
+    items = [_job_list_item(j, users, payment_statuses) for j in jobs]
     return {"items": items, "total": total or 0, "limit": limit, "offset": offset}
 
 
@@ -310,7 +345,8 @@ async def get_job_admin(job_id: uuid.UUID, admin: AdminUser, session: SessionDep
     if job.driver_id:
         user_ids.add(job.driver_id)
     users = await _user_name_map(session, user_ids)
-    list_item = _job_list_item(job, users)
+    payment_statuses = await _payment_status_map(session, {job.id})
+    list_item = _job_list_item(job, users, payment_statuses)
     return JobAdminDetail(
         **list_item.model_dump(),
         offers=[

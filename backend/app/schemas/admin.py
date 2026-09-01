@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 
 from app.models.driver import DriverStatus
 from app.models.job import JobStatus, OfferResponse, PaymentMethod, VehicleType
-from app.models.ledger import LedgerEntryType
+from app.models.ledger import LedgerEntryType, PaymentStatus
 from app.schemas.driver import TruckRead
 
 # ---- Config (ADM-2 / ADM-3) --------------------------------------------------
@@ -110,6 +110,13 @@ class AdminJobListItem(BaseModel):
     quoted_price: int | None
     final_price: int | None
     payment_method: PaymentMethod
+    # PAY-4 follow-up (2026-08-31): the *actual* state of the job's Payment row
+    # (most recent by created_at, though a job only ever has at most one --
+    # `payment_reference` is deterministic per job_id), distinct from
+    # `payment_method` above which is only what the customer requested. `None`
+    # when no Payment row exists yet (cash jobs settle synchronously so this is
+    # rarely null for them in practice, but a not-yet-delivered job has none).
+    payment_status: PaymentStatus | None
     config_snapshot: dict[str, Any] | None
     requested_at: datetime
     assigned_at: datetime | None

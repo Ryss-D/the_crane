@@ -351,6 +351,16 @@
           "payment_method": {
             "$ref": "#/components/schemas/PaymentMethod"
           },
+          "payment_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "picked_up_at": {
             "anyOf": [
               {
@@ -422,6 +432,7 @@
           "quoted_price",
           "final_price",
           "payment_method",
+          "payment_status",
           "config_snapshot",
           "requested_at",
           "assigned_at",
@@ -1560,6 +1571,16 @@
           "payment_method": {
             "$ref": "#/components/schemas/PaymentMethod"
           },
+          "payment_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "picked_up_at": {
             "anyOf": [
               {
@@ -1631,6 +1652,7 @@
           "quoted_price",
           "final_price",
           "payment_method",
+          "payment_status",
           "config_snapshot",
           "requested_at",
           "assigned_at",
@@ -2285,6 +2307,18 @@
           "wallet"
         ],
         "title": "PaymentMethod",
+        "type": "string"
+      },
+      "PaymentStatus": {
+        "enum": [
+          "pending",
+          "processing",
+          "approved",
+          "declined",
+          "expired",
+          "refunded"
+        ],
+        "title": "PaymentStatus",
         "type": "string"
       },
       "PlaceAutocompleteResponse": {

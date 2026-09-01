@@ -8,6 +8,7 @@ import { formatCOP, formatDateTime } from '../../i18n/format';
 import { strings } from '../../i18n/strings';
 import { Badge, Button, Card, Table, TBody, Td, Th, THead, Tr } from '../../ui';
 import { jobStatusTone } from './jobStatusTone';
+import { paymentStatusTone } from './paymentStatusTone';
 
 const offerResponseTone = {
   pending: 'neutral',
@@ -115,6 +116,20 @@ export function JobDetailPage() {
               </dt>
               <dd className="text-slate-200">
                 {job.final_price !== null ? formatCOP(job.final_price) : '—'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase text-slate-500">
+                {strings.operations.paymentStatus}
+              </dt>
+              <dd>
+                {job.payment_status !== null ? (
+                  <Badge tone={paymentStatusTone[job.payment_status]}>
+                    {strings.paymentStatuses[job.payment_status]}
+                  </Badge>
+                ) : (
+                  <span className="text-slate-500">{strings.operations.noPayment}</span>
+                )}
               </dd>
             </div>
           </dl>

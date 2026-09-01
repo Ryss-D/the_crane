@@ -13,8 +13,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models.driver import DriverProfile, DriverStatus
-from app.models.job import DriverLocationSnapshot, JobOffer, JobStatus, OfferResponse
-from app.models.ledger import DriverLedgerEntry, LedgerEntryType
+from app.models.job import DriverLocationSnapshot, JobOffer, JobStatus, OfferResponse, PaymentMethod
+from app.models.ledger import (
+    DriverLedgerEntry,
+    LedgerEntryType,
+    Payment,
+    PaymentProvider,
+    PaymentStatus,
+)
 from app.models.user import User
 from app.services.dispatch import _geo_key
 from app.services.ledger import driver_owed_balance
@@ -405,6 +411,60 @@ async def test_list_jobs_includes_customer_and_driver_names(
     assert by_id[str(unassigned.id)]["driver_name"] is None
 
 
+async def test_list_jobs_payment_status_variants(
+    client: AsyncClient,
+    tokens: dict,
+    customer_user: User,
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
+    """PAY-4 follow-up: `payment_status` reflects the job's actual Payment row —
+    null with none, a Wompi payment's pending/processing status surfaces as-is,
+    and cash's synchronous settlement surfaces as `approved`."""
+    no_payment_job = await make_job(session_maker, customer_user, status=JobStatus.delivered)
+    wompi_job = await make_job(
+        session_maker,
+        customer_user,
+        status=JobStatus.completed,
+        payment_method=PaymentMethod.pse,
+    )
+    cash_job = await make_job(
+        session_maker,
+        customer_user,
+        status=JobStatus.completed,
+        payment_method=PaymentMethod.cash,
+    )
+    async with session_maker() as session:
+        session.add(
+            Payment(
+                job_id=wompi_job.id,
+                provider=PaymentProvider.wompi,
+                reference=f"job_{wompi_job.id}",
+                amount=100000,
+                method=PaymentMethod.pse,
+                status=PaymentStatus.processing,
+            )
+        )
+        session.add(
+            Payment(
+                job_id=cash_job.id,
+                provider=PaymentProvider.cash,
+                reference=f"job_{cash_job.id}",
+                amount=100000,
+                method=PaymentMethod.cash,
+                status=PaymentStatus.approved,
+            )
+        )
+        await session.commit()
+
+    response = await client.get("/v1/admin/jobs", headers=AUTH_ADMIN)
+    assert response.status_code == 200
+    by_id = {item["id"]: item for item in response.json()["items"]}
+
+    assert by_id[str(no_payment_job.id)]["payment_status"] is None
+    assert by_id[str(wompi_job.id)]["payment_status"] == "processing"
+    assert by_id[str(cash_job.id)]["payment_status"] == "approved"
+
+
 async def test_get_job_admin_detail_includes_offers_and_snapshots(
     client: AsyncClient,
     tokens: dict,
@@ -439,6 +499,7 @@ async def test_get_job_admin_detail_includes_offers_and_snapshots(
     body = response.json()
     assert body["customer_name"] == customer_user.name
     assert body["driver_name"] == driver_user.name
+    assert body["payment_status"] is None  # no Payment row for this in-flight job
     assert len(body["offers"]) == 1
     assert body["offers"][0]["driver_id"] == str(driver_user.id)
     assert body["offers"][0]["driver_name"] == driver_user.name

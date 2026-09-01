@@ -217,6 +217,57 @@ Digital money on top of the LED spine. Commission-first (drivers settle their ba
   verified, same standing gap as the rest of PAY-*: a real Wompi sandbox
   account doesn't exist, so none of this has run against a live checkout.
 
+  Follow-up (2026-08-31): this admin gap is closed. `AdminJobListItem`
+  (`backend/app/schemas/admin.py`) gained `payment_status: PaymentStatus |
+  None` — the *actual* state of the job's most-recent `Payment` row, distinct
+  from the existing `payment_method` field (only what the customer
+  requested). Populated by both `GET /v1/admin/jobs` and `GET
+  /v1/admin/jobs/{id}` (`backend/app/api/admin.py`) via a new batched
+  `_payment_status_map` helper, mirroring the existing `_user_name_map`
+  pattern (one `IN (...)` query per page/detail call, not per job). Confirmed
+  `payment_reference` is deterministic per `job_id`
+  (`app/services/payments/base.py`), so a job never actually has more than
+  one `Payment` row today — the lookup still walks rows newest-by-`created_at`
+  first as a defensive default in case that ever changes. `null` when no
+  `Payment` row exists (not-yet-delivered job, or a cash job that never
+  called through Wompi). 1 new backend test
+  (`test_list_jobs_payment_status_variants`, covering no-row/null, a Wompi
+  payment left `processing`, and a cash payment's synchronous `approved`),
+  plus a `payment_status: None` assertion added to the existing job-detail
+  test. `openapi.json` regenerated. Full backend suite green: 346 passed (up
+  from 345 — that baseline count is itself 1 higher than what's shown in the
+  test run right before it after a `git stash`/pop, due to one pre-existing
+  flaky WS test that only fails when run as part of the full suite, never in
+  isolation — unrelated to this change).
+
+  Admin frontend: `admin/src/api/types.ts` gained `PaymentStatus` (mirrors
+  the backend enum exactly) and `Job.payment_status: PaymentStatus | null`
+  — note the admin `Job` type had no `payment_method` field at all before
+  this change either, so this is the first payment-related field admin
+  tracks. `JobDetailPage.tsx` shows a labeled payment-status field next to
+  quoted/final price: a colored badge (new `paymentStatusTone.ts`, mirroring
+  `jobStatusTone.ts`'s convention) when a `Payment` row exists, or a plain
+  "Sin pago registrado" placeholder when it doesn't. `pending`/`processing`
+  render with the same amber `warning` tone a mid-flight job status gets —
+  the exact "payment in progress" case PAY-4's AC calls out — `approved`
+  green, `declined`/`expired` red, `refunded` neutral. Scope call: also
+  surfaced it one level up, on `OperationsPage.tsx`'s job list, but only the
+  in-flight case (`pending`/`processing`) gets an extra badge next to the
+  status badge there — an `approved` or absent payment adds no visual noise
+  to the common, already-settled row. `mock.ts`'s 15 seeded jobs each gained
+  a realistic `payment_status` (`job_9`, `completed`, seeded `processing` —
+  the demo's own instance of this exact gap; `job_8`/`10`/`12` `approved`;
+  everything else `null`). 4 new admin tests (2 in `JobDetailPage.test.tsx`
+  for the processing/approved/no-payment states, 1 in `OperationsPage.test.tsx`
+  for the list-level badge) — full admin suite green, 66 passed (up from 62).
+  `npm run lint` introduces zero new errors (the 5 pre-existing
+  `firebaseAuth.test.ts`/`ConfigPage.test.tsx` errors are untouched by this
+  change) and `npm run build` is clean.
+
+  Still not verified, same standing gap as everything else in this file: no
+  real Wompi sandbox account exists, so this has never been checked against
+  an actual PSE-pending payment reaching an admin's screen live.
+
 - [ ] **PAY-5 — Reconciliation job** *(deps: PAY-2)*
   Nightly task diffing Wompi's transaction list against `payments`; mismatches alert (log/email).
   *AC: seeded mismatch is detected and reported.*

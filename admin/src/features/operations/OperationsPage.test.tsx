@@ -58,6 +58,21 @@ describe('OperationsPage (ADM-5)', () => {
     expect(badges.length).toBeGreaterThan(0);
   });
 
+  it('PAY-4 follow-up: flags a row whose payment is still in flight, not a settled one', async () => {
+    await authClient.signInWithPassword('admin@thecrane.local', 'anything');
+    renderOperationsPage();
+
+    // job_9 is seeded `completed` with payment_status "processing".
+    const inFlightRow = (await screen.findByText('job_9')).closest('tr') as HTMLElement;
+    expect(within(inFlightRow).getByText(strings.paymentStatuses.processing)).toBeInTheDocument();
+
+    // job_10 is seeded `completed` with payment_status "approved" (settled)
+    // — no extra badge for the common, already-paid case.
+    const settledRow = screen.getByText('job_10').closest('tr') as HTMLElement;
+    expect(within(settledRow).queryByText(strings.paymentStatuses.approved)).not.toBeInTheDocument();
+    expect(within(settledRow).queryByText(strings.paymentStatuses.processing)).not.toBeInTheDocument();
+  });
+
   it('clicking a row navigates to that job detail page', async () => {
     await authClient.signInWithPassword('admin@thecrane.local', 'anything');
     const user = userEvent.setup();

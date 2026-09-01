@@ -100,4 +100,38 @@ describe('JobDetailPage (ADM-5)', () => {
       screen.queryByRole('button', { name: strings.operations.cancelConfirm }),
     ).not.toBeInTheDocument();
   });
+
+  it('PAY-4 follow-up: flags a completed job whose payment is still in flight', async () => {
+    await authClient.signInWithPassword('admin@thecrane.local', 'anything');
+    // job_9 is seeded `completed` with payment_status "processing" — exactly
+    // the PSE-pending gap PAY-4's AC calls out: the job finished before the
+    // customer's payment actually settled.
+    renderJobDetail('job_9');
+
+    await screen.findByText(new RegExp(strings.operations.detailTitle));
+    expect(screen.getByText(strings.operations.paymentStatus)).toBeInTheDocument();
+    expect(screen.getByText(strings.paymentStatuses.processing)).toBeInTheDocument();
+  });
+
+  it('PAY-4 follow-up: shows a settled badge for an approved payment', async () => {
+    await authClient.signInWithPassword('admin@thecrane.local', 'anything');
+    // job_10 is seeded `completed` with payment_status "approved" (fully
+    // settled) — distinct from job_9's in-flight case above.
+    renderJobDetail('job_10');
+    await screen.findByText(new RegExp(strings.operations.detailTitle));
+    expect(screen.getByText(strings.paymentStatuses.approved)).toBeInTheDocument();
+    expect(screen.queryByText(strings.paymentStatuses.processing)).not.toBeInTheDocument();
+  });
+
+  it('PAY-4 follow-up: shows no payment badge when the job has no Payment row', async () => {
+    await authClient.signInWithPassword('admin@thecrane.local', 'anything');
+    // job_1 has no Payment row at all (payment_status: null) — the
+    // placeholder text shows instead of any status badge.
+    renderJobDetail('job_1');
+    await screen.findByText(new RegExp(strings.operations.detailTitle));
+    expect(screen.getByText(strings.operations.noPayment)).toBeInTheDocument();
+    for (const status of Object.values(strings.paymentStatuses)) {
+      expect(screen.queryByText(status)).not.toBeInTheDocument();
+    }
+  });
 });

@@ -153,6 +153,21 @@ export const TERMINAL_JOB_STATUSES: readonly JobStatus[] = ['completed', 'cancel
 export const OFFER_RESPONSES = ['pending', 'accepted', 'rejected', 'timeout'] as const;
 export type OfferResponse = (typeof OFFER_RESPONSES)[number];
 
+/**
+ * Matches the backend's `PaymentStatus` enum exactly (app/models/ledger.py) —
+ * the actual state of a job's `Payment` row (PAY-4 follow-up), distinct from
+ * the requested `payment_method` this app doesn't otherwise track yet.
+ */
+export const PAYMENT_STATUSES = [
+  'pending',
+  'processing',
+  'approved',
+  'declined',
+  'expired',
+  'refunded',
+] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
 /** One row of the job_offers audit trail (docs/PLAN.md §2.2). */
 export interface JobOffer {
   id: string;
@@ -181,6 +196,9 @@ export interface Job {
   /** COP, integer pesos. */
   quoted_price: number;
   final_price: number | null;
+  /** Most recent Payment row's status for this job; null if none exists yet
+   * (a job that hasn't reached delivery, or a not-yet-run digital checkout). */
+  payment_status: PaymentStatus | null;
   requested_at: string;
   assigned_at: string | null;
   completed_at: string | null;

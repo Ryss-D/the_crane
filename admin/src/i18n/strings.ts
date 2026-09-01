@@ -1,4 +1,4 @@
-import type { DriverStatus, JobStatus, OfferResponse, VehicleType } from '../api/types';
+import type { DriverStatus, JobStatus, OfferResponse, PaymentStatus, VehicleType } from '../api/types';
 
 /** es-CO strings, centralized so a real i18n layer can slot in later. */
 export const strings = {
@@ -133,6 +133,8 @@ export const strings = {
     distance: 'Distancia',
     quotedPrice: 'Precio cotizado',
     finalPrice: 'Precio final',
+    paymentStatus: 'Estado del pago',
+    noPayment: 'Sin pago registrado',
   },
 
   ledger: {
@@ -222,4 +224,13 @@ export const strings = {
     rejected: 'Rechazada',
     timeout: 'Expiró',
   } satisfies Record<OfferResponse, string>,
+
+  paymentStatuses: {
+    pending: 'Pendiente',
+    processing: 'En proceso',
+    approved: 'Pagado',
+    declined: 'Rechazado',
+    expired: 'Expirado',
+    refunded: 'Reembolsado',
+  } satisfies Record<PaymentStatus, string>,
 } as const;
