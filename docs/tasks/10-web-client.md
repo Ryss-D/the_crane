@@ -232,6 +232,54 @@ Request and track a grúa from the browser — no install. Customer role only.
   same standing gap as the rest of WEB-3, now extended to the
   `driver_location` handling specifically.
 
+  Follow-up (2026-08-31, closing the "not covered by an automated test"
+  gap above -- it was already half-stale by the time this session started:
+  a fake-WebSocket harness (`FakeWebSocket` in `src/ws/useJobSocket.test.tsx`,
+  `vi.stubEnv('VITE_USE_MOCKS', 'false')` + `vi.stubEnv('MODE',
+  'development')` + `vi.resetModules()` to force the real, non-mock hook
+  module) had been built in an earlier pass and already had 8 passing tests
+  unit-testing `useJobSocket` itself -- parsing `job_event`/`driver_location`/
+  `ping`, reconnect-on-close/error, subscribe/unsubscribe -- but that fact
+  was never reflected back into this entry's prose above, which still read
+  as if no fake-WS harness existed at all). What genuinely was still
+  missing, confirmed by reading `TrackingPage.test.tsx` directly (its own
+  comment: "no driver marker under mocks (useJobSocket no-ops, no
+  `driver_location` WS push to receive)"), was proof that `TrackingPage`
+  itself -- not just the hook in isolation -- wires a live `driver_location`
+  push into a rendered map marker. New file
+  `src/features/tracking/TrackingPage.ws.test.tsx` closes that: it reuses
+  the same `useJobSocket.test.tsx` technique (a duplicated, near-identical
+  `FakeWebSocket` class -- that file doesn't export its own, and it's short
+  enough not to be worth a shared-test-util extraction for one caller) to
+  force the real (non-mock) `useJobSocket` *and*, since `src/api/index.ts`'s
+  own `useMocks` const only checks `VITE_USE_MOCKS` (not `MODE`, unlike the
+  hook's), the real `HttpApi` too. Rather than standing up real Firebase
+  auth or a real backend just to prove a map marker, `../../auth/singleton`
+  is mocked the same way `useJobSocket.test.tsx` mocks it (a fake
+  `getIdToken`) and global `fetch` is stubbed to resolve one fixture `Job`
+  for the single `GET /v1/jobs/:id` call this page makes -- `TrackingPage`
+  is rendered directly under a bare `MemoryRouter`/`QueryClientProvider`
+  pair rather than the full `AppShell`/`AppRoutes` (which would pull in
+  `AuthProvider`'s real sign-in state machine for no benefit here). The new
+  test asserts exactly two markers (pickup/dropoff) before any WS push,
+  then drives a real `driver_location` message through the fake socket and
+  asserts a genuinely new third marker (`title="Grúa"`) appears with the
+  pushed lat/lng -- plus a second push with different coordinates updating
+  that same marker in place (still exactly one driver marker, not two).
+  Full suite green (91, up from 90), lint clean, build clean.
+
+  So, to correct the original claim above: `useJobSocket`'s own logic *and*
+  `TrackingPage`'s consumption of it are both now covered by automated
+  tests. What's still genuinely open, and is not the same thing as either
+  of those tests: an actual live pass against a real deployed backend and a
+  real browser `WebSocket` connection over the network (TLS/`wss://`,
+  real auth token issuance, the backend's actual driver-location publisher
+  under `backend/app/api/ws.py`) has never been done in this session or any
+  prior one -- both `FakeWebSocket` harnesses substitute a hand-driven fake
+  for the entire wire protocol, which proves the client-side wiring is
+  correct but not that it holds up against the real server. That live/
+  manual pass remains the one standing gap before this box gets checked.
+
 - [x] **WEB-4 — Public share-track page `/t/{token}`** *(deps: TRK-6)*
   Read-only live map, no login; used by the Flutter "share trip" button too.
   *AC: opens logged-out on a phone browser; shows position/status/ETA only.*
