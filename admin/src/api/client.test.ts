@@ -319,6 +319,51 @@ describe('HttpApi', () => {
     });
   });
 
+  describe('assignDriverToTruck', () => {
+    it('POSTs the driver_id body to the truck-scoped assign-driver endpoint', async () => {
+      const truck = {
+        id: 't1',
+        plate: 'ABC-123',
+        type: 'car',
+        capacity: 'car',
+        driver_id: 'drv_9',
+        fleet_id: 'f1',
+      };
+      fetchMock.mockResolvedValueOnce(fakeResponse(truck));
+      const api = new HttpApi(baseUrl, getToken);
+
+      const result = await api.assignDriverToTruck('t1', 'drv_9');
+
+      expect(result).toEqual(truck);
+      const { url, init } = lastCall();
+      expect(url).toBe(`${baseUrl}/v1/admin/trucks/t1/assign-driver`);
+      expect(init.method).toBe('POST');
+      expect(init.body).toBe(JSON.stringify({ driver_id: 'drv_9' }));
+    });
+  });
+
+  describe('unassignDriverFromTruck', () => {
+    it('DELETEs the truck-scoped assign-driver endpoint and returns the cleared truck', async () => {
+      const truck = {
+        id: 't1',
+        plate: 'ABC-123',
+        type: 'car',
+        capacity: 'car',
+        driver_id: null,
+        fleet_id: 'f1',
+      };
+      fetchMock.mockResolvedValueOnce(fakeResponse(truck));
+      const api = new HttpApi(baseUrl, getToken);
+
+      const result = await api.unassignDriverFromTruck('t1');
+
+      expect(result).toEqual(truck);
+      const { url, init } = lastCall();
+      expect(url).toBe(`${baseUrl}/v1/admin/trucks/t1/assign-driver`);
+      expect(init.method).toBe('DELETE');
+    });
+  });
+
   describe('non-2xx responses', () => {
     it('rejects with an ApiError carrying the status and a descriptive message (GET)', async () => {
       fetchMock.mockResolvedValue(fakeResponse({ detail: 'not found' }, { ok: false, status: 404 }));

@@ -185,3 +185,12 @@ class DriverLedgerEntryListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+# ---- Trucks (ADM-7 admin override, 2026-08-31) ----------------------------------
+
+
+class AssignDriverRequest(BaseModel):
+    """POST /v1/admin/trucks/{truck_id}/assign-driver body."""
+
+    driver_id: uuid.UUID

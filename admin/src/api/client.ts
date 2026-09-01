@@ -15,6 +15,7 @@ import type {
   PlatformConfig,
   SettleRequest,
   SettleResponse,
+  Truck,
 } from './types';
 
 /** Every GET list endpoint's real envelope shape (app/schemas/*.py's
@@ -63,6 +64,15 @@ export interface CraneAdminApi {
   getFleets(): Promise<AdminFleetListItem[]>;
   getFleetBalance(fleetId: string): Promise<FleetBalanceRead>;
   settleFleet(fleetId: string, body: FleetSettleRequest): Promise<FleetSettleResponse>;
+
+  /** ADM-7 admin override (2026-08-31): link an existing, already-verified
+   * driver to a truck directly, overwriting whatever driver was there before
+   * — a support-case tool distinct from the owner-initiated FLT-4 invite
+   * flow, which only pre-links a brand-new driver at registration time. */
+  assignDriverToTruck(truckId: string, driverId: string): Promise<Truck>;
+  /** Clears the truck's driver. 404 if the truck doesn't exist or already
+   * has no driver assigned. */
+  unassignDriverFromTruck(truckId: string): Promise<Truck>;
 }
 
 export class ApiError extends Error {
@@ -84,7 +94,7 @@ export class HttpApi implements CraneAdminApi {
   ) {}
 
   private async request<T>(
-    method: 'GET' | 'POST' | 'PUT',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     path: string,
     opts: { body?: unknown; query?: Record<string, string | undefined> } = {},
   ): Promise<T> {
@@ -189,5 +199,15 @@ export class HttpApi implements CraneAdminApi {
     return this.request('POST', `/v1/admin/fleets/${encodeURIComponent(fleetId)}/settle`, {
       body,
     });
+  }
+
+  assignDriverToTruck(truckId: string, driverId: string): Promise<Truck> {
+    return this.request('POST', `/v1/admin/trucks/${encodeURIComponent(truckId)}/assign-driver`, {
+      body: { driver_id: driverId },
+    });
+  }
+
+  unassignDriverFromTruck(truckId: string): Promise<Truck> {
+    return this.request('DELETE', `/v1/admin/trucks/${encodeURIComponent(truckId)}/assign-driver`);
   }
 }

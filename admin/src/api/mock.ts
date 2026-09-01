@@ -979,6 +979,9 @@ export class MockApi implements CraneAdminApi {
       driver_id: d.user_id,
       name: d.name,
       owed_balance: this.driverBalance(d.user_id),
+      // Members are derived from d.truck?.fleet_id === fleetId above, so every
+      // member here is guaranteed to have a truck.
+      truck_id: d.truck!.id,
     }));
     return clone({
       fleet_id: fleet.id,
@@ -1007,5 +1010,45 @@ export class MockApi implements CraneAdminApi {
     });
     this.ledger = [...newLedgerRows, ...this.ledger];
     return clone({ fleet_id: fleet.id, total_amount: body.amount, entries });
+  }
+
+  // -- Trucks (ADM-7 admin override, 2026-08-31) -------------------------------
+
+  /** Mock has no truck store independent of the driver embedding it (same as
+   * the real Driver -> Truck relationship is 1:1 there too) — a truck is
+   * found by scanning every driver's `.truck.id`. */
+  private findDriverByTruckId(truckId: string): Driver | undefined {
+    return [...this.drivers.values()].find((d) => d.truck?.id === truckId);
+  }
+
+  async assignDriverToTruck(truckId: string, driverId: string): Promise<Truck> {
+    await this.delay();
+    const targetDriver = this.requireDriver(driverId);
+    const currentHolder = this.findDriverByTruckId(truckId);
+    if (!currentHolder?.truck) throw new ApiError(404, `truck ${truckId} not found`);
+
+    const truckRow: Truck = { ...currentHolder.truck, driver_id: targetDriver.user_id };
+    // 1:1 invariant, same as the backend's assign_driver_to_truck: a driver
+    // reassigned here is cleared off whatever *other* truck they held before.
+    if (targetDriver.truck && targetDriver.truck.id !== truckId) {
+      this.drivers.set(targetDriver.user_id, { ...targetDriver, truck: null });
+    }
+    if (currentHolder.user_id !== targetDriver.user_id) {
+      this.drivers.set(currentHolder.user_id, { ...currentHolder, truck: null });
+    }
+    const refreshedTarget = this.drivers.get(targetDriver.user_id)!;
+    this.drivers.set(targetDriver.user_id, { ...refreshedTarget, truck: truckRow });
+    return clone(truckRow);
+  }
+
+  async unassignDriverFromTruck(truckId: string): Promise<Truck> {
+    await this.delay();
+    const holder = this.findDriverByTruckId(truckId);
+    if (!holder?.truck) {
+      throw new ApiError(404, `truck ${truckId} not found or has no driver assigned`);
+    }
+    const truckRow: Truck = { ...holder.truck, driver_id: null };
+    this.drivers.set(holder.user_id, { ...holder, truck: null });
+    return clone(truckRow);
   }
 }

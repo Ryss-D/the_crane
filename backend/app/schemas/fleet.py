@@ -33,6 +33,12 @@ class FleetMemberBalance(BaseModel):
     driver_id: uuid.UUID
     name: str | None
     owed_balance: int
+    # ADM-7 admin override (2026-08-31): the truck currently linking this driver to
+    # the fleet — admin's per-truck assign/unassign controls (POST/DELETE
+    # /v1/admin/trucks/{truck_id}/assign-driver) key off this instead of a separate
+    # fleet-trucks-listing endpoint, since membership here is truck-derived anyway
+    # (app/services/ledger.py's fleet_member_driver_ids).
+    truck_id: uuid.UUID
 
 
 class FleetBalanceRead(BaseModel):

@@ -175,6 +175,7 @@ export const strings = {
     memberColumns: {
       driver: 'Conductor',
       balance: 'Saldo',
+      actions: 'Acciones',
     },
     settle: 'Liquidar flota',
     settleTitle: 'Liquidar flota',
@@ -189,6 +190,14 @@ export const strings = {
     // Not "Cerrar" — the Modal's own X button already has that aria-label,
     // and both would resolve to the same accessible name/role otherwise.
     close: 'Entendido',
+    // ADM-7 admin override (2026-08-31): per-truck driver (re)assignment.
+    reassign: 'Reasignar',
+    reassignTitle: 'Reasignar conductor',
+    driverLabel: 'Conductor',
+    selectDriver: 'Selecciona un conductor',
+    assignError: 'No se pudo asignar el conductor a la grúa.',
+    unassign: 'Quitar conductor',
+    unassignError: 'No se pudo quitar el conductor de la grúa.',
   },
 
   vehicleTypes: {

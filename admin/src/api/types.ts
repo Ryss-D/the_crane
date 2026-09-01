@@ -283,6 +283,10 @@ export interface FleetMemberBalance {
   driver_id: string;
   name: string | null;
   owed_balance: number;
+  /** ADM-7 admin override (2026-08-31): the truck currently linking this
+   * driver to the fleet — feeds POST/DELETE
+   * /v1/admin/trucks/{truck_id}/assign-driver directly, no separate lookup. */
+  truck_id: string;
 }
 
 /** GET /v1/admin/fleets/{id}/balance — matches FleetBalanceRead exactly.

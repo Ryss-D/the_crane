@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { api } from '../../api';
-import type { AdminFleetListItem, FleetSettleResponse } from '../../api/types';
+import type { AdminFleetListItem, FleetMemberBalance, FleetSettleResponse } from '../../api/types';
 import { formatCOP } from '../../i18n/format';
 import { strings } from '../../i18n/strings';
 import { Button, Card, Modal, Table, TBody, Td, Th, THead, Tr } from '../../ui';
@@ -127,10 +127,101 @@ function SettleFleetModal({ fleet, onClose }: { fleet: AdminFleetListItem; onClo
   );
 }
 
+/**
+ * ADM-7 admin override (2026-08-31): reassign one truck to a different driver.
+ * The eligible-drivers list reuses GET /v1/admin/drivers (DriversPage's own
+ * `['drivers']` query, so the cache is shared) rather than a separate picker
+ * endpoint — a plain dropdown was proportionate here since that data already
+ * exists; a manual driver-id/phone text field was the documented fallback if
+ * it hadn't. Every driver is listed (even ones who already have a different
+ * truck) since overriding that is exactly what this control is for.
+ */
+function AssignDriverModal({
+  fleetId,
+  member,
+  onClose,
+}: {
+  fleetId: string;
+  member: FleetMemberBalance;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [driverId, setDriverId] = useState('');
+
+  const { data: drivers } = useQuery({ queryKey: ['drivers'], queryFn: () => api.getDrivers() });
+  const eligible = (drivers ?? []).filter((d) => d.user_id !== member.driver_id);
+
+  const mutation = useMutation({
+    mutationFn: () => api.assignDriverToTruck(member.truck_id, driverId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['fleetBalance', fleetId] });
+      void queryClient.invalidateQueries({ queryKey: ['fleets'] });
+      void queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      onClose();
+    },
+  });
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!driverId) return;
+    mutation.mutate();
+  }
+
+  return (
+    <Modal
+      title={`${strings.fleets.reassignTitle} — ${member.name ?? member.driver_id}`}
+      onClose={onClose}
+    >
+      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <label className="flex flex-col gap-1 text-xs text-slate-400">
+          {strings.fleets.driverLabel}
+          <select
+            value={driverId}
+            onChange={(e) => setDriverId(e.target.value)}
+            className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-slate-100 focus:border-amber-500 focus:outline-none"
+          >
+            <option value="">{strings.fleets.selectDriver}</option>
+            {eligible.map((d) => (
+              <option key={d.user_id} value={d.user_id}>
+                {d.name ?? d.user_id}
+                {d.truck ? ` (${d.truck.plate})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+        {mutation.isError && (
+          <p role="alert" className="text-sm text-rose-400">
+            {strings.fleets.assignError}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            {strings.fleets.cancel}
+          </Button>
+          <Button type="submit" disabled={mutation.isPending || !driverId}>
+            {strings.fleets.confirm}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 function FleetMembers({ fleetId }: { fleetId: string }) {
+  const queryClient = useQueryClient();
+  const [reassigning, setReassigning] = useState<FleetMemberBalance | null>(null);
   const { data: balance, isLoading } = useQuery({
     queryKey: ['fleetBalance', fleetId],
     queryFn: () => api.getFleetBalance(fleetId),
+  });
+
+  const unassignMutation = useMutation({
+    mutationFn: (truckId: string) => api.unassignDriverFromTruck(truckId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['fleetBalance', fleetId] });
+      void queryClient.invalidateQueries({ queryKey: ['fleets'] });
+      void queryClient.invalidateQueries({ queryKey: ['drivers'] });
+    },
   });
 
   if (isLoading || !balance) return <p className="text-sm text-slate-400">Cargando…</p>;
@@ -138,22 +229,52 @@ function FleetMembers({ fleetId }: { fleetId: string }) {
     return <p className="text-sm text-slate-500">{strings.fleets.noFleets}</p>;
 
   return (
-    <Table>
-      <THead>
-        <Tr>
-          <Th>{strings.fleets.memberColumns.driver}</Th>
-          <Th>{strings.fleets.memberColumns.balance}</Th>
-        </Tr>
-      </THead>
-      <TBody>
-        {balance.members.map((member) => (
-          <Tr key={member.driver_id}>
-            <Td>{member.name ?? member.driver_id}</Td>
-            <Td className="font-semibold">{formatCOP(member.owed_balance)}</Td>
+    <>
+      {unassignMutation.isError && (
+        <p role="alert" className="mb-2 text-sm text-rose-400">
+          {strings.fleets.unassignError}
+        </p>
+      )}
+      <Table>
+        <THead>
+          <Tr>
+            <Th>{strings.fleets.memberColumns.driver}</Th>
+            <Th>{strings.fleets.memberColumns.balance}</Th>
+            <Th>{strings.fleets.memberColumns.actions}</Th>
           </Tr>
-        ))}
-      </TBody>
-    </Table>
+        </THead>
+        <TBody>
+          {balance.members.map((member) => (
+            <Tr key={member.driver_id}>
+              <Td>{member.name ?? member.driver_id}</Td>
+              <Td className="font-semibold">{formatCOP(member.owed_balance)}</Td>
+              <Td>
+                <div className="flex flex-wrap gap-1.5">
+                  <Button variant="secondary" onClick={() => setReassigning(member)}>
+                    {strings.fleets.reassign}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    disabled={unassignMutation.isPending}
+                    onClick={() => unassignMutation.mutate(member.truck_id)}
+                  >
+                    {strings.fleets.unassign}
+                  </Button>
+                </div>
+              </Td>
+            </Tr>
+          ))}
+        </TBody>
+      </Table>
+
+      {reassigning && (
+        <AssignDriverModal
+          fleetId={fleetId}
+          member={reassigning}
+          onClose={() => setReassigning(null)}
+        />
+      )}
+    </>
   );
 }
 

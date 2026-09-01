@@ -12,6 +12,12 @@ this route can't always go through `transition()` as-is. PAY-4 follow-up: each j
 actual `payment_status` (distinct from the requested `payment_method`) is joined in
 the same batched-per-page way as customer/driver names (`_payment_status_map`,
 mirroring `_user_name_map`) rather than a per-job query.
+
+ADM-7 follow-up (2026-08-31): the "Trucks" section near the bottom of this file adds
+an admin-override driver<->truck assignment (assign/unassign) — a support-case tool,
+distinct from the owner-initiated FLT-4 invite flow (app/api/fleets.py's POST
+/me/invites), which only pre-links a brand-new driver at registration time and has
+no way to touch an already-existing, already-verified driver.
 """
 
 import uuid
@@ -38,6 +44,7 @@ from app.schemas.admin import (
     AdminJobListResponse,
     AdminLedgerListResponse,
     AdminLedgerRead,
+    AssignDriverRequest,
     ConfigAuditRead,
     ConfigRead,
     ConfigUpdate,
@@ -61,7 +68,12 @@ from app.schemas.job import JobRead
 from app.services import dispatch
 from app.services.config import RedisLike, set_config
 from app.services.jobs import ALLOWED_TRANSITIONS, JobEventHook, get_job_event_hook, transition
-from app.services.ledger import apportion, driver_owed_balance, fleet_member_balances
+from app.services.ledger import (
+    apportion,
+    driver_owed_balance,
+    fleet_member_balances,
+    fleet_member_truck_ids,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -560,6 +572,7 @@ async def get_fleet_balance(
     fleet owner sees at GET /v1/fleets/me/balance (app/services/ledger.py)."""
     fleet = await _get_fleet_or_404(session, fleet_id)
     balances = await fleet_member_balances(session, fleet.id)
+    truck_ids = await fleet_member_truck_ids(session, fleet.id)
     users = (
         {u.id: u for u in (await session.scalars(select(User).where(User.id.in_(balances))))}
         if balances
@@ -570,6 +583,7 @@ async def get_fleet_balance(
             driver_id=driver_id,
             name=users[driver_id].name if driver_id in users else None,
             owed_balance=owed,
+            truck_id=truck_ids[driver_id],
         )
         for driver_id, owed in balances.items()
     ]
@@ -629,3 +643,91 @@ async def settle_fleet(
         )
     await session.commit()
     return FleetSettleResponse(fleet_id=fleet.id, total_amount=body.amount, entries=entries)
+
+
+# ---- Trucks (ADM-7 admin override, 2026-08-31) ----------------------------------
+
+
+async def _get_truck_or_404(session: AsyncSession, truck_id: uuid.UUID) -> Truck:
+    truck = await session.get(Truck, truck_id)
+    if truck is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Truck not found")
+    return truck
+
+
+@router.post("/trucks/{truck_id}/assign-driver", response_model=TruckRead)
+async def assign_driver_to_truck(
+    truck_id: uuid.UUID,
+    body: AssignDriverRequest,
+    admin: AdminUser,
+    session: SessionDep,
+) -> TruckRead:
+    """Admin override: link an already-existing, already-verified driver to a truck
+    directly, overwriting whatever driver_id was there before. This is the gap FLT-4's
+    owner-initiated invite flow (POST /v1/fleets/me/invites + POST
+    /v1/drivers/me/register's invite_token) leaves open — that flow only pre-links a
+    *brand-new* driver at registration time; there was no endpoint anywhere that could
+    (re)link an existing driver, so this is a support-case tool for admin staff,
+    separate from (and overriding) the owner flow.
+
+    Deliberately does NOT reject a truck that already has a different driver —
+    overwriting that is the entire point of "override". 404 if the truck doesn't
+    exist; 404 (via `_get_driver_or_404`) if driver_id isn't a real user with a
+    DriverProfile.
+
+    1:1 driver:truck invariant: every truck lookup elsewhere in this codebase
+    (`select(Truck).where(Truck.driver_id == ...)` fed into `.scalar()` — see
+    app/api/drivers.py's `_get_own_truck`, app/api/jobs.py x3, app/api/realtime.py,
+    app/services/ledger.py, and `_serialize_admin_driver`/`block_driver` above) assumes
+    a driver is linked to at most one truck; `.scalar()` raises `MultipleResultsFound`
+    the moment that's violated. So reassigning a driver here first clears them off
+    whatever *other* truck they were previously linked to (a driver can't be on two
+    trucks at once), keeping that invariant intact for every one of those call sites.
+    """
+    truck = await _get_truck_or_404(session, truck_id)
+    await _get_driver_or_404(session, body.driver_id)
+
+    previous_truck = await session.scalar(
+        select(Truck).where(Truck.driver_id == body.driver_id, Truck.id != truck.id)
+    )
+    if previous_truck is not None:
+        previous_truck.driver_id = None
+
+    truck.driver_id = body.driver_id
+    await session.commit()
+    await session.refresh(truck)
+    return TruckRead.model_validate(truck)
+
+
+@router.delete("/trucks/{truck_id}/assign-driver", response_model=TruckRead)
+async def unassign_driver_from_truck(
+    truck_id: uuid.UUID,
+    admin: AdminUser,
+    session: SessionDep,
+    redis: RedisDep,
+) -> TruckRead:
+    """Clears truck.driver_id. 404 if the truck doesn't exist, or if it already has no
+    driver assigned — mirrors `remove_truck_from_fleet`'s "already not a member" 404
+    convention in app/api/fleets.py, applied to the analogous "already unassigned"
+    case here.
+
+    If the driver being unassigned is currently `available`, pull them out of the
+    Redis geo index too — same "driver becomes suddenly ineligible" case
+    `block_driver` above already handles for blocking, and for the same reason: a
+    driver with no truck shouldn't still be offered jobs by dispatch.
+    """
+    truck = await _get_truck_or_404(session, truck_id)
+    if truck.driver_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Truck has no driver assigned"
+        )
+
+    driver_id = truck.driver_id
+    profile = await session.scalar(select(DriverProfile).where(DriverProfile.user_id == driver_id))
+    if profile is not None and profile.status is DriverStatus.available:
+        await dispatch.remove_driver_from_geo(redis, driver_id, truck.capacity)
+
+    truck.driver_id = None
+    await session.commit()
+    await session.refresh(truck)
+    return TruckRead.model_validate(truck)

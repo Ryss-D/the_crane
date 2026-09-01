@@ -103,6 +103,14 @@ async def test_fleet_balance_equals_sum_of_member_balances(
     body = response.json()
     assert body["owed_balance"] == expected
     assert {m["driver_id"] for m in body["members"]} == {str(driver_a.id), str(driver_b.id)}
+    # ADM-7 admin override (2026-08-31): each member row also carries its current
+    # truck_id, so admin's per-truck assign/unassign controls can act on it directly.
+    async with session_maker() as session:
+        truck_a = await session.scalar(select(Truck).where(Truck.driver_id == driver_a.id))
+        truck_b = await session.scalar(select(Truck).where(Truck.driver_id == driver_b.id))
+    truck_id_by_driver = {m["driver_id"]: m["truck_id"] for m in body["members"]}
+    assert truck_id_by_driver[str(driver_a.id)] == str(truck_a.id)
+    assert truck_id_by_driver[str(driver_b.id)] == str(truck_b.id)
 
 
 async def test_fleet_balance_404_for_unknown_fleet(

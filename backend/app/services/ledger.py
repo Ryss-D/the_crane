@@ -56,6 +56,23 @@ async def fleet_member_balances(session: AsyncSession, fleet_id: uuid.UUID) -> d
     return {driver_id: await driver_owed_balance(session, driver_id) for driver_id in driver_ids}
 
 
+async def fleet_member_truck_ids(
+    session: AsyncSession, fleet_id: uuid.UUID
+) -> dict[uuid.UUID, uuid.UUID]:
+    """ADM-7 admin override (2026-08-31): each member driver's current truck within
+    the fleet, keyed by driver_id — lets a balance-breakdown view (FleetMemberBalance)
+    link straight to POST/DELETE /v1/admin/trucks/{truck_id}/assign-driver without a
+    separate per-driver truck lookup."""
+    rows = (
+        await session.execute(
+            select(Truck.driver_id, Truck.id).where(
+                Truck.fleet_id == fleet_id, Truck.driver_id.is_not(None)
+            )
+        )
+    ).all()
+    return {driver_id: truck_id for driver_id, truck_id in rows}
+
+
 async def fleet_owed_balance(session: AsyncSession, fleet_id: uuid.UUID) -> int:
     """COP the fleet owes the platform — sum of every member driver's owed balance."""
     balances = await fleet_member_balances(session, fleet_id)

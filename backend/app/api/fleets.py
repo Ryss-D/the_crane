@@ -35,7 +35,7 @@ from app.schemas.fleet import (
     InviteCreate,
     InviteRead,
 )
-from app.services.ledger import fleet_member_balances
+from app.services.ledger import fleet_member_balances, fleet_member_truck_ids
 
 router = APIRouter(prefix="/fleets", tags=["fleets"])
 
@@ -179,13 +179,19 @@ async def get_my_fleet_balance(user: CurrentUser, session: SessionDep) -> FleetB
     plus the per-driver breakdown it's built from (app/services/ledger.py)."""
     fleet = await _get_fleet_or_404(session, user.id)
     balances = await fleet_member_balances(session, fleet.id)
+    truck_ids = await fleet_member_truck_ids(session, fleet.id)
     names = (
         {u.id: u.name for u in (await session.scalars(select(User).where(User.id.in_(balances))))}
         if balances
         else {}
     )
     members = [
-        FleetMemberBalance(driver_id=driver_id, name=names.get(driver_id), owed_balance=owed)
+        FleetMemberBalance(
+            driver_id=driver_id,
+            name=names.get(driver_id),
+            owed_balance=owed,
+            truck_id=truck_ids[driver_id],
+        )
         for driver_id, owed in balances.items()
     ]
     return FleetBalanceRead(fleet_id=fleet.id, owed_balance=sum(balances.values()), members=members)

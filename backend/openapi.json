@@ -538,6 +538,21 @@
         "title": "AdminLedgerRead",
         "type": "object"
       },
+      "AssignDriverRequest": {
+        "description": "POST /v1/admin/trucks/{truck_id}/assign-driver body.",
+        "properties": {
+          "driver_id": {
+            "format": "uuid",
+            "title": "Driver Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "driver_id"
+        ],
+        "title": "AssignDriverRequest",
+        "type": "object"
+      },
       "AuthSyncRequest": {
         "description": "Optional profile fields sent alongside /v1/auth/sync (token claims are fallback).",
         "properties": {
@@ -1198,12 +1213,18 @@
           "owed_balance": {
             "title": "Owed Balance",
             "type": "integer"
+          },
+          "truck_id": {
+            "format": "uuid",
+            "title": "Truck Id",
+            "type": "string"
           }
         },
         "required": [
           "driver_id",
           "name",
-          "owed_balance"
+          "owed_balance",
+          "truck_id"
         ],
         "title": "FleetMemberBalance",
         "type": "object"
@@ -3982,6 +4003,112 @@
           }
         ],
         "summary": "Admin Ping",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/trucks/{truck_id}/assign-driver": {
+      "delete": {
+        "description": "Clears truck.driver_id. 404 if the truck doesn't exist, or if it already has no\ndriver assigned \u2014 mirrors `remove_truck_from_fleet`'s \"already not a member\" 404\nconvention in app/api/fleets.py, applied to the analogous \"already unassigned\"\ncase here.\n\nIf the driver being unassigned is currently `available`, pull them out of the\nRedis geo index too \u2014 same \"driver becomes suddenly ineligible\" case\n`block_driver` above already handles for blocking, and for the same reason: a\ndriver with no truck shouldn't still be offered jobs by dispatch.",
+        "operationId": "unassign_driver_from_truck_v1_admin_trucks__truck_id__assign_driver_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "truck_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Truck Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TruckRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unassign Driver From Truck",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "description": "Admin override: link an already-existing, already-verified driver to a truck\ndirectly, overwriting whatever driver_id was there before. This is the gap FLT-4's\nowner-initiated invite flow (POST /v1/fleets/me/invites + POST\n/v1/drivers/me/register's invite_token) leaves open \u2014 that flow only pre-links a\n*brand-new* driver at registration time; there was no endpoint anywhere that could\n(re)link an existing driver, so this is a support-case tool for admin staff,\nseparate from (and overriding) the owner flow.\n\nDeliberately does NOT reject a truck that already has a different driver \u2014\noverwriting that is the entire point of \"override\". 404 if the truck doesn't\nexist; 404 (via `_get_driver_or_404`) if driver_id isn't a real user with a\nDriverProfile.\n\n1:1 driver:truck invariant: every truck lookup elsewhere in this codebase\n(`select(Truck).where(Truck.driver_id == ...)` fed into `.scalar()` \u2014 see\napp/api/drivers.py's `_get_own_truck`, app/api/jobs.py x3, app/api/realtime.py,\napp/services/ledger.py, and `_serialize_admin_driver`/`block_driver` above) assumes\na driver is linked to at most one truck; `.scalar()` raises `MultipleResultsFound`\nthe moment that's violated. So reassigning a driver here first clears them off\nwhatever *other* truck they were previously linked to (a driver can't be on two\ntrucks at once), keeping that invariant intact for every one of those call sites.",
+        "operationId": "assign_driver_to_truck_v1_admin_trucks__truck_id__assign_driver_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "truck_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Truck Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignDriverRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TruckRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Assign Driver To Truck",
         "tags": [
           "admin"
         ]

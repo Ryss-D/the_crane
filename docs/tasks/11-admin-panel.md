@@ -81,7 +81,7 @@ Runtime control of pricing, commission, settlement, and dispatch — plus driver
   *AC: recording a settlement unblocks a capped driver (LED-2) and shows in their app balance.*
   Backend gained `GET /v1/admin/ledger/{driver_id}/entries` (drill-down) — the original `/ledger` endpoint only ever listed balances, never individual entries. The "capped" badge reads `balance_cap` from the same platform-config query `ConfigPage` uses, not a per-row field (the backend has no such field — it's one global value).
 
-- [ ] **ADM-7 — Fleets & owners view** *(deps: ADM-2, FLT-2)* · Phase 6
+- [x] **ADM-7 — Fleets & owners view** *(deps: ADM-2, FLT-2)* · Phase 6
   Fleet owners list with their trucks, per-truck driver assignment, and consolidated fleet balance.
   Design: «Flotas y dueños de grúas» (`docs/design/screen-references.md`)
   *AC: consolidated balance equals the sum of the fleet's driver ledger balances.*
@@ -117,3 +117,72 @@ Runtime control of pricing, commission, settlement, and dispatch — plus driver
   reassign regardless of owner action, e.g. for support cases), that's
   still genuinely unbuilt. Flagging the ambiguity rather than resolving it
   unilaterally.
+
+  Update (2026-08-31), resolved: the product owner confirmed the *admin
+  override* reading — build it. Confirmed by grep first (`driver_id\s*=`
+  across `backend/app/api/`) that there really was no endpoint anywhere,
+  owner- or admin-facing, that could link an already-existing,
+  already-verified driver to a truck directly, or forcibly reassign/unassign
+  one — FLT-4's invite flow only pre-links a *brand-new* driver at
+  registration time via `truck.driver_id = user.id`. Built as a support-case
+  tool, separate from (and overriding) that flow:
+
+  - `POST /v1/admin/trucks/{truck_id}/assign-driver` (body `{driver_id}`) —
+    sets `truck.driver_id`, overwriting whatever was there before with no
+    "already assigned" guard, since overriding that is the entire point.
+    404s if the truck or driver doesn't exist (the latter via
+    `_get_driver_or_404`, mirroring `verify_driver`/`block_driver`'s own
+    pattern in `backend/app/api/admin.py`).
+  - `DELETE /v1/admin/trucks/{truck_id}/assign-driver` — clears
+    `truck.driver_id`; 404 if the truck doesn't exist or already has no
+    driver (mirrors `remove_truck_from_fleet`'s "already not a member" 404
+    convention in `app/api/fleets.py`). If the driver being unassigned is
+    currently `available`, they're pulled from the Redis geo index too,
+    reusing `block_driver`'s exact `dispatch.remove_driver_from_geo` call for
+    the same "driver becomes suddenly ineligible" reason.
+  - 1:1 driver:truck judgment call: every truck lookup elsewhere in the
+    codebase (`select(Truck).where(Truck.driver_id == ...)` fed into
+    `.scalar()`, in `app/api/drivers.py`/`jobs.py`/`realtime.py`,
+    `app/services/ledger.py`, and this file's own `_serialize_admin_driver`/
+    `block_driver`) assumes a driver is linked to at most one truck at a
+    time — `.scalar()` raises `MultipleResultsFound` the moment that's
+    violated. So `assign-driver` first clears the driver off whatever
+    *other* truck they previously held, keeping that invariant intact
+    everywhere else in the codebase reads it.
+  - `FleetMemberBalance` (`app/schemas/fleet.py`, shared by
+    `GET /v1/admin/fleets/{id}/balance` and the owner-facing
+    `GET /v1/fleets/me/balance`) gained a `truck_id` field, backed by a new
+    `fleet_member_truck_ids` helper in `app/services/ledger.py` — the
+    admin drill-down needs a truck id per member row to act on, and since
+    fleet membership is truck-derived anyway (`fleet_member_driver_ids`),
+    this was extending an existing response shape rather than standing up a
+    separate fleet-trucks-listing endpoint just for this.
+  - Admin frontend: `FleetsPage`'s per-fleet member drill-down
+    (`admin/src/features/fleets/FleetsPage.tsx`) gained "Reasignar" (opens a
+    driver-picker modal, POSTs to `assign-driver`) and "Quitar conductor"
+    (DELETEs `assign-driver` directly) per member row, both invalidating the
+    `fleetBalance`/`fleets`/`drivers` query caches on success. Driver-picker
+    judgment call: reused `GET /v1/admin/drivers` (`['drivers']`, the same
+    query `DriversPage` already populates, so the cache is shared) as a real
+    `<select>` dropdown rather than a manual driver-id/phone text field —
+    proportionate since that data source already existed with nothing new to
+    build; every driver is listed, including ones already on a different
+    truck, since overriding that is exactly what "reasignar" is for.
+    `CraneAdminApi` gained `assignDriverToTruck`/`unassignDriverFromTruck`
+    (+ `MockApi` implementations, which treat a truck as living inside
+    whichever driver currently embeds it, same 1:1 shape as the real model).
+
+  Tests: 10 new + 1 extended assertion in the backend
+  (`test_admin_api.py`: unassigned/override/unknown-driver/unknown-truck/
+  clear/geo-index/already-unassigned-404 cases; `test_fleet_ledger.py`
+  asserts the new `truck_id` field) — backend suite 356/356 green (up from
+  346), `ruff check` clean. Admin gained 2 `client.test.ts` wire-format
+  tests plus 2 `FleetsPage.test.tsx` flows (reassign-across-fleets,
+  unassign-drops-membership) — admin suite 70/70 green (up from 66),
+  lint clean (same 5 pre-existing unrelated errors, untouched), build clean.
+
+  Checking the box now: the AC ("consolidated balance equals the sum of the
+  fleet's driver ledger balances") was already met by the earlier
+  fleet-balance work, and this closes the one remaining open item from the
+  bullet's own scope ("per-truck driver assignment") under the now-confirmed
+  admin-override reading.

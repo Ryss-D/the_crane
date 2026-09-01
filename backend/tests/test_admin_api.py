@@ -12,7 +12,7 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.models.driver import DriverProfile, DriverStatus
+from app.models.driver import DriverProfile, DriverStatus, Truck, TruckCapacity, TruckType
 from app.models.job import DriverLocationSnapshot, JobOffer, JobStatus, OfferResponse, PaymentMethod
 from app.models.ledger import (
     DriverLedgerEntry,
@@ -59,6 +59,8 @@ def tokens(
         ("GET", "/v1/admin/ledger"),
         ("GET", f"/v1/admin/ledger/{uuid.uuid4()}/entries"),
         ("POST", f"/v1/admin/ledger/{uuid.uuid4()}/settle"),
+        ("POST", f"/v1/admin/trucks/{uuid.uuid4()}/assign-driver"),
+        ("DELETE", f"/v1/admin/trucks/{uuid.uuid4()}/assign-driver"),
     ],
 )
 async def test_admin_routes_reject_non_admin(
@@ -755,3 +757,181 @@ async def test_settle_already_zero_balance_driver_still_succeeds(
 
     async with session_maker() as session:
         assert await driver_owed_balance(session, driver.id) == -5000
+
+
+# ---- Trucks (ADM-7 admin override, 2026-08-31) -----------------------------------
+
+
+async def _own_truck(
+    session_maker: async_sessionmaker[AsyncSession], driver_id: uuid.UUID
+) -> Truck:
+    async with session_maker() as session:
+        truck = await session.scalar(select(Truck).where(Truck.driver_id == driver_id))
+        assert truck is not None
+        return truck
+
+
+async def _make_unassigned_truck(
+    session_maker: async_sessionmaker[AsyncSession], *, plate: str
+) -> Truck:
+    async with session_maker() as session:
+        truck = Truck(plate=plate, type=TruckType.car, capacity=TruckCapacity.car)
+        session.add(truck)
+        await session.commit()
+        await session.refresh(truck)
+        return truck
+
+
+async def test_assign_driver_to_unassigned_truck(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="drv-assign-1", status=DriverStatus.offline
+    )
+    original_truck = await _own_truck(session_maker, driver.id)
+    new_truck = await _make_unassigned_truck(session_maker, plate="ASSIGN-01")
+
+    response = await client.post(
+        f"/v1/admin/trucks/{new_truck.id}/assign-driver",
+        headers=AUTH_ADMIN,
+        json={"driver_id": str(driver.id)},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == str(new_truck.id)
+    assert body["driver_id"] == str(driver.id)
+
+    async with session_maker() as session:
+        refreshed_new = await session.get(Truck, new_truck.id)
+        assert refreshed_new is not None
+        assert refreshed_new.driver_id == driver.id
+        # 1:1 invariant: the driver's previous truck is cleared, since every other
+        # `select(Truck).where(Truck.driver_id == ...)).scalar()` call site in the
+        # codebase would otherwise raise MultipleResultsFound.
+        refreshed_original = await session.get(Truck, original_truck.id)
+        assert refreshed_original is not None
+        assert refreshed_original.driver_id is None
+
+
+async def test_assign_driver_overrides_existing_assignment(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    """The actual "override" case: the target truck already has a different driver;
+    assigning a new one overwrites it rather than being blocked."""
+    driver_a = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="drv-assign-a", status=DriverStatus.offline
+    )
+    driver_b = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="drv-assign-b", status=DriverStatus.offline
+    )
+    truck_a = await _own_truck(session_maker, driver_a.id)
+    truck_b = await _own_truck(session_maker, driver_b.id)
+
+    response = await client.post(
+        f"/v1/admin/trucks/{truck_b.id}/assign-driver",
+        headers=AUTH_ADMIN,
+        json={"driver_id": str(driver_a.id)},
+    )
+    assert response.status_code == 200
+    assert response.json()["driver_id"] == str(driver_a.id)
+
+    async with session_maker() as session:
+        refreshed_b = await session.get(Truck, truck_b.id)
+        assert refreshed_b is not None
+        assert refreshed_b.driver_id == driver_a.id
+        # driver_a's original truck is cleared (1:1 invariant), and driver_b is left
+        # with no truck at all -- exactly what an admin override implies.
+        refreshed_a = await session.get(Truck, truck_a.id)
+        assert refreshed_a is not None
+        assert refreshed_a.driver_id is None
+
+
+async def test_assign_driver_404_for_unknown_driver(
+    client: AsyncClient, tokens: dict, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    truck = await _make_unassigned_truck(session_maker, plate="ASSIGN-02")
+    response = await client.post(
+        f"/v1/admin/trucks/{truck.id}/assign-driver",
+        headers=AUTH_ADMIN,
+        json={"driver_id": str(uuid.uuid4())},
+    )
+    assert response.status_code == 404
+
+
+async def test_assign_driver_404_for_unknown_truck(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="drv-assign-3", status=DriverStatus.offline
+    )
+    response = await client.post(
+        f"/v1/admin/trucks/{uuid.uuid4()}/assign-driver",
+        headers=AUTH_ADMIN,
+        json={"driver_id": str(driver.id)},
+    )
+    assert response.status_code == 404
+
+
+async def test_unassign_driver_clears_truck(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="drv-unassign-1", status=DriverStatus.offline
+    )
+    truck = await _own_truck(session_maker, driver.id)
+
+    response = await client.delete(f"/v1/admin/trucks/{truck.id}/assign-driver", headers=AUTH_ADMIN)
+    assert response.status_code == 200
+    assert response.json()["driver_id"] is None
+
+    async with session_maker() as session:
+        refreshed = await session.get(Truck, truck.id)
+        assert refreshed is not None
+        assert refreshed.driver_id is None
+
+
+async def test_unassign_available_driver_removes_from_geo_index(
+    client: AsyncClient,
+    tokens: dict,
+    session_maker: async_sessionmaker[AsyncSession],
+    fake_redis: FakeRedis,
+) -> None:
+    """Mirrors block_driver's geo-index regression test: unassigning a currently
+    -available driver's truck must pull them out of the Redis geo index too, not
+    just clear the DB link, or dispatch could still offer them jobs."""
+    driver = await make_available_driver(
+        session_maker, fake_redis, firebase_uid="drv-unassign-2", verified=True
+    )
+    truck = await _own_truck(session_maker, driver.id)
+    assert str(driver.id) in fake_redis.geo[_geo_key("car")]
+
+    response = await client.delete(f"/v1/admin/trucks/{truck.id}/assign-driver", headers=AUTH_ADMIN)
+    assert response.status_code == 200
+    assert str(driver.id) not in fake_redis.geo.get(_geo_key("car"), {})
+
+
+async def test_unassign_already_unassigned_truck_is_404(
+    client: AsyncClient, tokens: dict, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    truck = await _make_unassigned_truck(session_maker, plate="ASSIGN-03")
+    response = await client.delete(f"/v1/admin/trucks/{truck.id}/assign-driver", headers=AUTH_ADMIN)
+    assert response.status_code == 404
+
+
+async def test_unassign_404_for_unknown_truck(client: AsyncClient, tokens: dict) -> None:
+    response = await client.delete(
+        f"/v1/admin/trucks/{uuid.uuid4()}/assign-driver", headers=AUTH_ADMIN
+    )
+    assert response.status_code == 404

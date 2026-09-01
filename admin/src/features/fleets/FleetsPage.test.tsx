@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -84,5 +84,67 @@ describe('FleetsPage (ADM-7)', () => {
     // The list balance drops by the settled amount: 222,000 - 22,200 = 199,800.
     const updatedRow = (await screen.findByText('Flota Restrepo')).closest('tr') as HTMLElement;
     await within(updatedRow).findByText(cop(199800));
+  });
+
+  it('reassigns a fleet member\'s truck to a different driver (ADM-7 admin override)', async () => {
+    await authClient.signInWithPassword('admin@thecrane.local', 'anything');
+    const user = userEvent.setup();
+    renderFleetsPage();
+
+    const row = (await screen.findByText('Flota del Valle')).closest('tr') as HTMLElement;
+    await user.click(row);
+
+    const card = (await screen.findByText(/Flota del Valle$/, { selector: 'h2' })).closest(
+      'div',
+    ) as HTMLElement;
+    const memberRow = (await within(card).findByText('Andrea Muñoz')).closest('tr') as HTMLElement;
+    await user.click(within(memberRow).getByRole('button', { name: strings.fleets.reassign }));
+
+    const dialog = await screen.findByRole('dialog', {
+      name: `${strings.fleets.reassignTitle} — Andrea Muñoz`,
+    });
+    // Jorge Salazar (drv_3) is a member of a different fleet -- picking him
+    // here is exactly the "override" case: he's pulled off his own truck.
+    await user.selectOptions(within(dialog).getByLabelText(strings.fleets.driverLabel), [
+      'drv_3',
+    ]);
+    await user.click(within(dialog).getByRole('button', { name: strings.fleets.confirm }));
+
+    // Dialog closes on success, and the reassigned truck now shows Jorge
+    // instead of Andrea in this fleet's member breakdown -- membership is
+    // truck-derived, so the swap moves him into "Flota del Valle" and drops
+    // Andrea out of it entirely.
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
+    const refreshedCard = (await screen.findByText(/Flota del Valle$/, { selector: 'h2' })).closest(
+      'div',
+    ) as HTMLElement;
+    await within(refreshedCard).findByText('Jorge Salazar');
+    expect(within(refreshedCard).queryByText('Andrea Muñoz')).not.toBeInTheDocument();
+  });
+
+  it('unassigns a fleet member\'s driver and refreshes the breakdown', async () => {
+    await authClient.signInWithPassword('admin@thecrane.local', 'anything');
+    const user = userEvent.setup();
+    renderFleetsPage();
+
+    const row = (await screen.findByText('Flota Restrepo')).closest('tr') as HTMLElement;
+    await user.click(row);
+
+    const card = (await screen.findByText(/Flota Restrepo$/, { selector: 'h2' })).closest(
+      'div',
+    ) as HTMLElement;
+    const memberRow = (await within(card).findByText('Carlos Restrepo')).closest(
+      'tr',
+    ) as HTMLElement;
+    await user.click(within(memberRow).getByRole('button', { name: strings.fleets.unassign }));
+
+    // Carlos drops out of the fleet's member breakdown once his truck has no
+    // driver -- membership is truck-derived, same as the backend.
+    const refreshedCard = (await screen.findByText(/Flota Restrepo$/, { selector: 'h2' })).closest(
+      'div',
+    ) as HTMLElement;
+    await waitFor(() => {
+      expect(within(refreshedCard).queryByText('Carlos Restrepo')).not.toBeInTheDocument();
+    });
   });
 });
