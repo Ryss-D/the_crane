@@ -28,6 +28,32 @@ Phone-OTP identity via Firebase; profiles and roles live in Postgres.
 
   Correction: a second, separate bug would also have broken this against the real backend -- the backend's `TruckType` enum used `moto_only`/`flatbed`/`standard` while Flutter's has always used `moto_only`/`car`/`flatbed`, so picking "car" in `BecomeDriverScreen` would have sent a value the backend's enum validation rejects (422). Fixed by aligning the backend on `car` (see the JOB-5 driver-summary commit) -- both sides now speak the same three values. Still not yet verified: a real run against the live backend end to end.
 
+  Follow-up (2026-08-31): real document upload, closing the one deliberately-scoped-out piece above -- `BecomeDriverScreen`'s license/truck-photo fields were plain hand-typed URL text fields; they're now an `image_picker` gallery-chooser flow that uploads to Firebase Storage (project `FND-1`/`the-crane-c6b86`, same one already wired for Auth/Messaging in `lib/main.dart` -- Storage is just a new SDK on it, no new project). Backend needed zero changes, as expected: `license_url`/`truck_photo_url` were already opaque `str | None` (`backend/app/schemas/driver.py`) and don't care where the string came from.
+
+  Built: `DocumentUploadRepository` (`lib/core/storage/document_upload_repository.dart`, real `FirebaseDocumentUploadRepository` + `FakeDocumentUploadRepository`) uploads to `driver-documents/{driverUserId}/{kind}<ext>` and returns the download URL. `DocumentImagePicker` (`lib/core/storage/document_image_picker.dart`, real `ImagePickerDocumentPicker` + `FakeDocumentImagePicker`) wraps `image_picker`'s gallery chooser the same way `LocationSource` already wraps `geolocator` -- a small interface seam rather than `image_picker_platform_interface`'s own heavier test-fake convention, kept consistent with this codebase's existing hardware-adjacent pattern. Both are wired into `AppDependencies`/`main.dart`/`test_dependencies.dart` exactly like every other repository here, picked by `Env.useFakeBackend`.
+
+  Design call -- upload timing: pick-and-upload-immediately (with a visible per-document thumbnail + spinner-over-thumbnail + inline retry-able error), not upload-on-submit. Reasoning: the two documents are genuinely independent of the rest of the form (plate/truck type/capacity), so there's no reason to make the driver wait through a form-submit spinner for two uploads that could have started the moment each photo was picked; failing early and inline (with the thumbnail still visible so the driver can see what they picked) is also a smaller, easier-to-reason-about failure surface than folding upload errors into the same generic "registration failed" banner submit already has. Both documents stay fully optional per the AC -- a picked-but-failed-to-upload document is simply left out of the request (`licenseUrl`/`truckPhotoUrl` stay `null`), never blocks submit.
+
+  `become_driver_flow_widget_test.dart` was reworked: the old two `TextField`s are gone; three new tests cover pick→thumbnail→uploaded-status→real-URL-sent-to-`registerDriver`, upload-failure→inline-error→submit-still-succeeds-without-that-document, and picker-cancel→no-state-change (427 → 430 passing). `FakeDocumentImagePicker` writes a real (but tiny, generated, non-golden-asset) PNG to a temp file *synchronously* -- widget tests run inside a FakeAsync zone (see this file's own pre-existing FLT-4-invite-test comments on the same gotcha) where real async dart:io I/O never resolves without `tester.runAsync`; a sync write sidesteps that.
+
+  Not done / still open: no live pass against a real Firebase Storage bucket or a real device's camera/gallery -- same standing gap as every other "verified against the fakes only" item in this file (AUTH-3/4, the rest of AUTH-5). The box above stays unchecked for that reason (plus AUTH-5's own prior real-backend-end-to-end gap, still open too) -- this follow-up only closes the "document upload is out of scope" caveat, not the wider live-verification gap.
+
+  Real gap caught and fixed during review: `ios/Runner/Info.plist` had no
+  `NSPhotoLibraryUsageDescription` key -- unlike a missing location key
+  (soft permission-denied), iOS hard-crashes the app the instant
+  `image_picker`'s gallery chooser requests photo-library access without
+  one. Added it (gallery-only picker, so `NSCameraUsageDescription` isn't
+  needed). Android needed no manifest change: `image_picker_android`'s own
+  bundled manifest declares no storage permission at all -- it relies
+  entirely on the modern system Photo Picker intent, confirmed by reading
+  the plugin's manifest directly rather than assuming. Two more manual
+  steps for whoever does the live pass: (1) Firebase Storage's security
+  rules need configuring in the Firebase Console (default rules deny all
+  reads/writes) before a real upload will succeed, same class of
+  Console-side step as everything else FND-1 already tracks; (2) the
+  Storage bucket itself needs enabling on the Firebase project if it isn't
+  already (Storage isn't auto-enabled the way Auth/Messaging are).
+
 - [ ] **AUTH-6 — FCM token lifecycle** *(deps: AUTH-3)*
   Register/refresh device token on login and token rotation; clear on logout.
   *AC: backend can push a test notification to a logged-in device.*

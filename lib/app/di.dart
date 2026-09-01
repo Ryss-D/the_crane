@@ -26,6 +26,10 @@ import '../core/location/location_source.dart';
 import '../core/notifications/notification_permission_requester.dart';
 import '../core/notifications/push_notifications.dart';
 import '../core/storage/active_job_store.dart';
+import '../core/storage/document_image_picker.dart';
+import '../core/storage/document_upload_repository.dart';
+import '../core/storage/fake_document_image_picker.dart';
+import '../core/storage/fake_document_upload_repository.dart';
 import '../core/ws/crane_socket.dart';
 import '../features/auth/auth_cubit.dart';
 
@@ -44,6 +48,8 @@ class AppDependencies {
     required this.fleetRepository,
     required this.placesRepository,
     required this.directionsRepository,
+    required this.documentUploadRepository,
+    required this.documentImagePicker,
     required this.authCubit,
     required this.activeJobStore,
     this.socket,
@@ -98,6 +104,8 @@ class AppDependencies {
         fleetRepository: fleetRepository,
         placesRepository: FakePlacesRepository(),
         directionsRepository: FakeDirectionsRepository(),
+        documentUploadRepository: FakeDocumentUploadRepository(),
+        documentImagePicker: FakeDocumentImagePicker(),
         authCubit: AuthCubit(
           gateway: FakePhoneAuthGateway(),
           authRepository: authRepository,
@@ -132,6 +140,11 @@ class AppDependencies {
       fleetRepository: ApiFleetRepository(dio),
       placesRepository: ApiPlacesRepository(dio),
       directionsRepository: ApiDirectionsRepository(dio),
+      // AUTH-5 follow-up: same Firebase project (FND-1) already wired for
+      // Auth/Messaging, just a new SDK (Storage) -- see
+      // `lib/core/storage/document_upload_repository.dart`.
+      documentUploadRepository: FirebaseDocumentUploadRepository(),
+      documentImagePicker: ImagePickerDocumentPicker(),
       socket: socket,
       locationSource: GeolocatorLocationSource(),
       // TRK-3: the same singleton `main()` already called `init()` on
@@ -155,6 +168,12 @@ class AppDependencies {
   final FleetRepository fleetRepository;
   final PlacesRepository placesRepository;
   final DirectionsRepository directionsRepository;
+
+  /// AUTH-5 follow-up (2026-08-31): real Firebase Storage uploads /
+  /// `image_picker` gallery chooser for `BecomeDriverScreen`'s document
+  /// fields, real or fake per [Env.useFakeBackend] same as everything else.
+  final DocumentUploadRepository documentUploadRepository;
+  final DocumentImagePicker documentImagePicker;
   final AuthCubit authCubit;
 
   /// CUS-4: which job (if any) to resume on next launch — real in both fake-

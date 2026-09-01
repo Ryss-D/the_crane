@@ -21,6 +21,8 @@ import 'core/location/location_source.dart';
 import 'core/notifications/notification_permission_requester.dart';
 import 'core/notifications/push_notifications.dart';
 import 'core/storage/active_job_store.dart';
+import 'core/storage/document_image_picker.dart';
+import 'core/storage/document_upload_repository.dart';
 import 'core/ws/crane_socket.dart';
 import 'features/auth/auth_cubit.dart';
 import 'l10n/app_localizations.dart';
@@ -138,6 +140,12 @@ class _TheCraneAppState extends State<TheCraneApp> with WidgetsBindingObserver {
         ),
         RepositoryProvider<DirectionsRepository>.value(
           value: widget.dependencies.directionsRepository,
+        ),
+        RepositoryProvider<DocumentUploadRepository>.value(
+          value: widget.dependencies.documentUploadRepository,
+        ),
+        RepositoryProvider<DocumentImagePicker>.value(
+          value: widget.dependencies.documentImagePicker,
         ),
         // Null under `Env.useFakeBackend` (see `AppDependencies.fromEnv`);
         // `ActiveJobCubit` treats a null socket as "no location push".

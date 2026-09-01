@@ -514,13 +514,33 @@
   "@capacityBoth": {
     "description": "Truck capacity: both motorcycles and cars"
   },
-  "licenseUrlFieldLabel": "URL de la licencia (opcional)",
-  "@licenseUrlFieldLabel": {
-    "description": "Optional driver license document URL field"
+  "licenseDocumentLabel": "Foto de la licencia (opcional)",
+  "@licenseDocumentLabel": {
+    "description": "AUTH-5 follow-up: optional driver license document upload label"
   },
-  "truckPhotoUrlFieldLabel": "URL de foto de la grúa (opcional)",
-  "@truckPhotoUrlFieldLabel": {
-    "description": "Optional truck photo URL field"
+  "truckPhotoDocumentLabel": "Foto de la grúa (opcional)",
+  "@truckPhotoDocumentLabel": {
+    "description": "AUTH-5 follow-up: optional truck photo document upload label"
+  },
+  "documentPickButton": "Elegir foto",
+  "@documentPickButton": {
+    "description": "AUTH-5 follow-up: opens the gallery chooser for a document"
+  },
+  "documentReplaceButton": "Cambiar foto",
+  "@documentReplaceButton": {
+    "description": "AUTH-5 follow-up: replaces an already-picked/uploaded document"
+  },
+  "documentUploading": "Subiendo...",
+  "@documentUploading": {
+    "description": "AUTH-5 follow-up: shown while a document is uploading to Storage"
+  },
+  "documentUploaded": "Foto subida",
+  "@documentUploaded": {
+    "description": "AUTH-5 follow-up: shown once a document finished uploading"
+  },
+  "documentUploadFailed": "No pudimos subir la foto. Intenta de nuevo.",
+  "@documentUploadFailed": {
+    "description": "AUTH-5 follow-up: shown when a document upload fails; the form can still be submitted without it"
   },
   "becomeDriverSubmitButton": "Enviar registro",
   "@becomeDriverSubmitButton": {

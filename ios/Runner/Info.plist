@@ -36,6 +36,14 @@
 	<string></string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>La Grúa usa tu ubicación para guiarte hacia el cliente y compartir tu posición durante un servicio activo.</string>
+	<!-- AUTH-5 follow-up: image_picker's gallery chooser (BecomeDriverScreen's
+	     license/truck-photo upload) needs this key or iOS kills the app
+	     outright the moment it requests photo-library access -- unlike a
+	     missing location key, this isn't a soft permission-denied, it's a
+	     hard crash. No camera capture is offered (gallery-only), so
+	     NSCameraUsageDescription isn't needed. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>La Grúa necesita acceso a tus fotos para subir tu licencia de conducción y una foto de tu grúa al registrarte como conductor.</string>
 	<!-- TRK-5 (this pass): plist-only prep for true background/locked-screen
 	     tracking, checked against geolocator's own README (in its pub-cache
 	     copy, ~/.pub-cache/hosted/pub.dev/geolocator-14.0.3/README.md) for

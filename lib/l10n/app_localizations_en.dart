@@ -396,10 +396,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get capacityBoth => 'Motorcycles and cars';
 
   @override
-  String get licenseUrlFieldLabel => 'License document URL (optional)';
+  String get licenseDocumentLabel => 'License photo (optional)';
 
   @override
-  String get truckPhotoUrlFieldLabel => 'Truck photo URL (optional)';
+  String get truckPhotoDocumentLabel => 'Truck photo (optional)';
+
+  @override
+  String get documentPickButton => 'Choose photo';
+
+  @override
+  String get documentReplaceButton => 'Change photo';
+
+  @override
+  String get documentUploading => 'Uploading...';
+
+  @override
+  String get documentUploaded => 'Photo uploaded';
+
+  @override
+  String get documentUploadFailed =>
+      'We could not upload the photo. Please try again.';
 
   @override
   String get becomeDriverSubmitButton => 'Submit registration';

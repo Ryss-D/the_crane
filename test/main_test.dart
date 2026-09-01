@@ -23,6 +23,8 @@ AppDependencies _withSocket(CraneSocket socket) {
     fleetRepository: base.fleetRepository,
     placesRepository: base.placesRepository,
     directionsRepository: base.directionsRepository,
+    documentUploadRepository: base.documentUploadRepository,
+    documentImagePicker: base.documentImagePicker,
     authCubit: base.authCubit,
     activeJobStore: base.activeJobStore,
     socket: socket,

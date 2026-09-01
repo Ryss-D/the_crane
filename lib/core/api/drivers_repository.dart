@@ -17,8 +17,12 @@ abstract interface class DriversRepository {
   /// `POST /v1/drivers/me/register` (AUTH-5) — a signed-in customer becomes
   /// a driver: creates the `driver_profiles` + `trucks` rows server-side and
   /// flips the caller's role to `driver` (unverified, offline until an
-  /// admin verifies it). Document upload is out of scope — `licenseUrl`/
-  /// `truckPhotoUrl` are plain strings, same as the backend schema.
+  /// admin verifies it). `licenseUrl`/`truckPhotoUrl` are plain opaque
+  /// strings, same as the backend schema — as of the AUTH-5 follow-up
+  /// (2026-08-31) `BecomeDriverScreen` populates them with real Firebase
+  /// Storage download URLs (`lib/core/storage/document_upload_repository.dart`)
+  /// rather than hand-typed text, but this repository/the backend don't
+  /// care where the string came from.
   ///
   /// Two mutually exclusive shapes (FLT-4): bring your own truck
   /// ([plate]/[truckType]/[capacity], all three required), or redeem a

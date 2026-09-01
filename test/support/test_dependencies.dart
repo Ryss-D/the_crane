@@ -13,6 +13,8 @@ import 'package:the_crane/core/auth/fake_phone_auth_gateway.dart';
 import 'package:the_crane/core/auth/fake_push_token_gateway.dart';
 import 'package:the_crane/core/models/app_user.dart';
 import 'package:the_crane/core/storage/active_job_store.dart';
+import 'package:the_crane/core/storage/fake_document_image_picker.dart';
+import 'package:the_crane/core/storage/fake_document_upload_repository.dart';
 import 'package:the_crane/features/auth/auth_cubit.dart';
 
 import 'in_memory_active_job_store.dart';
@@ -46,6 +48,8 @@ AppDependencies testDependencies({
   FakeFleetRepository? fleet,
   ActiveJobStore? activeJobStore,
   UserRole authRole = UserRole.customer,
+  FakeDocumentUploadRepository? documentUploadRepository,
+  FakeDocumentImagePicker? documentImagePicker,
 }) {
   final jobsRepository = jobs ?? fastFakeJobs();
   final store = activeJobStore ?? InMemoryActiveJobStore();
@@ -81,6 +85,10 @@ AppDependencies testDependencies({
     fleetRepository: fleetRepository,
     placesRepository: FakePlacesRepository(delay: Duration.zero),
     directionsRepository: FakeDirectionsRepository(delay: Duration.zero),
+    documentUploadRepository:
+        documentUploadRepository ??
+        FakeDocumentUploadRepository(delay: const Duration(milliseconds: 10)),
+    documentImagePicker: documentImagePicker ?? FakeDocumentImagePicker(),
     authCubit: AuthCubit(
       gateway: FakePhoneAuthGateway(
         sendDelay: const Duration(milliseconds: 10),

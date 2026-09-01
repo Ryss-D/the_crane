@@ -4,6 +4,8 @@ import 'package:the_crane/core/api/fake_drivers_repository.dart';
 import 'package:the_crane/core/api/fake_fleet_repository.dart';
 import 'package:the_crane/core/models/driver_profile.dart';
 import 'package:the_crane/core/models/truck.dart';
+import 'package:the_crane/core/storage/fake_document_image_picker.dart';
+import 'package:the_crane/core/storage/fake_document_upload_repository.dart';
 import 'package:the_crane/features/customer/request/request_screen.dart';
 import 'package:the_crane/features/customer/settings/become_driver_screen.dart';
 import 'package:the_crane/features/customer/settings/settings_screen.dart';
@@ -11,6 +13,37 @@ import 'package:the_crane/features/driver/home/driver_home_screen.dart';
 import 'package:the_crane/main.dart';
 
 import '../../support/test_dependencies.dart';
+
+/// Records the `licenseUrl`/`truckPhotoUrl` a `registerDriver` call actually
+/// received, so the AUTH-5-follow-up document-upload tests below can assert
+/// the real uploaded URL (not a hand-typed one) is what gets sent.
+class _CapturingDriversRepository extends FakeDriversRepository {
+  _CapturingDriversRepository({required super.jobs, super.actionDelay});
+
+  String? lastLicenseUrl;
+  String? lastTruckPhotoUrl;
+
+  @override
+  Future<DriverProfile> registerDriver({
+    String? plate,
+    TruckType? truckType,
+    TruckCapacity? capacity,
+    String? inviteToken,
+    String? licenseUrl,
+    String? truckPhotoUrl,
+  }) async {
+    lastLicenseUrl = licenseUrl;
+    lastTruckPhotoUrl = truckPhotoUrl;
+    return super.registerDriver(
+      plate: plate,
+      truckType: truckType,
+      capacity: capacity,
+      inviteToken: inviteToken,
+      licenseUrl: licenseUrl,
+      truckPhotoUrl: truckPhotoUrl,
+    );
+  }
+}
 
 /// Fails the next `registerDriver` call exactly once, mirroring
 /// `RejectingOnceJobsRepository`'s shape (`test/support/`).
@@ -348,5 +381,138 @@ void main() {
     await tester.tap(find.byKey(const Key('becomeDriverSubmitButton')));
     await tester.pump(const Duration(milliseconds: 20));
     expect(find.byKey(const Key('becomeDriverSubmitButton')), findsOneWidget);
+  });
+
+  // AUTH-5 follow-up (2026-08-31): real document upload via
+  // DocumentImagePicker/DocumentUploadRepository, replacing the old
+  // hand-typed licenseUrlField/truckPhotoUrlField text fields.
+  testWidgets(
+      'AUTH-5 follow-up: picking a document uploads it immediately, shows a '
+      'thumbnail + uploaded status, and the real download URL is what gets '
+      'sent to registerDriver', (tester) async {
+    final jobs = fastFakeJobs();
+    final drivers = _CapturingDriversRepository(
+      jobs: jobs,
+      actionDelay: const Duration(milliseconds: 10),
+    );
+    final picker = FakeDocumentImagePicker(delay: const Duration(milliseconds: 10));
+    final uploads =
+        FakeDocumentUploadRepository(delay: const Duration(milliseconds: 10));
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(
+        jobs: jobs,
+        drivers: drivers,
+        documentImagePicker: picker,
+        documentUploadRepository: uploads,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await tester.tap(find.byKey(const Key('settingsNavButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('becomeDriverMenuItem')));
+    await tester.pumpAndSettle();
+
+    // No thumbnail/status before anything is picked.
+    expect(find.byKey(const Key('licenseThumbnail')), findsNothing);
+
+    await tester.ensureVisible(find.byKey(const Key('licensePickButton')));
+    await tester.tap(find.byKey(const Key('licensePickButton')));
+    await tester.pump(const Duration(milliseconds: 10)); // picker delay
+    // Thumbnail appears once picked, before the upload itself resolves.
+    expect(find.byKey(const Key('licenseThumbnail')), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 10)); // upload delay
+    expect(find.byKey(const Key('licenseUploadedLabel')), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('truckPhotoPickButton')));
+    await tester.tap(find.byKey(const Key('truckPhotoPickButton')));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
+    expect(find.byKey(const Key('truckPhotoUploadedLabel')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('plateField')), 'XYZ987');
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('becomeDriverSubmitButton')));
+    await tester.tap(find.byKey(const Key('becomeDriverSubmitButton')));
+    await tester.pump(const Duration(milliseconds: 20)); // registerDriver's actionDelay
+
+    expect(drivers.lastLicenseUrl, 'https://fake-storage.local/fake-user-1/license.jpg');
+    expect(
+      drivers.lastTruckPhotoUrl,
+      'https://fake-storage.local/fake-user-1/truck_photo.jpg',
+    );
+  });
+
+  testWidgets(
+      'AUTH-5 follow-up: a failed document upload shows an inline error but '
+      "doesn't block submitting the registration without that document",
+      (tester) async {
+    final jobs = fastFakeJobs();
+    final drivers = _CapturingDriversRepository(
+      jobs: jobs,
+      actionDelay: const Duration(milliseconds: 10),
+    );
+    final picker = FakeDocumentImagePicker(delay: const Duration(milliseconds: 10));
+    final uploads = FakeDocumentUploadRepository(
+      delay: const Duration(milliseconds: 10),
+    )..rejectNext = true;
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(
+        jobs: jobs,
+        drivers: drivers,
+        documentImagePicker: picker,
+        documentUploadRepository: uploads,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await tester.tap(find.byKey(const Key('settingsNavButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('becomeDriverMenuItem')));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('licensePickButton')));
+    await tester.tap(find.byKey(const Key('licensePickButton')));
+    await tester.pump(const Duration(milliseconds: 10)); // picker delay
+    await tester.pump(const Duration(milliseconds: 10)); // upload delay (fails)
+
+    expect(find.byKey(const Key('licenseUploadError')), findsOneWidget);
+    // The picked thumbnail is still shown -- only the upload failed, so the
+    // driver can see what they picked before deciding to retry or move on.
+    expect(find.byKey(const Key('licenseThumbnail')), findsOneWidget);
+
+    // Registration still succeeds without the license URL -- both documents
+    // are optional (backend schema: `str | None`).
+    await tester.enterText(find.byKey(const Key('plateField')), 'NOLIC01');
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('becomeDriverSubmitButton')));
+    await tester.tap(find.byKey(const Key('becomeDriverSubmitButton')));
+    await tester.pump(const Duration(milliseconds: 20)); // registerDriver's actionDelay
+
+    expect(drivers.lastLicenseUrl, isNull);
+    expect(drivers.lastTruckPhotoUrl, isNull);
+  });
+
+  testWidgets(
+      'AUTH-5 follow-up: cancelling the picker leaves the document unpicked',
+      (tester) async {
+    final picker = FakeDocumentImagePicker()..cancelNext = true;
+    await tester.pumpWidget(TheCraneApp(
+      dependencies: testDependencies(documentImagePicker: picker),
+    ));
+    await tester.pumpAndSettle();
+    await signIn(tester);
+    await tester.tap(find.byKey(const Key('settingsNavButton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('becomeDriverMenuItem')));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('licensePickButton')));
+    await tester.tap(find.byKey(const Key('licensePickButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('licenseThumbnail')), findsNothing);
+    expect(find.byKey(const Key('licenseUploadError')), findsNothing);
+    expect(find.byKey(const Key('licenseUploadedLabel')), findsNothing);
   });
 }

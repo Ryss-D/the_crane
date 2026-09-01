@@ -824,17 +824,47 @@ abstract class AppLocalizations {
   /// **'Motos y carros'**
   String get capacityBoth;
 
-  /// Optional driver license document URL field
+  /// AUTH-5 follow-up: optional driver license document upload label
   ///
   /// In es, this message translates to:
-  /// **'URL de la licencia (opcional)'**
-  String get licenseUrlFieldLabel;
+  /// **'Foto de la licencia (opcional)'**
+  String get licenseDocumentLabel;
 
-  /// Optional truck photo URL field
+  /// AUTH-5 follow-up: optional truck photo document upload label
   ///
   /// In es, this message translates to:
-  /// **'URL de foto de la grúa (opcional)'**
-  String get truckPhotoUrlFieldLabel;
+  /// **'Foto de la grúa (opcional)'**
+  String get truckPhotoDocumentLabel;
+
+  /// AUTH-5 follow-up: opens the gallery chooser for a document
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir foto'**
+  String get documentPickButton;
+
+  /// AUTH-5 follow-up: replaces an already-picked/uploaded document
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar foto'**
+  String get documentReplaceButton;
+
+  /// AUTH-5 follow-up: shown while a document is uploading to Storage
+  ///
+  /// In es, this message translates to:
+  /// **'Subiendo...'**
+  String get documentUploading;
+
+  /// AUTH-5 follow-up: shown once a document finished uploading
+  ///
+  /// In es, this message translates to:
+  /// **'Foto subida'**
+  String get documentUploaded;
+
+  /// AUTH-5 follow-up: shown when a document upload fails; the form can still be submitted without it
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos subir la foto. Intenta de nuevo.'**
+  String get documentUploadFailed;
 
   /// Submits the become-a-driver registration form
   ///

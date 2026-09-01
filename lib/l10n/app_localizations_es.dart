@@ -396,10 +396,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get capacityBoth => 'Motos y carros';
 
   @override
-  String get licenseUrlFieldLabel => 'URL de la licencia (opcional)';
+  String get licenseDocumentLabel => 'Foto de la licencia (opcional)';
 
   @override
-  String get truckPhotoUrlFieldLabel => 'URL de foto de la grúa (opcional)';
+  String get truckPhotoDocumentLabel => 'Foto de la grúa (opcional)';
+
+  @override
+  String get documentPickButton => 'Elegir foto';
+
+  @override
+  String get documentReplaceButton => 'Cambiar foto';
+
+  @override
+  String get documentUploading => 'Subiendo...';
+
+  @override
+  String get documentUploaded => 'Foto subida';
+
+  @override
+  String get documentUploadFailed =>
+      'No pudimos subir la foto. Intenta de nuevo.';
 
   @override
   String get becomeDriverSubmitButton => 'Enviar registro';
