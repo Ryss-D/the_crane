@@ -290,6 +290,15 @@ Flutter customer shell: request a tow, follow it live, confirm delivery.
   `confirm-delivery` actually writes the ledger entry exactly once end to
   end (LED-1 lands the ledger itself; this task only wires the client call).
 
+  Stale-note correction (2026-08-31): the "not yet verified" claim above is
+  itself stale — LED-1 (`09-ledger-commission.md`, checked off) already
+  covers this exactly, with a real backend test:
+  `test_confirm_delivery_is_idempotent_under_double_call`
+  (`backend/tests/test_job_completion.py`) calls `confirm-delivery` twice
+  and asserts `len(payments) == 1` — a real, passing, end-to-end check that
+  the payment/ledger row is written exactly once even under a double call.
+  Audited, not rebuilt; no code changed.
+
 - [ ] **CUS-6 — Saved vehicles** *(deps: AUTH-2)*
   CRUD for customer vehicles (type, make, model, plate) to speed repeat requests.
   Design: «Vehículos guardados» (`docs/design/screen-references.md`)
